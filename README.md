@@ -14,8 +14,8 @@ For a lot more background, as well as a walkthrough of how the code works and wh
 
 You need two external tools to make this work:
 
-The [Merlin32 assembler](https://brutaldeluxe.fr/products/crossdevtools/merlin/index.html), for building the code.
-The [CiderPress II](https://ciderpress2.com) utility, for constructing the a disk image suitable for running with an Apple IIgs.
+* The [Merlin32 assembler](https://brutaldeluxe.fr/products/crossdevtools/merlin/index.html), for building the code.
+* The [CiderPress II](https://ciderpress2.com) utility, for constructing the a disk image suitable for running with an Apple IIgs.
 
 Download and install these somewhere near your checked-out copy of this repo, then modify `build.sh` to point to these tools.
 
