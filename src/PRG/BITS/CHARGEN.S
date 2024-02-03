@@ -111,11 +111,12 @@ CharWind lda   (Msg)      ; Data: HA,VA,HB,VB
          sta   Tmp3
          inc   Msg
          lda   (Msg)
+         sta   Tmp
          and   #$003F
          ASLS  3
          sta   MsHm
          lsr
-         adc   (Msg)
+         adc   Tmp
          xba
          and   #$FF00
          sta   MsV
