@@ -333,8 +333,6 @@ RunBran  sta   WldNumb
 
 *------------------------------------------------------------------------
 
-LoadMove =     *
-
          LST   ON
 * DGOD file-loader v0.1b
 * Modified from Trolls P8 loader routine
@@ -343,9 +341,14 @@ LoadMove =     *
 *
          LST   OFF
 
-LoadSize =     $4000
+* Track this location in the compiled file,
+* Then build as if we're at address Loader.
+* Upon launch we will move this code to Loader and call it there.
+LoadMove =     *
 
-         DUM   $00        ; Zpage
+LoadSize =     $4000    ; Read buffer size
+
+         DUM   $00
 PtrLoad  DS    4
 PntList  DS    2
          DEND
@@ -354,7 +357,7 @@ PntList  DS    2
 
          ORG   Loader
 
-ReadBuf  =     *-LoadSize
+ReadBuf  =     *-LoadSize   ; Declare read buffer to be just before Loader in memory
 
          phb              ; Must be JSLd to
          phd              ;in full native mode
