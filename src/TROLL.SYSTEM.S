@@ -4,8 +4,6 @@
 *
          LST   OFF
 
-         XC
-         XC
          MX    %00
 
          TYP   $FF
