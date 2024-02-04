@@ -24,10 +24,10 @@ disk_destination_folder = this_repo
 # End of customization section
 #
 
-materials_folder = os.path.join(this_repo, "disk_construction_materials")
+boot_dependencies = os.path.join(this_repo, "boot_dependencies")
 src_folder = os.path.join(this_repo, "src")
 
-disk_name = "Merryo_Trolls.2mg"
+disk_name = "Merryo_Trolls"
 path_to_disk = os.path.join(disk_destination_folder, disk_name + '.2mg')
 
 def check_all_paths():
@@ -43,8 +43,8 @@ def check_all_paths():
 	if not os.path.isdir(disk_destination_folder):
 		print("Cannot find disk_destination_folder at: " + disk_destination_folder + " .")
 		return False
-	if not os.path.isdir(materials_folder):
-		print("Cannot find materials_folder folder at: " + materials_folder + " .")
+	if not os.path.isdir(boot_dependencies):
+		print("Cannot find boot_dependencies folder at: " + boot_dependencies + " .")
 		return False
 	return True
 
@@ -72,29 +72,62 @@ def run_build(src_file):
 	return status
 
 
-# Support function to add a file to the (assumed existing) image and set the attributes
-def add_file_to_image(file_name, main_attr, sub_attr):
-	print("Adding file " + file_name + ", type " + main_attr + "," + sub_attr)
-	path_to_file = os.path.join(materials_folder, file_name)
+def add_file_to_image(path, subfolder, name, main_attr, sub_attr):
+
+	if len(subfolder) > 0:
+		print("Adding file " + subfolder + ":" + name + ", type " + main_attr + "," + sub_attr)
+		pathname = os.path.join(path, subfolder, name)
+	else:
+		print("Adding file " + name + ", type " + main_attr + "," + sub_attr)
+		pathname = os.path.join(path, name)
+
+	if len(subfolder) > 0:
+		ciderpress_args = [
+			'mkdir',					# Make a directory if it doesnt exist
+			'"' + path_to_disk + '"',
+			subfolder
+		]
+		mkdir_cmd = ciderpress + " " + ' '.join(ciderpress_args)
+		mkdir_cmd_out = subprocess.check_output(mkdir_cmd, shell=True)
+
+		disk_reference = '"' + path_to_disk + '":' + subfolder
+	else:
+		disk_reference = '"' + path_to_disk + '"'
+
 	ciderpress_args = [
 		'add',						# Add file
 		'--strip-paths',			# Do not recreate subdirectories
 		'--no-strip-ext',			# Do not remove file extension
-		'"' + path_to_disk + '"',	# Image should already exist
-		'"' + path_to_file + '"'
+		disk_reference,	# Image should already exist
+		'"' + pathname + '"'
 	]
 	add_cmd = ciderpress + " " + ' '.join(ciderpress_args)
 	add_cmd_out = subprocess.check_output(add_cmd, shell=True)
 
+	if len(subfolder) > 0:
+		target_file = subfolder + ':' + name
+	else:
+		target_file = name
+
 	ciderpress_args = [
 		'set-attr',					# Set attributes
-		'"' + path_to_disk + '"',	# Image should already exist
-		'"' + file_name + '"',
+		'"' + path_to_disk + '"',
+		target_file,
 		'type=' + main_attr,
 		'aux=' + sub_attr
 	]
 	set_cmd = ciderpress + " " + ' '.join(ciderpress_args)
 	set_cmd_out = subprocess.check_output(set_cmd, shell=True)
+
+
+# Support function to add a source file to the (assumed existing) image and set the attributes
+def add_obj_file_to_image(subfolder, name, main_attr, sub_attr):
+	add_file_to_image(src_folder, subfolder, name, main_attr, sub_attr)
+
+# Support function to add a boot dependency file to the (assumed existing) image and set the attributes
+def add_boot_dependency_to_image(name, main_attr, sub_attr):
+	pathname = os.path.join(boot_dependencies, name)
+	add_file_to_image(boot_dependencies, '', name, main_attr, sub_attr)
 
 
 def main(argv):
@@ -117,7 +150,7 @@ def main(argv):
 	# Phase 1: Invoke build
 
 	run_build('TROLL.SYSTEM.S')
-	sys.exit()
+	#sys.exit()
 
 	#
 	# Phase 2: Make a new blank disk image
@@ -138,13 +171,26 @@ def main(argv):
 	# Phase 3: Add the baseline files
 	#
 
-	baseline_files = [
-		['PRODOS', '0xFF', '0x0000'],
-		['BASIC.System', '0xFF', '0x2000']
-	]
+	add_boot_dependency_to_image('PRODOS', '0xFF', '0x0000')
+	#add_boot_dependency_to_image('BASIC.System', '0xFF', '0x2000')
 
-	for baseline_file in baseline_files:
-		add_file_to_image(baseline_file[0], baseline_file[1], baseline_file[2])
+	add_obj_file_to_image('PX', 'SPLASH.Z', '0x06', '0x0000')
+	add_obj_file_to_image('PX', 'TITLE', '0x06', '0x0000')
+	add_obj_file_to_image('PX', 'CHARSET', '0x06', '0x2000')
+
+	add_obj_file_to_image('SPR', 'SPR1', '0xC1', '0x0000')
+	add_obj_file_to_image('SPR', 'SPR1G', '0x06', '0x1000')
+
+	add_obj_file_to_image('BLKS', 'WD11', '0x06', '0x1000')
+	add_obj_file_to_image('BLKS', 'WD11T', '0x06', '0x2000')
+
+	add_obj_file_to_image('SPEC', 'ACIDPT', '0x06', '0x2000')
+
+	add_obj_file_to_image('SFX', 'HADOU', '0x06', '0x0000')
+
+	add_obj_file_to_image('MAPS', 'WD1A', '0x06', '0x3000')
+
+	add_obj_file_to_image('', 'TROLL.SYSTEM', '0xFF', '0x2000')
 
 	print("Done.")
 
