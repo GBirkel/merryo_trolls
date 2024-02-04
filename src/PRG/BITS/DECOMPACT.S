@@ -9,6 +9,9 @@ PtrCrnch DS    4
 PtrLen   DS    2          ; Zero page
 PtrDist  DS    4
 CrntRnge DS    1
+* This used to be a reference to address $C034 to make cool border effects but it
+* also plays hell with the clock control.
+Border   DS    1
          DEND
 
          MX    %00
@@ -19,20 +22,20 @@ Decrunch PHD
          TCS
          INC
          TCD
-         STX   PrtDecom
+         STX   PrtDecom     ; Address of compressed file
          STX   PtchEnd+1
-         STY   PrtDecom+2
+         STY   PrtDecom+2   ; Bank of compressed file
          sep   $10
          STY   PtchEnd2+1
          rep   $11
-         LDA   [PrtDecom]
+         LDA   [PrtDecom]   ; First three bytes of file are size of body of crunched data
          ADC   PrtDecom
          STA   PtrCrnch
          LDY   #2
-         LDA   [PrtDecom],Y
+         LDA   [PrtDecom],Y ; Bits 16-23 of body size, plus 8 more bits of garbage that will be ignored
          ADC   PrtDecom+2
-         STA   PtrCrnch+2
-         LDA   [PtrCrnch]
+         STA   PtrCrnch+2   ; 24-bit address just before end of file, after crunched body
+         LDA   [PtrCrnch]   ; Pick up the 4 bytes here and write them at the beginning of the file
          STA   [PrtDecom]
          LDA   [PtrCrnch],Y
          STA   [PrtDecom],Y
@@ -52,7 +55,7 @@ Decrunch PHD
          STA   PrtDecom+1
          SEP   $30
          JSR   GoDecomp
-         stz   $c034
+*         stz   Border
          stz   $c022
          REP   $31
          TSC
@@ -85,14 +88,14 @@ prg1     REP   $20        ; recopy PtrLen bytes from crunch to decompact
          LDA   #$00
          BRA   ]lp1
 
-more1    STA   $c034
+more1    STA   Border
          AND   #%00_111111
          STA   PtrDist
          STA   $c022
          STZ   PtrDist+1
-         LDA   $c034      ; if bit 7 is 1, goto more2
+         LDA   Border      ; if bit 7 is 1, goto more2
          BMI   more2
-         ASL   $c034      ; if bit 6 is 1, goto more3
+         ASL   Border      ; if bit 6 is 1, goto more3
          BMI   more3
          LDA   #$00       ; ig bit 7 is 0 and bit 6 is 0
          STA   $c022
@@ -117,7 +120,7 @@ more3    JSR   rout2      ; if bit 6 is 1 and bit 7 is 0, read a byte from
          STA   PtrDist    ; the source, so we jump over 8 bits
          LDA   #$03       ; and move 3 bytes
          bra   prg2       ; recopy 3 bytes and tell me about it
-more2    ASL   $c034      ; (on 6 bits) if bit 7 is 1
+more2    ASL   Border      ; (on 6 bits) if bit 7 is 1
          BMI   more4
          LDA   #$04       ; if bit 7 is 1 and bit 6 is 0
          STA   PtrLen     ; move 4 bytes
