@@ -40,10 +40,15 @@ BORD     MAC
          EOM
 
 DIR      MAC
+* Reminder: The STR pseudo-opcode creates an ASCII string prefixed
+* with a single byte indicating the length of the string.
+* We only use this pseudo-opcode once in the entire codebase.
 N0       STR   ]1
 N1
          DS    13-N1+N0
-         ADR   ]2
+* ADR = 24-bit address.
+* This is the only time we use the ADR opcode in the entire codebase.
+         ADR   ]2   ; 3 bytes + 13 bytes = an even 16
          EOM
 
 ASLS     MAC
@@ -324,7 +329,7 @@ RunBran  sta   WldNumb
          sta   WldLives
          lda   #$0001     ; Condition to 1,
          sta   WldCndtn
-         lda   #$005F
+         lda   #$004F
          clc
          adc   WldNumb
          jsl   Loader     ; Main Prog
@@ -360,7 +365,7 @@ PntList  DS    2
 ReadBuf  =     *-LoadSize   ; Declare read buffer to be just before Loader in memory
 
          phb              ; Must be JSLd to
-         phd              ;in full native mode
+         phd              ; in full native mode
          PEA   #$0000     ; Direct page and bank to 0
          plb
          plb
@@ -368,7 +373,7 @@ ReadBuf  =     *-LoadSize   ; Declare read buffer to be just before Loader in me
          pld
          and   #$00FF
          ASLS  4
-         adc   #List
+         adc   #FileList
          sta   PntList
          sta   FileName   ; Store the address
          sec              ; of the record in FileName
@@ -377,24 +382,10 @@ ReadBuf  =     *-LoadSize   ; Declare read buffer to be just before Loader in me
 Open     JSR   $BF00
          DFB   $C8        ; [Open] the file with a prodos call
          DA    OpenParm
-         BCC   FndFile
-
-         LDA   (PntList)
-         TAY
-         LDA   (PntList),Y
-         CMP   #'.'          ; look and see if the name in the
-         BNE   TryComp       ; list has a ".C" suffix.  If it does,
-         sec
+         BCC   FileFound
          _Err  2
 
-TryComp  INY
-         LDA   #'.'
-         STA   (PntList),Y  ; add a ".C" suffix to the entry name
-         TYA
-         STA   (PntList)
-         BRA   Open
-
-FndFile  LDA   Ref
+FileFound LDA   Ref
          STA   ReadRef    ; Spread the file reference #
          STA   CloseRef   ; to the other routines
          LDY   #13
@@ -429,7 +420,7 @@ NoErr    LDA   TransCnt
 NoOdd    DEC
          TAY
 ]lp      LDA   ReadBuf,Y    ; Move up the file data from the buffer,
-         STA   [PtrLoad],Y  ; and put it in it's proper place
+         STA   [PtrLoad],Y  ; and put it in it's proper place (Remember, [] means three byte indirect in Merlin)
          DEY
          DEY
          BPL   ]lp
@@ -452,11 +443,15 @@ EndLoad  JSR   $BF00
          LDA   (PntList)
          TAY
          LDA   (PntList),Y
-         CMP   #'.'         ; If the file has the ".C" suffix,
-         clc
-         xce
+         CMP   #'Z'         ; If the file has the ".Z" suffix,
+         BNE   NoCompac
+         DEY
+         LDA   (PntList),Y
+         CMP   #'.'
          BNE   NoCompac
 
+         clc
+         xce
          REP   #$31       ; native mode
          LDY   #13
          LDA   (PntList),Y
@@ -468,7 +463,9 @@ EndLoad  JSR   $BF00
          TAY
          JSR   Decrunch   ; and decrunch the file.
 
-NoCompac rep   #$30
+NoCompac clc
+         xce
+         rep   #$30
          pld
          plb
          rtl
@@ -526,10 +523,10 @@ TransCnt DA    0
 ClosePrm HEX   01
 CloseRef DFB   0
 
-ListDA   DA    List
+FileListDA DA    FileList
          DS    */$10+1*$10-*     ; Make a gap to the nearest $10 in memory
 
-List     DIR   'BLKS/WD11';Blox ; Wd1 Blocks             00
+FileList DIR   'BLKS/WD11';Blox ; Wd1 Blocks             00
          DIR   'BLKS/WD21';Blok ; Wd2 Blocks             01
          DIR   'BLKS/WD31';Blox ; Wd3 Blocks             02
          DIR   'BLKS/WD41';Blok ; Wd4 Blocks             03
@@ -599,10 +596,10 @@ List     DIR   'BLKS/WD11';Blox ; Wd1 Blocks             00
          DIR   'ERROR';0  ; Empty slot 3F
 
          DIR   'SPEC/ACIDPT';AcidPtrn ; Acid land wave patterns 40
-         DIR   'PX/SPLASH';ShrA ; Splash screen   41
-         DIR   'CHARSET';Char ; Chracter set      42
-         DIR   'PX/TITLE';TitleStr ; Title page   43
-         DIR   'PRG/CREDITS';ThisProg ; Main Prog 44
+         DIR   'PX/SPLASH.Z';ShrA ; Splash screen    41
+         DIR   'PX/CHARSET';Char ; Chracter set      42
+         DIR   'PX/TITLE';TitleStr ; Title page      43
+         DIR   'PRG/CREDITS';ThisProg ; Main Prog    44
          DIR   'SPEC/CRDF1';$024000 ; Credits font 1 45
          DIR   'SPEC/CRDF1';$028000 ; Credits font 2 46
          DIR   'ERROR';0  ; Empty slot 47
@@ -616,32 +613,15 @@ List     DIR   'BLKS/WD11';Blox ; Wd1 Blocks             00
          DIR   'ERROR';0  ; Empty slot 4E
          DIR   'ERROR';0  ; Empty slot 4F
 
-         DIR   'ERROR';0  ; Empty slot 50
-         DIR   'ERROR';0  ; Empty slot 51
-         DIR   'ERROR';0  ; Empty slot 52
-         DIR   'ERROR';0  ; Empty slot 53
-         DIR   'ERROR';0  ; Empty slot 54
-         DIR   'ERROR';0  ; Empty slot 55
-         DIR   'ERROR';0  ; Empty slot 56
-         DIR   'ERROR';0  ; Empty slot 57
-         DIR   'ERROR';0  ; Empty slot 58
-         DIR   'ERROR';0  ; Empty slot 59
-         DIR   'ERROR';0  ; Empty slot 5A
-         DIR   'ERROR';0  ; Empty slot 5B
-         DIR   'ERROR';0  ; Empty slot 5C
-         DIR   'ERROR';0  ; Empty slot 5D
-         DIR   'ERROR';0  ; Empty slot 5E
-         DIR   'ERROR';0  ; Empty slot 5F
-
-         DIR   'PRG/TROLL1';ThisProg ; Main Prog 60
-         DIR   'PRG/TROLL2';ThisProg ; Main Prog 61
-         DIR   'PRG/TROLL3';ThisProg ; Main Prog 62
-         DIR   'PRG/TROLL4';ThisProg ; Main Prog 63
-         DIR   'PRG/TROLL5';ThisProg ; Main Prog 64
-         DIR   'PRG/TROLL6';ThisProg ; Main Prog 65
-         DIR   'PRG/TROLL7';ThisProg ; Main Prog 66
-* DIR 'PRG/TROLL8';ThisProg ; Main Prog 67
-         DIR   'PRG/CREDITS';ThisProg ; Main Prog 67 (test)
+         DIR   'PRG/TROLL1';ThisProg ; Main Prog 50
+         DIR   'PRG/TROLL2';ThisProg ; Main Prog 51
+         DIR   'PRG/TROLL3';ThisProg ; Main Prog 52
+         DIR   'PRG/TROLL4';ThisProg ; Main Prog 53
+         DIR   'PRG/TROLL5';ThisProg ; Main Prog 54
+         DIR   'PRG/TROLL6';ThisProg ; Main Prog 55
+         DIR   'PRG/TROLL7';ThisProg ; Main Prog 56
+* DIR 'PRG/TROLL8';ThisProg ; Main Prog 57
+         DIR   'PRG/CREDITS';ThisProg ; Main Prog 57 (test)
 
          DS    \
 OpenBuf  =     *
