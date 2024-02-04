@@ -202,4 +202,4 @@ Aigh     PHP
          LST   OFF
 
 TestThis =     *
-         PUT   BITS/DEREZZ
+         PUT   LIB/DEREZZ

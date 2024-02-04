@@ -3,7 +3,7 @@
 *
          lst   off
 
-         DUM   ]Z0
+         DUM   ]ZPSys
 Crnt     DS    2          ;Blockmaker zp
 CrntT    DS    2          ; Value in table representing block
 Sect     DS    2          ; Current section being converted (0-4)
@@ -20,7 +20,7 @@ IndxLn   DS    2          ; Current length to check
 PEALen   DS    2          ; Length of one SCB of data in the PEA field
 PEAWhole DS    2          ; Endpoint of a whole 20x16 block in PEA field
 StorDmmy DS    2          ; Current store variable being processed
-]Z0      =     *
+]ZPSys   =     *
          DEND
 
 BlokMakr rep   #$30

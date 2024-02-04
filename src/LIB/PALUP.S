@@ -1,8 +1,11 @@
-         DO    World-2/-1
+PalUpdate = *   ; Dealing with a Merlin32 addressing ambiguity
+
+         IF    1=World    ; Happy land
          lst   on
 * World 1 pallete modifier v0.2b
          lst   off
-PalUp    rep   #$30
+
+         rep   #$30
          ldx   Pal        ; Update the palette.
          LDA   Palette2,x ; for the QM blox
          stal  $E19ee0
@@ -68,11 +71,12 @@ Palette2 HEX   40042002200230034004500560067007
          DA    $660,$550
          FIN
 
-         DO    World-3/-1
+         IF    2=World      ; Unhappy land
          lst   on
 * World 2 pallete modifier v0.2b
          lst   off
-PalUp    rep   #$30
+
+         rep   #$30
          ldx   Pal
          LDA   Palette+6,x ; for the SMT logo
          stal  $019FE2
@@ -91,11 +95,12 @@ PalUp    rep   #$30
 :Br1     RTS
          FIN
 
-         DO    World-4/-1
+         IF    3=World      ; Munchies land
          lst   on
 * World 3 pallete modifier v0.2b
          lst   off
-PalUp    rep   #$30
+
+         rep   #$30
          ldx   Pal
          LDA   Palette+6,x ; for the SMT logo
          stal  $019FE2
@@ -114,11 +119,12 @@ PalUp    rep   #$30
 :Br1     RTS
          FIN
 
-         DO    World-5/-1
+         IF    4=World      ; Gothic land
          lst   on
 * World 4 pallete modifier v0.2b
          lst   off
-PalUp    rep   #$30
+
+         rep   #$30
          ldx   Pal
          LDA   Palette+6,x ; for the SMT logo
          stal  $019FE2
@@ -137,11 +143,12 @@ PalUp    rep   #$30
 :Br1     RTS
          FIN
 
-         DO    World-6/-1
+         IF    5=World      ; Techno land
          lst   on
 * World 5 pallete modifier v0.1
          lst   off
-PalUp    rep   #$30
+
+         rep   #$30
          ldx   Pal
          LDA   Palette+6,x ; for the SMT logo
          stal  $019FE2
@@ -160,11 +167,36 @@ PalUp    rep   #$30
 :Br1     RTS
          FIN
 
-         DO    World-7/-1
+         IF    6=World      ; Acid land
          lst   on
 * World 6 pallete modifier v0.1
          lst   off
-PalUp    rep   #$30
+
+         rep   #$30
+         ldx   Pal
+         LDA   Palette+6,x ; for the SMT logo
+         stal  $019FE2
+         LDA   Palette+4,x
+         stal  $019FEA
+         LDA   Palette+2,x
+         stal  $019FF2
+         LDA   Palette,x
+         stal  $019FFA
+         inc   Pal
+         inc   Pal
+         lda   Pal
+         cmp   #90
+         bne   :Br1
+         stz   Pal
+:Br1     RTS
+         FIN
+
+         IF    7=World      ; Aliens land
+         lst   on
+* World 7 pallete modifier v0.1
+         lst   off
+
+         rep   #$30
          ldx   Pal
          LDA   Palette+6,x ; for the SMT logo
          stal  $019FE2
@@ -190,3 +222,4 @@ Palette  DA    $80F,$81E,$82d,$83c,$84b,$85A,$869,$878
          DA    $f00,$E01,$d02,$c03,$b04,$A05,$906,$807
          DA    $808,$809,$80A,$80B,$80C,$80D,$80E
          DA    $80F,$81E,$82d,$83c,$84b,$85A,$869,$878,$887,$896
+

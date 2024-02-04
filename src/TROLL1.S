@@ -5,156 +5,176 @@
 *
          lst   off
 
-World    KBD   "World number compiling for (1-7)"
+*World    KBD   "World number compiling for (1-7)"  ; Not supported by Merlin32
+World   =       "1"
 
          TR    ADR
          LSTDO OFF
-         CAS   SE
-         XC
-         XC
+*         CAS   SE  ; Merlin32 is case-sensitive by default and does not support this pseudo-opcode
          MX    %00
 
 Debugger =     1
 
 * Set build flags based on the world we're building for
 
-         DO    World-2/-1 ; Happy land
-SFXcode  =     1
-DoBlComp =     1          ; Assemble compiled blockset
-Flower   =     1          ; Include these sprites:
-Turtle   =     1
-BChester =     1
-Snail    =     1
-GdRecord =     1          ; Include joystick path recorder
-Slope    =     0          ; Include platform slopes
-VertFunk =     0          ; Vertical "funky" effect
-ScrlLeft =     0          ; Whether the screen can scroll left
-HeatWave =     0
-DeRezz   =     1          ; Techno Land de-rez effect
-Buttons  =     0          ; Half-height connect-based-sprite buttons
-TVscrns  =     0          ; Techno Land tv screens (buttons required)
-SizLine  =     $F0        ; Length of one line on the PEA field
-CodeSiz  =     $00
+         IF    1=World    ; Happy land
+]SFXcode  =     1
+]DoBlComp =     1          ; Assemble compiled blockset
+]Flower   =     1          ; Include these sprites:
+]Turtle   =     1
+]BChester =     1
+]Snail    =     1
+]GdRecord =     1          ; Include joystick path recorder
+]Slope    =     0          ; Include platform slopes
+]VertFunk =     0          ; Vertical "funky" effect
+]ScrlLeft =     0          ; Whether the screen can scroll left
+]HeatWave =     0
+]DeRezz   =     1          ; Techno Land de-rez effect
+]Buttons  =     0          ; Half-height connect-based-sprite buttons
+]TVscrns  =     0          ; Techno Land tv screens (buttons required)
+]SizLine  =     $F0        ; Length of one line on the PEA field
+]CodeSiz  =     $00
          FIN
 
-         DO    World-3/-1 ; Unhappy land
-SFXcode  =     0
-DoBlComp =     0
-Flower   =     0
-Turtle   =     0
-BChester =     1
-Snail    =     1
-GdRecord =     0
-Slope    =     1
-VertFunk =     0
-ScrlLeft =     1
-HeatWave =     0
-DeRezz   =     0
-Buttons  =     0
-TVscrns  =     0
-SizLine  =     $F0
-CodeSiz  =     $00
+         IF    2=World      ; Unhappy land
+]SFXcode  =     0
+]DoBlComp =     0
+]Flower   =     0
+]Turtle   =     0
+]BChester =     1
+]Snail    =     1
+]GdRecord =     0
+]Slope    =     1
+]VertFunk =     0
+]ScrlLeft =     1
+]HeatWave =     0
+]DeRezz   =     0
+]Buttons  =     0
+]TVscrns  =     0
+]SizLine  =     $F0
+]CodeSiz  =     $00
          FIN
 
-         DO    World-4/-1 ; Munchies land
-SFXcode  =     0
-DoBlComp =     1
-Flower   =     0
-Turtle   =     0
-BChester =     1
-Snail    =     1
-GdRecord =     0
-Slope    =     0
-VertFunk =     0
-ScrlLeft =     1
-HeatWave =     0
-DeRezz   =     0
-Buttons  =     0
-TVscrns  =     0
-SizLine  =     $F0
-CodeSiz  =     $00
+         IF    3=World      ; Munchies land
+]SFXcode  =     0
+]DoBlComp =     1
+]Flower   =     0
+]Turtle   =     0
+]BChester =     1
+]Snail    =     1
+]GdRecord =     0
+]Slope    =     0
+]VertFunk =     0
+]ScrlLeft =     1
+]HeatWave =     0
+]DeRezz   =     0
+]Buttons  =     0
+]TVscrns  =     0
+]SizLine  =     $F0
+]CodeSiz  =     $00
          FIN
 
-         DO    World-5/-1 ; Gothic land
-SFXcode  =     0
-DoBlComp =     0
-Flower   =     0
-Turtle   =     0
-BChester =     1
-Snail    =     1
-GdRecord =     0
-Slope    =     1
-VertFunk =     0
-ScrlLeft =     1
-HeatWave =     0
-DeRezz   =     0
-Buttons  =     0
-TVscrns  =     0
-SizLine  =     $F0
-CodeSiz  =     $00
+         IF    4=World      ; Gothic land
+]SFXcode  =     0
+]DoBlComp =     0
+]Flower   =     0
+]Turtle   =     0
+]BChester =     1
+]Snail    =     1
+]GdRecord =     0
+]Slope    =     1
+]VertFunk =     0
+]ScrlLeft =     1
+]HeatWave =     0
+]DeRezz   =     0
+]Buttons  =     0
+]TVscrns  =     0
+]SizLine  =     $F0
+]CodeSiz  =     $00
          FIN
 
-         DO    World-6/-1 ; Techno land
-SFXcode  =     0
-DoBlComp =     1
-Flower   =     1
-Turtle   =     1
-BChester =     1
-Snail    =     1
-GdRecord =     0
-Slope    =     0
-VertFunk =     0
-ScrlLeft =     1
-HeatWave =     0
-DeRezz   =     1
-Buttons  =     1
-TVscrns  =     1
-SizLine  =     $F0
-CodeSiz  =     $00
+         IF    5=World      ; Techno land
+]SFXcode  =     0
+]DoBlComp =     1
+]Flower   =     1
+]Turtle   =     1
+]BChester =     1
+]Snail    =     1
+]GdRecord =     0
+]Slope    =     0
+]VertFunk =     0
+]ScrlLeft =     1
+]HeatWave =     0
+]DeRezz   =     1
+]Buttons  =     1
+]TVscrns  =     1
+]SizLine  =     $F0
+]CodeSiz  =     $00
          FIN
 
-         DO    World-7/-1 ; Acid land
-SFXcode  =     0
-DoBlComp =     1
-Flower   =     1
-Turtle   =     1
-BChester =     1
-Snail    =     1
-GdRecord =     0
-Slope    =     0
-VertFunk =     0
-ScrlLeft =     0
-HeatWave =     1
-DeRezz   =     0
-Buttons  =     0
-TVscrns  =     0
-SizLine  =     $F0
-CodeSiz  =     $03
+         IF    6=World      ; Acid land
+]SFXcode  =     0
+]DoBlComp =     1
+]Flower   =     1
+]Turtle   =     1
+]BChester =     1
+]Snail    =     1
+]GdRecord =     0
+]Slope    =     0
+]VertFunk =     0
+]ScrlLeft =     0
+]HeatWave =     1
+]DeRezz   =     0
+]Buttons  =     0
+]TVscrns  =     0
+]SizLine  =     $F0
+]CodeSiz  =     $03
          FIN
 
-         DO    World-8/-1 ; Aliens land
-SFXcode  =     0
-DoBlComp =     1
-Flower   =     1
-Turtle   =     1
-BChester =     1
-Snail    =     1
-GdRecord =     0
-Slope    =     0
-VertFunk =     0
-ScrlLeft =     0
-HeatWave =     1
-DeRezz   =     0
-Buttons  =     0
-TVscrns  =     0
-SizLine  =     $F0
-CodeSiz  =     $03
+         IF    7=World      ; Aliens land
+]SFXcode  =     0
+]DoBlComp =     1
+]Flower   =     1
+]Turtle   =     1
+]BChester =     1
+]Snail    =     1
+]GdRecord =     0
+]Slope    =     0
+]VertFunk =     0
+]ScrlLeft =     0
+]HeatWave =     0
+]DeRezz   =     0
+]Buttons  =     1
+]TVscrns  =     0
+]SizLine  =     $F0
+]CodeSiz  =     $00
          FIN
 
-]Z1      =     $00
+ASLS     MAC
+         LUP   ]1
+         asl
+         --^
+         EOM
+
+LSRS     MAC
+         LUP   ]1
+         lsr
+         --^
+         EOM
+
+         PUT   LIB/MEMORYMAP
+         TYP   $69
+         ORG   ThisProg
+
+         jmp   ProgBegn
+
 ]Z2      =     $00
 
-         DUM   ]Z1        ;Zpage for all shell programs
+* Zero page declared in TROLLS.System, and used during level building 
+
+]ZPSys   =     $00
+
+         DUM   ]ZPSys
 WldNumb  DS    2          ; Globals
 WldSect  DS    2          ; Map packet #
 WldIndx  DS    2          ; Map index # (0-3)
@@ -165,10 +185,18 @@ WldScore ds    8          ; Initial score
 WldCndtn ds    2          ; Condition (0-3)
 WldStats ds    2          ; Initial status (form)
 TmpB     DS    2
-]Z1      =     *
+]ZPSys   =     *
          DEND
 
-         DUM   ]Z2
+         PUT   LIB/SPRITEMAKER
+
+         DO    ]DoBlComp ; If we're compiling blocks, include the block maker
+         PUT   LIB/BLOCKMAKER
+         FIN
+
+* Zero page while playing
+
+         DUM   ]ZPPlay
 ST       DS    2          ; Stack storage
 CLM      DS    2          ; Window column # on map
 CLMs     DS    2          ; Window column # on map for MapBl
@@ -217,7 +245,7 @@ SpAc     DS    2          ; Number of active sprites
 ErCn     DS    2          ; On-screen sprite currently processing
 SpCn     DS    2          ; Active sprite currently processing
 IMsp     DS    2          ; Left-scroll location in the map Sprite List
-         DO    ScrlLeft
+         DO    ]ScrlLeft
 DMsp     DS    2          ; Right-scroll location in the map Sprite List
          FIN
 OVRt     DS    2          ; Blox over temp (for sprites)
@@ -232,32 +260,31 @@ Score2   DS    8          ; Amount to add to score
 Time1    DS    3          ; Current time
 Time2    DS    4          ; Amount to add to time + delay counter
 Flashing DS    2          ; Flashing(hurt) Guido timer
-         DO    VertFunk
+         DO    ]VertFunk
 FunkFlag DS    2          ; The vertical funk flag
 FunkReg  DS    2          ; The vertical funk value reg
          FIN
-         DO    Slope
+         DO    ]Slope
 SlopeFlg DS    2
          FIN
-         DO    HeatWave
+         DO    ]HeatWave
 HeatCnt  DS    2
 HeatSync DS    2
 AcidIndx DS    2
          FIN
-]Z2      =     *
+]ZPPlay  =     *
          DEND             ; Nifty, huh?
 
-ASLS     MAC
-         LUP   ]1
-         asl
-         --^
-         EOM
+         PUT   LIB/CHARGEN
 
-LSRS     MAC
-         LUP   ]1
-         lsr
-         --^
-         EOM
+         PUT   LIB/FADER
+
+         PUT   LIB/PALUP
+
+         DO    ]TVscrns
+         PUT   LIB/TVSCRNS
+         FIN
+
 
 PalNum   =     $10        ; Standard number of palletes to fade.
 MhMsv    =     $82        ; Horizontal movement lower level (walking)
@@ -270,26 +297,24 @@ Gcdi     =     $10        ; Clear deady block i.d
 Gdor     =     $11        ; Clear door space i.d
 Gplt     =     $14        ; Straight platform i.d
 Gpl2     =     $15        ; Straight reverse platform i.d
-         DO    Slope
+         DO    ]Slope
 GplL     =     $16        ; Left sloped platform i.d
 GplR     =     $17        ; Right sloped platform i.d
          FIN
-Git1     =     $1C        ; Coin with block $00 under
-Git2     =     $1D        ; Food with block $00 under
-Git3     =     $1E        ; Coin with block $A0 under
-Git4     =     $1F        ; Food with block $A0 under
-Gbh1     =     $21        ; 1st hidden action solid i.d
-Gbh10    =     $2A        ; 10th hidden action solid i.d
-Gppd     =     $2C        ; Entry down i.d (all solids past here)(usually)
-Gppu     =     $2D        ; Entry up i.d
-Gppr     =     $2E        ; Entry right i.d
-Gppl     =     $2F        ; Entry left i.d
-Gsld     =     $30        ; Solid i.d
-Gbi1     =     $31        ; 1st action solid i.d
-Gbi10    =     $3A        ; 10th action solid i.d
-         DO    Buttons
-Gbut     =     $3B        ; Half-height button i.d
-         FIN
+Git1            = $1C  ; Coin with block $00 under
+Git2            = $1D  ; Food with block $00 under
+Git3            = $1E  ; Coin with block $A0 under
+Git4            = $1F  ; Food with block $A0 under
+Gbh1            = $21  ; 1st hidden action solid i.d
+Gbh10           = $2A  ; 10th hidden action solid i.d
+Gppd            = $2C  ; Entry down i.d (all solids past here)(usually)
+Gppu            = $2D  ; Entry up i.d
+Gppr            = $2E  ; Entry right i.d
+Gppl            = $2F  ; Entry left i.d
+Gsld            = $30  ; Solid i.d
+Gbi1            = $31  ; 1st action solid i.d
+Gbi10           = $3A  ; 10th action solid i.d
+MapTypeButton   = $3B  ; Half-height button i.d , only useful if ]Buttons = 1
 Gsdi     =     $3F        ; Solid deadly block i.d
 
 Gloc     =     $48        ; Standard location of blank solids in blox MOD
@@ -298,31 +323,6 @@ EsqA     =     $01C03E    ;Ensoniq Address reg
 EsqC     =     $01C03C    ;Ensoniq Control reg
 EsqD     =     $01C03D    ;Ensoniq Data reg
 
-         PUT   BITS/MEMORYMAP
-
-         TYP   $69
-
-         ORG   ThisProg
-
-         jmp   ProgBegn
-
-]Z0      =     ]Z1
-         PUT   BITS/SPRITEMAKER
-
-         DO    DoBlComp
-         PUT   BITS/BLOCKMAKER
-         FIN
-]Z1      =     ]Z0
-
-]Z0      =     ]Z2
-         PUT   BITS/CHARGEN
-
-         PUT   BITS/FADER
-
-         DO    TVscrns
-         PUT   BITS/TVSCRNS
-         FIN
-]Z2      =     ]Z0
 
 ProgBegn SEC
          XCE
@@ -385,7 +385,7 @@ ProgBegn SEC
          rep   #$30
          lda   #ShelPage
          tcd
-         lda   #World-1*2+$f
+         lda   #World-'1'*2+$f
          jsl   Loader     ; Level sprites
          lda   #Zpl
          tcd
@@ -440,7 +440,7 @@ ProgBegn SEC
          rep   #$30
          lda   #ShelPage
          tcd
-         lda   #World-1*2+$10
+         lda   #World-'1'*2+$10
          jsl   Loader     ; Guido sprites
 
          lda   #Zpl
@@ -496,11 +496,11 @@ ProgBegn SEC
          lda   #ShelPage
          tcd
 
-         lda   #World-1
+         lda   #World-'1'
          jsl   Loader     ; Blocks
 
-         DO    DoBlComp
-         lda   #World+7
+         DO    ]DoBlComp
+         lda   #World-'1'+8
          jsl   Loader     ; Block Table
          lda   #Zpl
          tcd
@@ -518,12 +518,12 @@ ProgBegn SEC
          rep   #$20
          FIN
 
-         DO    HeatWave
+         DO    ]HeatWave
          lda   #$0040
          jsl   Loader     ; Acid land patterns
          FIN
 
-         DO    SFXcode
+         DO    ]SFXcode
          lda   #$0048
          jsl   Loader     ; Sound effects data
          FIN
@@ -539,7 +539,7 @@ ProgBegn SEC
          sta   Amth       ; Guido: mouth
 
 NewPack  rep   #$20
-         lda   #World-1*2+$21
+         lda   #World-'1'*2+$21
          jsl   Loader     ; Map
          clc
          xce
@@ -547,7 +547,7 @@ NewPack  rep   #$20
          lda   #Zpl
          tcd
 
-         DO    SFXcode
+         DO    ]SFXcode
          jsr   SFXsetup
          FIN
 
@@ -590,11 +590,11 @@ TrolPlay sep   #$20
          stz   Time2+2
          lda   #56
          sta   Aeye       ; Guido: eye
-         DO    VertFunk
+         DO    ]VertFunk
          stz   FunkFlag
          stz   FunkReg
          FIN
-         DO    Slope
+         DO    ]Slope
          stz   SlopeFlg
          FIN
          sep   #$20
@@ -638,7 +638,7 @@ TrolPlay sep   #$20
          HEX   FF020000               ; C:data offset = $1000
          HEX   84CDD3C4D1C8CDC648     ; "Entering:" (9)[9]
          HEX   FF020010               ; C:data offset = $1000 MOD
-         PUT   BITS/WORLDNAMES
+         PUT   LIB/WORLDNAMES
          HEX   FF00250B   ; C:H=37,V=11
          HEX   FF020000   ; C:data offset = $0000
          HEX   80D1C4C000 ; "AREA " (5)[5]
@@ -789,7 +789,7 @@ ScoreM   HEX   7474747474747474000088d3c4ccd248 ; "00000000  Items:" (16)[30]
 TimeM    HEX   7474740000020348          ; "000  @@:" (8)[57]
 LivesM   HEX   747474740000464748        ; "()()  HH:" (9)[66]
 ConditnM HEX   1617161716170000          ; "()()()  " (8)[74]
-         DFB   World*2+$60,World*2+$61   ; "##" (2)[76]
+         DFB   World-'0'*2+$60,World-'0'*2+$61   ; "##" (2)[76]
          HEX   5CFF020010                ; "-" (1)[77] C:data offset = $1000
 LevelM   HEX   8283       ; "##" (2)[79]
          HEX   FF020000   ; C:data offset = $0000
@@ -799,7 +799,7 @@ LevelM   HEX   8283       ; "##" (2)[79]
 NewLoc2  rep   #$30
          stz   BK
          stz   Flashing
-         lda   #SizLine*$C0 ; x192
+         lda   #]SizLine*$C0 ; x192
          sta   SizTotal
          lda   #$9cff
          sta   SizStack
@@ -821,7 +821,7 @@ NewLoc2  rep   #$30
          lda   Connects+5,x
          and   #$07
          sta   Mhs
-         DO    HeatWave
+         DO    ]HeatWave
          lda   Connects+6,x
          asl
          sta   AcidIndx+1
@@ -865,7 +865,7 @@ NewLoc2  rep   #$30
          tax
          bra   ]lp
 
-         DO    ScrlLeft
+         DO    ]ScrlLeft
 Bonk     lda   IMsp
          sta   DMsp
          stz   Lupe
@@ -915,7 +915,7 @@ DoorKnob lda   Mhb
          bne   ]lp
          plb
 
-         DO    HeatWave
+         DO    ]HeatWave
          stz   HeatCnt
          stz   HeatSync
          FIN
@@ -957,7 +957,7 @@ DoorKnob lda   Mhb
          LDA   #$C1
          STAl  $e1C029    ; turn on SHR
          jsr   FadeLoop   ; Fade everything in (phew! now we can start!)
-         DO    TVscrns
+         DO    ]TVscrns
          stz   TVcntr     ; Temporary check to see if it works
          FIN
 
@@ -970,7 +970,7 @@ MainLp   rep   #$20
          lda   ErAc
          beq   *+5
          JSR   DraEm      ; Draw active sprites, if any
-         DO    HeatWave
+         DO    ]HeatWave
          lda   HeatCnt
          inc
          cmp   #22
@@ -1009,7 +1009,7 @@ NotPause cmp   #$9B       ; ESC
          bne   ]lp
          FIN
 
-         DO    GdRecord
+         DO    ]GdRecord
          MX    %10
 NotQuit  cmp   #"r"       ; Check for instigation of recorder
          bne   NotRecrd
@@ -1058,11 +1058,11 @@ NotQuit  lda   #$00
 NoKey    lda   ExStats    ; Skip new reads if
          bmi   AutoSkip   ; autopilot is running them
 
-         PUT   BITS/JOYSTICK
+         PUT   LIB/JOYSTICK
 
 EndStick rep   #$30       ; all this does
-         jsr   PalUp      ; is update the palette.
-         DO    TVscrns
+         JSR   PalUpdate      ; is update the palette.
+         DO    ]TVscrns
          jsr   DrawScrn   ; Temporary check to see if it works
          FIN
          sep   #$20
@@ -1121,7 +1121,7 @@ Junky    rep   #$10       ; Set the anal Xaxs value
          sta   Xaxs
          sep   #$20       ; check the vertical axis
 
-         DO    Slope
+         DO    ]Slope
          lda   Mvb        ; if it is above the screen
          beq   JumpEr
          cmp   #$0d       ; It's always empty.
@@ -1140,11 +1140,11 @@ Junky    rep   #$10       ; Set the anal Xaxs value
          lda   Mvs
          beq   Barney     ; If not on the bottom of the block, check slope.
 
-         DO    Buttons
+         DO    ]Buttons
          cmp   #$08       ; Step 8 half-height button check
          bne   Burger
          lda   MapBl,x
-         cmp   #Gbut
+         cmp   #MapTypeButton
          beq   ScrewMe
          lda   Mhs        ; Mhs = 0>2?
          cmp   #$03
@@ -1155,7 +1155,7 @@ Junky    rep   #$10       ; Set the anal Xaxs value
          tax
          sep   #$20
          lda   MapBl,x
-         cmp   #Gbut      ; Next block over
+         cmp   #MapTypeButton      ; Next block over
          beq   ScrewMe
 Burger   =     *
          FIN
@@ -1187,7 +1187,7 @@ Barney   inx              ; one extra block down
 
          ELSE
 
-         DO    Buttons
+         DO    ]Buttons
          lda   Mvs
          beq   PayUp
          cmp   #$08       ; Step 8 half-height button check
@@ -1206,13 +1206,13 @@ Barney   inx              ; one extra block down
          tax
          sep   #$20
          lda   MapBl,x
-         cmp   #Gbut
+         cmp   #MapTypeButton
          beq   ScrewMe
          lda   Mhs        ; Mhs = 0>2?
          cmp   #$03
          bcc   Buttock
          lda   MapBl+$c,x
-         cmp   #Gbut      ; Next block over
+         cmp   #MapTypeButton      ; Next block over
          beq   ScrewMe
          bra   Buttock
 
@@ -1242,8 +1242,9 @@ PayUp    =     *          ; normal 'below' check
 
          lda   MapBl,x
 
-         DO    Buttons
-         cmp   #Gbut
+         DO    ]Buttons
+         MX    %10
+         cmp   #MapTypeButton
          beq   :Br1
          cmp   #Gppd
          bcs   ScrewMe
@@ -1262,8 +1263,8 @@ PayUp    =     *          ; normal 'below' check
          bcc   Buttock
          lda   MapBl+$c,x ; Next row of blocks
 
-         DO    Buttons
-         cmp   #Gbut
+         DO    ]Buttons
+         cmp   #MapTypeButton
          beq   Buttock
          FIN
 
@@ -1280,7 +1281,7 @@ ScrewMe  lda   #$01
          sta   Mvv
          lda   #$05
          sta   Jcnt
-         DO    SFXcode    ; MOD for jump sfx
+         DO    ]SFXcode    ; MOD for jump sfx
          jsr   PlaySFX
          FIN
          lda   Xaxs       ; If horiz. velocity is "fast", add to jump height
@@ -1706,7 +1707,7 @@ Clittie  inc   Mvs
          jmp   Uranus
 
 Juicy    dec   Yaxs       ; second routine
-         DO    Buttons
+         DO    ]Buttons
          lda   Mvs
          bne   *+5
          jmp   TopHat
@@ -1726,7 +1727,7 @@ Juicy    dec   Yaxs       ; second routine
          tax
          sep   #$20
          lda   MapBl,x
-         cmp   #Gbut
+         cmp   #MapTypeButton
          beq   NotElsa
          lda   Mhs        ; Mhs = 0>2?
          cmp   #$03
@@ -1737,7 +1738,7 @@ Juicy    dec   Yaxs       ; second routine
          tax
          sep   #$20
          lda   MapBl,x
-         cmp   #Gbut      ; Next block over
+         cmp   #MapTypeButton      ; Next block over
          bne   Elsa
 NotElsa  inc   Mvs
          lda   #$01
@@ -1792,8 +1793,8 @@ TopHat   lda   Mvb        ; Bastard-offscreen check
          sep   #$20
          lda   MapBl,x
 
-         DO    Buttons
-         cmp   #Gbut
+         DO    ]Buttons
+         cmp   #MapTypeButton
          beq   Br1
          cmp   #Gppd
          bcs   Kitties
@@ -1819,8 +1820,8 @@ Br1      =     *
          sep   #$20
          lda   MapBl,x
 
-         DO    Buttons
-         cmp   #Gbut
+         DO    ]Buttons
+         cmp   #MapTypeButton
          beq   Panties
          FIN
 
@@ -1878,7 +1879,7 @@ UpHere   lda   #$33       ; Right border -1
          adc   DCnt
          sta   Mbl
 
-         DO    ScrlLeft
+         DO    ]ScrlLeft
 UpThere  lda   Mbl        ; Check screen loc.
          cmp   #$1C       ; Left border of "window"
          bcs   DirtClod
@@ -1968,7 +1969,7 @@ AwlkD    DB    00,01,02,03,04,05,06,07
 AwlbD    DB    16,17,18,19,20,21,22,23
 ArtmD    DB    36,35,36,37,38,39,38,37
 
-         DO    Slope
+         DO    ]Slope
          DB    0          ; Subtract 1 for lower limit check values
 SlopLeft DB    2,5,8,11,14
 SlopRght DB    14,11,8,5,2
@@ -2047,7 +2048,7 @@ Die      rep   #$30       ; Mario death routine so far!
 PeaInc   SEP   #$30
          lda   #$80
          trb   Mdir       ; Set the forward scroll flag
-         DO    VertFunk
+         DO    ]VertFunk
          lda   ExStats
          and   #$01
          beq   IncBr2
@@ -2082,7 +2083,7 @@ IncBr2   =     *
          INC   BK
          LDA   BK
          CMP   #$0005     ; Not gone a block?
-         DO    ScrlLeft
+         DO    ]ScrlLeft
          BNE   IncBr4     ; Don't check new sprites.
          ELSE
          bne   IncBr3
@@ -2137,7 +2138,7 @@ IncBr5   ASLS  3          ; x8
          rep   #$20
          inc   SpAc
          bra   ]lp
-         DO    ScrlLeft
+         DO    ]ScrlLeft
 IncBr3   jmp   IncBr3B
 IncBr4   rep   #$30
          ELSE
@@ -2145,7 +2146,7 @@ IncBr3   rep   #$30
          FIN
          LDA   #$000B
          STA   Tmp
-         DO    VertFunk
+         DO    ]VertFunk
          lda   ExStats
          and   #$0001
          beq   TwistSk
@@ -2160,35 +2161,35 @@ TwistSk  clc
          ldal  PA
          FIN
          tay
-         DO    HeatWave
+         DO    ]HeatWave
          phb
          pea   #>ForeFld
          plb
          plb
-]lp      =     SizLine-CodeSiz
+]lp      =     ]SizLine-]CodeSiz
 ]lp2     =     0
          LUP   #128
          lda   #]lp2*$100+$e5 ; sbc ##
          sta   ForeFld+]lp,y
-]lp      =     ]lp+SizLine
+]lp      =     ]lp+]SizLine
 ]lp2     =     ]lp2+2
          --^
 ]lp2     =     0
          LUP   #62
          lda   #]lp2*$100+$f5 ; sbc ##,x
          sta   ForeFld+]lp,y
-]lp      =     ]lp+SizLine
+]lp      =     ]lp+]SizLine
 ]lp2     =     ]lp2+2
          --^
          lda   #$f41b     ; tcs, pea #$xxxx
-]lp      =     SizLine-CodeSiz+2
+]lp      =     ]SizLine-]CodeSiz+2
          LUP   #190
          sta   ForeFld+]lp,y
-]lp      =     ]lp+SizLine
+]lp      =     ]lp+]SizLine
          --^
          plb
          FIN
-         DO    DoBlComp
+         DO    ]DoBlComp
          LDA   Tmp
          CLC
          ADC   CLMs
@@ -2236,7 +2237,7 @@ TwistSk  clc
          plb
          FIN
          RTS
-         DO    ScrlLeft
+         DO    ]ScrlLeft
 IncBr3B  rep   #$30
          lda   DMsp
          ASLS  3          ; x8
@@ -2253,11 +2254,11 @@ IncBr3B  rep   #$30
          bra   IncBr3B
          FIN
 
-         DO    ScrlLeft
+         DO    ]ScrlLeft
 PeaDec   REP   #$31       ; Draw grafix 1st, in the dec routine
          LDA   #$000B
          STA   Tmp
-         DO    VertFunk
+         DO    ]VertFunk
          lda   ExStats
          and   #$0001
          bne   TwistS3
@@ -2275,7 +2276,7 @@ TwistS2  clc
          FIN
          ADCl  PA
          tay
-         DO    DoBlComp
+         DO    ]DoBlComp
          LDA   Tmp        ; Compiled-set routine:
          CLC
          ADC   CLMs
@@ -2327,7 +2328,7 @@ TwistS2  clc
          SEP   #$30       ; THEN do computing:
          lda   #$80
          tsb   Mdir
-         DO    VertFunk
+         DO    ]VertFunk
          lda   ExStats
          and   #$01
          beq   DecBr2
@@ -2447,7 +2448,7 @@ PeaBlit  phb
          STAL  ForeFld,x
          LDA   #>PeaCR
          STAL  ForeFld+2,x
-         DO    HeatWave
+         DO    ]HeatWave
          LDA   HeatSync
          clc
          adc   SizStack
@@ -2477,7 +2478,7 @@ PeaCR    SEP   #$20
          tcd
          lda   ST
          TCS              ; Recover stack
-         DO    HeatWave
+         DO    ]HeatWave
          lda   HeatCnt
          asl
          adc   AcidIndx
@@ -2573,7 +2574,7 @@ Toad     txa
          inc
 
 Ren      sec
-         sbc   #SizLine   ; Down 1 line
+         sbc   #]SizLine   ; Down 1 line
          sta   Tmp        ; Horitontal computed
          phb              ; (entry point for pipes)
          pea   #>ForeFld
@@ -2750,7 +2751,7 @@ Chompem  sta   DWNt       ; Store the blox down for safekeeping
          sbc   Tmp        ; - the total
          clc
          adcl  PA         ; + the current offset
-         DO    DoBlComp
+         DO    ]DoBlComp
          tay
          lda   #$0400
          ORA   Tmp3
@@ -2873,7 +2874,7 @@ RSideOut stx   VARX       ; Frame in PEA field
 
 DownOut  txa              ; Frame in PEA field
          clc
-         adc   #SizLine
+         adc   #]SizLine
          sta   VARX
          txa
          clc
@@ -2905,7 +2906,7 @@ DownOut  txa              ; Frame in PEA field
          jsr   CutPaste
          lda   VARY
          sec
-         sbc   #SizLine
+         sbc   #]SizLine
          sta   VARY
          dec   Lupe
          bne   ]lp
@@ -2924,13 +2925,13 @@ CutPaste sep   #$30
          stal  ForeFld+$F,x
          lda   #$1b00
          stal  ForeFld+$11,x
-         lda   #SizLine-$16*$100+$82
+         lda   #]SizLine-$16*$100+$82
          stal  ForeFld+$13,x ; Establish frame
          lda   #$0000
          stal  ForeFld+$15,x
          txa
          clc
-         adc   #SizLine
+         adc   #]SizLine
          tax
          dey
          bne   ]lp
@@ -2960,7 +2961,7 @@ HalfDo   sta   DaSpot+2
          jmp   Ren
 
 DoorFade =     *
-         DO    DeRezz
+         DO    ]DeRezz
          jsr   RezzOut
          ELSE
          rep   #$30
@@ -3061,7 +3062,7 @@ DuckPoop jmp   TrolPlay
          brk   00
          brk   00
 
-         DO    DoBlComp
+         DO    ]DoBlComp
 Box      =     $030000    ; Block set
          ELSE
 Box      =     *          ; OR block drawing subroutine
@@ -3077,24 +3078,22 @@ Box      =     *          ; OR block drawing subroutine
          RTS
          FIN
 
-         PUT   BITS/SCOREADD
+         PUT   LIB/SCOREADD
 
-         PUT   BITS/TIMEADD
+         PUT   LIB/TIMEADD
 
-         PUT   BITS/LIVESINC
+         PUT   LIB/LIVESINC
 
-         PUT   BITS/WAITSYN
+         PUT   LIB/WAITSYN
 
-         PUT   BITS/WAITKEY
+         PUT   LIB/WAITKEY
 
-         PUT   BITS/PALUP
-
-         PUT   BITS/CHSOLID
+         PUT   LIB/CHSOLID
 
 ActList  =     *
 ]lp      =     0
 
-         DO    Flower
+         DO    ]Flower
          DA    Flower10,Flower01,Flower11
 ]lp      =     ]lp+3
          FIN
@@ -3159,67 +3158,67 @@ KillDis  sep   #$20       ; REMOVE the current sprite
 KillRet  rts
 
 SprList  DA    KillMe,AnBrik,Flag,PufSmok,Mushey,CoinGet
-         DO    Turtle
+         DO    ]Turtle
          DA    TurtleSp,Shell
          FIN
-         DO    Flower
+         DO    ]Flower
 IDFlower =     *-SprList/2
          DA    FlowerSp
          FIN
-         DO    Snail
+         DO    ]Snail
          DA    SlimBal
          FIN
-         DO    BChester
+         DO    ]BChester
          DA    Chester
          FIN
-         DO    GdRecord
+         DO    ]GdRecord
          DA    Recorder
          FIN
          DA    Player
 IDPlayer =     *-SprList/2
 
-         PUT   BITS/BRIKBITS
+         PUT   LIB/BRIKBITS
 
-         PUT   BITS/FLAGPOLE
+         PUT   LIB/FLAGPOLE
 
-         PUT   BITS/PUFFSMOK
+         PUT   LIB/PUFFSMOK
 
-         PUT   BITS/MUSHROOM
+         PUT   LIB/MUSHROOM
 
-         PUT   BITS/COINGET
+         PUT   LIB/COINGET
 
-         DO    Turtle
-         PUT   BITS/TURTLE
+         DO    ]Turtle
+         PUT   LIB/TURTLE
          FIN
 
-         DO    Flower
-         PUT   BITS/FLOWER
+         DO    ]Flower
+         PUT   LIB/FLOWER
          FIN
 
-         DO    Snail
-         PUT   BITS/SLIMBAL
+         DO    ]Snail
+         PUT   LIB/SLIMBAL
          FIN
 
-         DO    BChester
-         PUT   BITS/CHESTER
+         DO    ]BChester
+         PUT   LIB/CHESTER
          FIN
 
-         DO    GdRecord
-         PUT   BITS/RECORDER
+         DO    ]GdRecord
+         PUT   LIB/RECORDER
          FIN
 
-         PUT   BITS/PLAYER
+         PUT   LIB/PLAYER
 
-         DO    SFXcode
-         PUT   BITS/PLAYSFX
+         DO    ]SFXcode
+         PUT   LIB/PLAYSFX
          FIN
 
-         DO    DeRezz
-         PUT   BITS/DEREZZ
+         DO    ]DeRezz
+         PUT   LIB/DEREZZ
          FIN
 
          DO    Debugger
-         PUT   BITS/DEBUGGER
+         PUT   LIB/DEBUGGER
          FIN
 
          lst   on

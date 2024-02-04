@@ -19,7 +19,7 @@ FlagPole lda   ExStats
          sta   Artm       ; "Carry" arm for grabbing flag
          txa
          clc
-         adc   #SizLine
+         adc   #]SizLine
          sta   VARX       ; Window's PEA field
          clc
          adc   #$000f
@@ -48,7 +48,7 @@ FlagPole lda   ExStats
          stal  ForeFld+$15,x
          txa
          clc
-         adc   #SizLine
+         adc   #]SizLine
          tax
          dey
          bne   ]lp
@@ -58,9 +58,9 @@ FlagPole lda   ExStats
          stal  ForeFld+$11,x
          lda   VARX
          sec
-         sbc   #SizLine   ; Guido position
+         sbc   #]SizLine   ; Guido position
          sec
-         sbc   #SizLine   ; Guido position
+         sbc   #]SizLine   ; Guido position
          sta   VARX
          clc
          adc   #$000f

@@ -4,8 +4,8 @@
 *
          lst   off
 
-SizLine  =     $F0        ; Length of one line on the PEA field
-CodeSiz  =     $00
+]SizLine  =     $F0        ; Length of one line on the PEA field
+]CodeSiz  =     $00
 
          DUM   $00
 Tmp      DS    2
@@ -73,7 +73,7 @@ BackFld  =     $060000    ; Background feild bank
          stal  PA
          LDA   #^ForeFld
          STAl  PA+2       ; Set the PEA bank correctly
-         lda   #SizLine*$C0 ; x192
+         lda   #]SizLine*$C0 ; x192
          sta   SizTotal
          lda   #$9cff
          sta   SizStack
@@ -223,8 +223,8 @@ FogTablR HEX   BBBCB1B5B3BFB9BDB7B8BCBABEBDBDBD
          HEX   DBDCD1D5D3DFD9DDD7D8DCDADEDDDDDD
          HEX   DBDCD1D5D3DFD9DDD7D8DCDADEDDDDDD
 
-         PUT   BITS/WAITKEY
+         PUT   LIB/WAITKEY
 
-         PUT   BITS/WAITSYN
+         PUT   LIB/WAITSYN
 
-         PUT   BITS/FOGIMPORT
+         PUT   LIB/FOGIMPORT

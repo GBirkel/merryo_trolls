@@ -3,9 +3,9 @@
 *             v0.02c ace 1994
          LST   OFF
 
-         DUM   ]Z0
+         DUM   ]ZPPlay
 FadeRate DS    2
-]Z0      =     *
+]ZPPlay      =     *
          DEND
 
 FadeLoop php

@@ -12,18 +12,18 @@
          XC
          MX    %00
 
-DoBlComp =     0          ; This has to show up in any TROLL# file
-Flower   =     0          ; to remain compatible with all the PUT
-Turtle   =     0          ; code objects.
-BChester =     0
-Snail    =     0
-GdRecord =     0
-Slope    =     0
-VertFunk =     0
-ScrlLeft =     0
-HeatWave =     0
+]DoBlComp =     0          ; This has to show up in any TROLL# file
+]Flower   =     0          ; to remain compatible with all the PUT
+]Turtle   =     0          ; code objects.
+]BChester =     0
+]Snail    =     0
+]GdRecord =     0
+]Slope    =     0
+]VertFunk =     0
+]ScrlLeft =     0
+]HeatWave =     0
 SizLine  =     $F0
-CodeSiz  =     $00
+]CodeSiz  =     $00
 
 ]Z1      =     $00
 ]Z2      =     $00
@@ -118,11 +118,11 @@ ShrB     =     $E12000
          jmp   ProgBegn
 
 ]Z0      =     ]Z2
-         PUT   BITS/CHARGEN
+         PUT   LIB/CHARGEN
 
-         PUT   BITS/MOUSE
+         PUT   LIB/MOUSE
 
-         PUT   BITS/FADER
+         PUT   LIB/FADER
 ]Z2      =     ]Z0
 
 ProgBegn SEC
@@ -769,15 +769,15 @@ Palette  DA    $80F,$81E,$82d,$83c,$84b,$85A,$869,$878
          DA    $808,$809,$80A,$80B,$80C,$80D,$80E
          DA    $80F,$81E,$82d,$83c
 
-         PUT   BITS/SCOREADD
+         PUT   LIB/SCOREADD
 
-         PUT   BITS/TIMEADD
+         PUT   LIB/TIMEADD
 
-         PUT   BITS/LIVESINC
+         PUT   LIB/LIVESINC
 
-         PUT   BITS/WAITSYN
+         PUT   LIB/WAITSYN
 
-         PUT   BITS/WAITKEY
+         PUT   LIB/WAITKEY
 
          lst   on
 *

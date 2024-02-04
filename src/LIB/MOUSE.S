@@ -6,12 +6,12 @@
 *
          lst   off
 
-         DUM   ]Z0
+         DUM   ]ZPSys
 MouseX   DS    2          ; Mouse zp
 MouseY   DS    2
 Button   DS    2
 OldMIndx DS    2
-]Z0      =     *
+]ZPSys      =     *
          DEND
 
          MX    %00

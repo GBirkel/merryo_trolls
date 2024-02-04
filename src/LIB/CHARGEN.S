@@ -4,14 +4,14 @@
 *
          lst   off
 
-         DUM   ]Z0        ; Message maker zp
+         DUM   ]ZPPlay    ; Message maker zp
 Msg      DS    2          ; 8x8 char message indirect memory location
 MsAND    DS    2          ; 8x8 char AND mask value storage
 MsOFF    DS    2          ; 8x8 char data offset storage
 MsH      DS    2          ; 8x8 char horizontal loc
 MsV      DS    2          ; 8x8 char vertical location
 MsHm     DS    2          ; 8x8 char horizontal left margin
-]Z0      =     *
+]ZPPlay      =     *
          DEND             ; Nifty, huh?
 
 MsgPrint rep   #$30

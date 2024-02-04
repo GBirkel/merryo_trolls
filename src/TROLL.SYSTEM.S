@@ -5,27 +5,7 @@
          LST   OFF
 
          MX    %00
-
          TYP   $FF
-
-]Z0      =     $00
-
-         DUM   ]Z0        ; Zpage for all other programs
-WldNumb  DS    2          ; Globals
-WldSect  DS    2          ; Map packet #
-WldIndx  DS    2          ; Map index # (0-3)
-LevLet   DS    2          ; Level letter
-LevSect  DS    2          ; Level section letter
-WldLives DS    2          ; Initial lives
-WldScore ds    8          ; Initial score
-WldCndtn ds    2          ; Initial condition (0-3)
-WldStats ds    2          ; Initial status (form)
-Tmp      DS    2
-Tmp2     DS    2
-Tmp3     DS    2
-Tmp4     DS    2
-]Z0      =     *
-         DEND
 
 *------------------------------- Macros
 
@@ -74,14 +54,16 @@ _Err     MAC
 
 BordTime =     1
 
-DoBlComp =     1          ; Assemble compiled blockset
-GdRecord =     1          ; Include joystick path recorder
-Slope    =     1          ; Include platform slopes
-VertFunk =     1          ; Vertical "funky" effect
-ScrlLeft =     1          ; Whether the screen can scroll left
-HeatWave =     1
+]DoBlComp =     1          ; Assemble compiled blockset
+]GdRecord =     1          ; Include joystick path recorder
+]Slope    =     1          ; Include platform slopes
+]VertFunk =     1          ; Vertical "funky" effect
+]ScrlLeft =     1          ; Whether the screen can scroll left
+]HeatWave =     1
 
-         PUT   PRG/BITS/MEMORYMAP
+* Memory map and zer page
+
+         PUT   LIB/MEMORYMAP
 
 BootProg =     $002000
 
@@ -95,13 +77,37 @@ KQVDirec =     $040000    ; initial destination for KQV-clone format
          ORG   BootProg
          jmp   RealBegn
 
-         PUT   PRG/BITS/CHARGEN
+]ZPSys   =     $00
 
-         PUT   PRG/BITS/FADER
+         DUM   ]ZPSys
+WldNumb  DS    2          ; Globals
+WldSect  DS    2          ; Map packet #
+WldIndx  DS    2          ; Map index # (0-3)
+LevLet   DS    2          ; Level letter
+LevSect  DS    2          ; Level section letter
+WldLives DS    2          ; Initial lives
+WldScore ds    8          ; Initial score
+WldCndtn ds    2          ; Initial condition (0-3)
+WldStats ds    2          ; Initial status (form)
+Tmp      DS    2
+Tmp2     DS    2
+Tmp3     DS    2
+Tmp4     DS    2
+]ZPSys   =     *
+         DEND
 
-         PUT   PRG/BITS/WAITSYN
+         PUT   LIB/MOUSE
 
-         PUT   PRG/BITS/MOUSE
+         PUT   LIB/WAITSYN
+
+* These libs are also used by the player program, which uses two
+* different direct pages.  Here in TROLL.System we're using one joined direct page.
+* variable for specifying their direct page.
+]ZPPlay  =     ]ZPSys
+
+         PUT   LIB/CHARGEN
+
+         PUT   LIB/FADER
 
 TxtClr   HEX   00000002000002060001050104090C0A
 
@@ -470,7 +476,7 @@ NoCompac clc
          plb
          rtl
 
-         PUT   PRG/BITS/DECOMPACT
+         PUT   LIB/DECOMPACT
 
          MX    %11
 
@@ -599,7 +605,7 @@ FileList DIR   'BLKS/WD11';Blox ; Wd1 Blocks             00
          DIR   'PX/SPLASH.Z';ShrA ; Splash screen    41
          DIR   'PX/CHARSET';Char ; Chracter set      42
          DIR   'PX/TITLE';TitleStr ; Title page      43
-         DIR   'PRG/CREDITS';ThisProg ; Main Prog    44
+         DIR   'CREDITS';ThisProg ; Main Prog    44
          DIR   'SPEC/CRDF1';$024000 ; Credits font 1 45
          DIR   'SPEC/CRDF1';$028000 ; Credits font 2 46
          DIR   'ERROR';0  ; Empty slot 47
@@ -613,15 +619,15 @@ FileList DIR   'BLKS/WD11';Blox ; Wd1 Blocks             00
          DIR   'ERROR';0  ; Empty slot 4E
          DIR   'ERROR';0  ; Empty slot 4F
 
-         DIR   'PRG/TROLL1';ThisProg ; Main Prog 50
-         DIR   'PRG/TROLL2';ThisProg ; Main Prog 51
-         DIR   'PRG/TROLL3';ThisProg ; Main Prog 52
-         DIR   'PRG/TROLL4';ThisProg ; Main Prog 53
-         DIR   'PRG/TROLL5';ThisProg ; Main Prog 54
-         DIR   'PRG/TROLL6';ThisProg ; Main Prog 55
-         DIR   'PRG/TROLL7';ThisProg ; Main Prog 56
-* DIR 'PRG/TROLL8';ThisProg ; Main Prog 57
-         DIR   'PRG/CREDITS';ThisProg ; Main Prog 57 (test)
+         DIR   'TROLL1';ThisProg ; Main Prog 50
+         DIR   'TROLL2';ThisProg ; Main Prog 51
+         DIR   'TROLL3';ThisProg ; Main Prog 52
+         DIR   'TROLL4';ThisProg ; Main Prog 53
+         DIR   'TROLL5';ThisProg ; Main Prog 54
+         DIR   'TROLL6';ThisProg ; Main Prog 55
+         DIR   'TROLL7';ThisProg ; Main Prog 56
+* DIR 'TROLL8';ThisProg ; Main Prog 57
+         DIR   'CREDITS';ThisProg ; Main Prog 57 (test)
 
          DS    \
 OpenBuf  =     *

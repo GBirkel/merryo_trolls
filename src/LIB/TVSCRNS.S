@@ -1,6 +1,6 @@
-         DUM   ]Z2
+         DUM   ]ZPPlay
 TVcntr   DA    2
-]Z2      =     *
+]ZPPlay  =     *
          DEND
 
 DrawScrn php

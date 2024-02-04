@@ -1,4 +1,4 @@
-         DO    HeatWave
+         DO    ]HeatWave
 Wave1    DFB   $a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0
          DFB   $a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0
 Wave2    DFB   $a0,$a1,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$9F,$a0

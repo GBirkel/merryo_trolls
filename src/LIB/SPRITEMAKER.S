@@ -6,7 +6,7 @@
 *
          LST   OFF
 
-         DUM   ]Z0
+         DUM   ]ZPSys
 SprMkBnk DS    2          ;Spritemaker zp
 Prog     DS    2
 Prog2    DS    2
@@ -27,7 +27,7 @@ Index    ds    2
 Pass     ds    2
 PixelFix ds    2
 NumDone  ds    2
-]Z0      =     *
+]ZPSys      =     *
          DEND
 
 SpriteMk REP   #$30
