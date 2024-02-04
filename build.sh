@@ -218,7 +218,20 @@ def main(argv):
 
 	add_obj_file_to_image('MAPS', 'WD1A', '0x06', '0x3000')
 
+	#
+	# Phase 7: Clean up
+	#
+
+	os.remove(os.path.join(src_folder, "WORLD1.S"))
+	os.remove(os.path.join(src_folder, "WORLD2.S"))
+	os.remove(os.path.join(src_folder, "WORLD3.S"))
+	os.remove(os.path.join(src_folder, "WORLD4.S"))
+	os.remove(os.path.join(src_folder, "WORLD5.S"))
+	os.remove(os.path.join(src_folder, "WORLD6.S"))
+	os.remove(os.path.join(src_folder, "WORLD7.S"))
+
 	print("Done.")
+
 
 
 if __name__ == "__main__":
