@@ -54,12 +54,12 @@ _Err     MAC
 
 BordTime =     1
 
-]DoBlComp =     1          ; Assemble compiled blockset
-]GdRecord =     1          ; Include joystick path recorder
-]Slope    =     1          ; Include platform slopes
-]VertFunk =     1          ; Vertical "funky" effect
-]ScrlLeft =     1          ; Whether the screen can scroll left
-]HeatWave =     1
+BF_BlkComp =     1          ; Assemble compiled blockset
+BF_Recordr =     1          ; Include joystick path recorder
+BF_Slopes  =     1          ; Include platform slopes
+BF_VrtFunk =     1          ; Vertical "funky" effect
+BF_ScrlLft =     1          ; Whether the screen can scroll left
+BF_HeatWav =     1
 
 * Memory map and zer page
 

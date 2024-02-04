@@ -12,18 +12,18 @@
          XC
          MX    %00
 
-]DoBlComp =     0          ; This has to show up in any TROLL# file
-]Flower   =     0          ; to remain compatible with all the PUT
-]Turtle   =     0          ; code objects.
-]BChester =     0
-]Snail    =     0
-]GdRecord =     0
-]Slope    =     0
-]VertFunk =     0
-]ScrlLeft =     0
-]HeatWave =     0
-SizLine  =     $F0
-]CodeSiz  =     $00
+BF_BlkComp  =     0          ; This has to show up in any TROLL# file
+BF_S_Flowr  =     0          ; to remain compatible with all the PUT
+BF_S_Turtl  =     0          ; code objects.
+BF_S_Chstr  =     0
+BF_S_Snail  =     0
+BF_Recordr  =     0
+BF_Slopes   =     0
+BF_VrtFunk  =     0
+BF_ScrlLft  =     0
+BF_HeatWav  =     0
+BF_SizLine  =     $F0
+BF_SizCode  =     $00
 
 ]Z1      =     $00
 ]Z2      =     $00

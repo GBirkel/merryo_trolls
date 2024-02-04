@@ -3,9 +3,9 @@
 * SFX v0.01 (c) ace 1994, v0.01m garote 1994
          LST   OFF
 
-         DUM   ]Z2
+         DUM   ]ZPPlay
 IntVol   DS    2          ;volume
-]Z2      =     *
+]ZPPlay  =     *
          DEND
 
 SFXsetup PHP

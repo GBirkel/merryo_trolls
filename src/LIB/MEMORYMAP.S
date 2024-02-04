@@ -5,7 +5,7 @@
 PA       =     $000800    ; Long jump location (Important)
 ShelPage =     $001000    ; Shell/loader zero page
 Zpl      =     $001100    ; Zero page location
-         DO    ]HeatWave
+         DO    BF_HeatWav
 AcidPtrn =     $001600    ; Acid land wave patterns
          FIN
 Loader   =     $009000
@@ -39,7 +39,7 @@ DraW     =     $02FC00    ; On-screen to-draw list
 
 * Bank 03 -----------------------------------------------------
 
-         DO    ]DoBlComp
+         DO    BF_BlkComp
 DestBnk  =     $030000
 DestTabl =     $030100    ; Destination table
 Dest     =     $030B00    ; Destination block set
@@ -73,7 +73,7 @@ BackFld  =     $070000    ; Background feild bank
 
 ForeFld  =     $080000    ; Foreground field bank
 SpriRaw  =     $081000    ; Original sprite pics
-         DO    ]DoBlComp
+         DO    BF_BlkComp
 Blox     =     $080000    ; Original block set
 Table    =     $08F000    ; Original table of block locations
 TrashTbl =     $08f400    ; Table for duplicate checking

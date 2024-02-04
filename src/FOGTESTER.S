@@ -4,8 +4,8 @@
 *
          lst   off
 
-]SizLine  =     $F0        ; Length of one line on the PEA field
-]CodeSiz  =     $00
+BF_SizLine  =     $F0  ; Length of one line on the PEA field
+BF_SizCode  =     $00  ; Length of any additional code tacked onto the end of one line
 
          DUM   $00
 Tmp      DS    2
@@ -73,7 +73,7 @@ BackFld  =     $060000    ; Background feild bank
          stal  PA
          LDA   #^ForeFld
          STAl  PA+2       ; Set the PEA bank correctly
-         lda   #]SizLine*$C0 ; x192
+         lda   #BF_SizLine*$C0 ; x192
          sta   SizTotal
          lda   #$9cff
          sta   SizStack

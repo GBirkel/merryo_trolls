@@ -1,12 +1,30 @@
          LST   ON
 *  Merryo Trolls loader v1.31n
-*  Merryo Trolls player v1.78t
-*       (c) Garote '93
+*  Merryo Trolls player v1.8
+*       (c) Garote '2024
 *
          lst   off
 
-*World    KBD   "World number compiling for (1-7)"  ; Not supported by Merlin32
 World   =       "1"
+
+BF_SFXCode  =     1
+BF_BlkComp  =     1          ; Assemble compiled blockset
+BF_S_Flowr  =     1          ; Include these sprites:
+BF_S_Turtl  =     1
+BF_S_Chstr  =     1
+BF_S_Snail  =     1
+BF_Recordr  =     1          ; Include joystick path recorder
+BF_Slopes   =     0          ; Include platform slopes
+BF_VrtFunk  =     0          ; Vertical "funky" effect
+BF_ScrlLft  =     0          ; Whether the screen can scroll left
+BF_HeatWav  =     0
+BF_DeRezz   =     1          ; Techno Land de-rez effect
+BF_Buttons  =     0          ; Half-height connect-based-sprite buttons
+BF_TVScrns  =     0          ; Techno Land tv screens (buttons required)
+BF_SizLine  =     $F0        ; Length of one line on the PEA field
+BF_SizCode  =     $00
+
+*World    KBD   "World number compiling for (1-7)"  ; Not supported by Merlin32
 
          TR    ADR
          LSTDO OFF
@@ -33,11 +51,12 @@ LSRS     MAC
 
          jmp   ProgBegn
 
-]Z2      =     $00
 
 * Zero page declared in TROLLS.System, and used during level building 
-
 ]ZPSys   =     $00
+
+* Zero page for play mode, defined here in MAIN.S
+]ZPPlay  =     $00
 
          DUM   ]ZPSys
 WldNumb  DS    2          ; Globals
@@ -55,7 +74,7 @@ TmpB     DS    2
 
          PUT   LIB/SPRITEMAKER
 
-         DO    ]DoBlComp ; If we're compiling blocks, include the block maker
+         DO    BF_BlkComp ; If we're compiling blocks, include the block maker
          PUT   LIB/BLOCKMAKER
          FIN
 
@@ -110,7 +129,7 @@ SpAc     DS    2          ; Number of active sprites
 ErCn     DS    2          ; On-screen sprite currently processing
 SpCn     DS    2          ; Active sprite currently processing
 IMsp     DS    2          ; Left-scroll location in the map Sprite List
-         DO    ]ScrlLeft
+         DO    BF_ScrlLft
 DMsp     DS    2          ; Right-scroll location in the map Sprite List
          FIN
 OVRt     DS    2          ; Blox over temp (for sprites)
@@ -125,14 +144,14 @@ Score2   DS    8          ; Amount to add to score
 Time1    DS    3          ; Current time
 Time2    DS    4          ; Amount to add to time + delay counter
 Flashing DS    2          ; Flashing(hurt) Guido timer
-         DO    ]VertFunk
+         DO    BF_VrtFunk
 FunkFlag DS    2          ; The vertical funk flag
 FunkReg  DS    2          ; The vertical funk value reg
          FIN
-         DO    ]Slope
+         DO    BF_Slopes
 SlopeFlg DS    2
          FIN
-         DO    ]HeatWave
+         DO    BF_HeatWav
 HeatCnt  DS    2
 HeatSync DS    2
 AcidIndx DS    2
@@ -146,25 +165,25 @@ AcidIndx DS    2
 
          PUT   LIB/PALUP
 
-         DO    ]TVscrns
+         DO    BF_TVScrns
          PUT   LIB/TVSCRNS
          FIN
 
 
-PalNum   =     $10        ; Standard number of palletes to fade.
-MhMsv    =     $82        ; Horizontal movement lower level (walking)
-MhMfv    =     $86        ; Horizontal movement upper level (running)
+PalNum          = $10  ; Standard number of palletes to fade.
+MhMsv           = $82  ; Horizontal movement lower level (walking)
+MhMfv           = $86  ; Horizontal movement upper level (running)
 
-Gclr     =     $00        ; Clear invisible space i.d
-Gsp1     =     $01        ; 1st clear sprite-activatior i.d
-Gsp8     =     $08        ; 8th clear sprite-activatior i.d
-Gcdi     =     $10        ; Clear deady block i.d
-Gdor     =     $11        ; Clear door space i.d
-Gplt     =     $14        ; Straight platform i.d
-Gpl2     =     $15        ; Straight reverse platform i.d
-         DO    ]Slope
-GplL     =     $16        ; Left sloped platform i.d
-GplR     =     $17        ; Right sloped platform i.d
+Gclr            = $00  ; Clear invisible space i.d
+Gsp1            = $01  ; 1st clear sprite-activatior i.d
+Gsp8            = $08  ; 8th clear sprite-activatior i.d
+Gcdi            = $10  ; Clear deady block i.d
+Gdor            = $11  ; Clear door space i.d
+Gplt            = $14  ; Straight platform i.d
+Gpl2            = $15  ; Straight reverse platform i.d
+         DO    BF_Slopes
+GplL            = $16  ; Left sloped platform i.d
+GplR            = $17  ; Right sloped platform i.d
          FIN
 Git1            = $1C  ; Coin with block $00 under
 Git2            = $1D  ; Food with block $00 under
@@ -179,14 +198,16 @@ Gppl            = $2F  ; Entry left i.d
 Gsld            = $30  ; Solid i.d
 Gbi1            = $31  ; 1st action solid i.d
 Gbi10           = $3A  ; 10th action solid i.d
-MapTypeButton   = $3B  ; Half-height button i.d , only useful if ]Buttons = 1
-Gsdi     =     $3F        ; Solid deadly block i.d
+         DO    BF_Buttons
+MapTypeButton   = $3B  ; Half-height button i.d , only useful if BF_Buttons = 1
+         FIN
+Gsdi            = $3F  ; Solid deadly block i.d
 
-Gloc     =     $48        ; Standard location of blank solids in blox MOD
+Gloc            = $48  ; Standard location of blank solids in blox MOD
 
-EsqA     =     $01C03E    ;Ensoniq Address reg
-EsqC     =     $01C03C    ;Ensoniq Control reg
-EsqD     =     $01C03D    ;Ensoniq Data reg
+EsqA            = $01C03E    ;Ensoniq Address reg
+EsqC            = $01C03C    ;Ensoniq Control reg
+EsqD            = $01C03D    ;Ensoniq Data reg
 
 
 ProgBegn SEC
@@ -364,7 +385,7 @@ ProgBegn SEC
          lda   #World-'1'
          jsl   Loader     ; Blocks
 
-         DO    ]DoBlComp
+         DO    BF_BlkComp
          lda   #World-'1'+8
          jsl   Loader     ; Block Table
          lda   #Zpl
@@ -383,12 +404,12 @@ ProgBegn SEC
          rep   #$20
          FIN
 
-         DO    ]HeatWave
+         DO    BF_HeatWav
          lda   #$0040
          jsl   Loader     ; Acid land patterns
          FIN
 
-         DO    ]SFXcode
+         DO    BF_SFXCode
          lda   #$0048
          jsl   Loader     ; Sound effects data
          FIN
@@ -412,7 +433,7 @@ NewPack  rep   #$20
          lda   #Zpl
          tcd
 
-         DO    ]SFXcode
+         DO    BF_SFXCode
          jsr   SFXsetup
          FIN
 
@@ -455,11 +476,11 @@ TrolPlay sep   #$20
          stz   Time2+2
          lda   #56
          sta   Aeye       ; Guido: eye
-         DO    ]VertFunk
+         DO    BF_VrtFunk
          stz   FunkFlag
          stz   FunkReg
          FIN
-         DO    ]Slope
+         DO    BF_Slopes
          stz   SlopeFlg
          FIN
          sep   #$20
@@ -664,7 +685,7 @@ LevelM   HEX   8283       ; "##" (2)[79]
 NewLoc2  rep   #$30
          stz   BK
          stz   Flashing
-         lda   #]SizLine*$C0 ; x192
+         lda   #BF_SizLine*$C0 ; x192
          sta   SizTotal
          lda   #$9cff
          sta   SizStack
@@ -686,7 +707,7 @@ NewLoc2  rep   #$30
          lda   Connects+5,x
          and   #$07
          sta   Mhs
-         DO    ]HeatWave
+         DO    BF_HeatWav
          lda   Connects+6,x
          asl
          sta   AcidIndx+1
@@ -730,7 +751,7 @@ NewLoc2  rep   #$30
          tax
          bra   ]lp
 
-         DO    ]ScrlLeft
+         DO    BF_ScrlLft
 Bonk     lda   IMsp
          sta   DMsp
          stz   Lupe
@@ -780,7 +801,7 @@ DoorKnob lda   Mhb
          bne   ]lp
          plb
 
-         DO    ]HeatWave
+         DO    BF_HeatWav
          stz   HeatCnt
          stz   HeatSync
          FIN
@@ -822,7 +843,7 @@ DoorKnob lda   Mhb
          LDA   #$C1
          STAl  $e1C029    ; turn on SHR
          jsr   FadeLoop   ; Fade everything in (phew! now we can start!)
-         DO    ]TVscrns
+         DO    BF_TVScrns
          stz   TVcntr     ; Temporary check to see if it works
          FIN
 
@@ -835,7 +856,7 @@ MainLp   rep   #$20
          lda   ErAc
          beq   *+5
          JSR   DraEm      ; Draw active sprites, if any
-         DO    ]HeatWave
+         DO    BF_HeatWav
          lda   HeatCnt
          inc
          cmp   #22
@@ -874,7 +895,7 @@ NotPause cmp   #$9B       ; ESC
          bne   ]lp
          FIN
 
-         DO    ]GdRecord
+         DO    BF_Recordr
          MX    %10
 NotQuit  cmp   #"r"       ; Check for instigation of recorder
          bne   NotRecrd
@@ -927,7 +948,7 @@ NoKey    lda   ExStats    ; Skip new reads if
 
 EndStick rep   #$30       ; all this does
          JSR   PalUpdate      ; is update the palette.
-         DO    ]TVscrns
+         DO    BF_TVScrns
          jsr   DrawScrn   ; Temporary check to see if it works
          FIN
          sep   #$20
@@ -986,7 +1007,7 @@ Junky    rep   #$10       ; Set the anal Xaxs value
          sta   Xaxs
          sep   #$20       ; check the vertical axis
 
-         DO    ]Slope
+         DO    BF_Slopes
          lda   Mvb        ; if it is above the screen
          beq   JumpEr
          cmp   #$0d       ; It's always empty.
@@ -1005,7 +1026,7 @@ Junky    rep   #$10       ; Set the anal Xaxs value
          lda   Mvs
          beq   Barney     ; If not on the bottom of the block, check slope.
 
-         DO    ]Buttons
+         DO    BF_Buttons
          cmp   #$08       ; Step 8 half-height button check
          bne   Burger
          lda   MapBl,x
@@ -1052,7 +1073,7 @@ Barney   inx              ; one extra block down
 
          ELSE
 
-         DO    ]Buttons
+         DO    BF_Buttons
          lda   Mvs
          beq   PayUp
          cmp   #$08       ; Step 8 half-height button check
@@ -1107,7 +1128,7 @@ PayUp    =     *          ; normal 'below' check
 
          lda   MapBl,x
 
-         DO    ]Buttons
+         DO    BF_Buttons
          cmp   #MapTypeButton
          beq   :Br1
          cmp   #Gppd
@@ -1127,7 +1148,7 @@ PayUp    =     *          ; normal 'below' check
          bcc   Buttock
          lda   MapBl+$c,x ; Next row of blocks
 
-         DO    ]Buttons
+         DO    BF_Buttons
          cmp   #MapTypeButton
          beq   Buttock
          FIN
@@ -1145,7 +1166,7 @@ ScrewMe  lda   #$01
          sta   Mvv
          lda   #$05
          sta   Jcnt
-         DO    ]SFXcode    ; MOD for jump sfx
+         DO    BF_SFXCode    ; MOD for jump sfx
          jsr   PlaySFX
          FIN
          lda   Xaxs       ; If horiz. velocity is "fast", add to jump height
@@ -1571,7 +1592,7 @@ Clittie  inc   Mvs
          jmp   Uranus
 
 Juicy    dec   Yaxs       ; second routine
-         DO    ]Buttons
+         DO    BF_Buttons
          lda   Mvs
          bne   *+5
          jmp   TopHat
@@ -1657,7 +1678,7 @@ TopHat   lda   Mvb        ; Bastard-offscreen check
          sep   #$20
          lda   MapBl,x
 
-         DO    ]Buttons
+         DO    BF_Buttons
          cmp   #MapTypeButton
          beq   Br1
          cmp   #Gppd
@@ -1684,7 +1705,7 @@ Br1      =     *
          sep   #$20
          lda   MapBl,x
 
-         DO    ]Buttons
+         DO    BF_Buttons
          cmp   #MapTypeButton
          beq   Panties
          FIN
@@ -1743,7 +1764,7 @@ UpHere   lda   #$33       ; Right border -1
          adc   DCnt
          sta   Mbl
 
-         DO    ]ScrlLeft
+         DO    BF_ScrlLft
 UpThere  lda   Mbl        ; Check screen loc.
          cmp   #$1C       ; Left border of "window"
          bcs   DirtClod
@@ -1833,7 +1854,7 @@ AwlkD    DB    00,01,02,03,04,05,06,07
 AwlbD    DB    16,17,18,19,20,21,22,23
 ArtmD    DB    36,35,36,37,38,39,38,37
 
-         DO    ]Slope
+         DO    BF_Slopes
          DB    0          ; Subtract 1 for lower limit check values
 SlopLeft DB    2,5,8,11,14
 SlopRght DB    14,11,8,5,2
@@ -1912,7 +1933,7 @@ Die      rep   #$30       ; Mario death routine so far!
 PeaInc   SEP   #$30
          lda   #$80
          trb   Mdir       ; Set the forward scroll flag
-         DO    ]VertFunk
+         DO    BF_VrtFunk
          lda   ExStats
          and   #$01
          beq   IncBr2
@@ -1947,7 +1968,7 @@ IncBr2   =     *
          INC   BK
          LDA   BK
          CMP   #$0005     ; Not gone a block?
-         DO    ]ScrlLeft
+         DO    BF_ScrlLft
          BNE   IncBr4     ; Don't check new sprites.
          ELSE
          bne   IncBr3
@@ -2002,7 +2023,7 @@ IncBr5   ASLS  3          ; x8
          rep   #$20
          inc   SpAc
          bra   ]lp
-         DO    ]ScrlLeft
+         DO    BF_ScrlLft
 IncBr3   jmp   IncBr3B
 IncBr4   rep   #$30
          ELSE
@@ -2010,7 +2031,7 @@ IncBr3   rep   #$30
          FIN
          LDA   #$000B
          STA   Tmp
-         DO    ]VertFunk
+         DO    BF_VrtFunk
          lda   ExStats
          and   #$0001
          beq   TwistSk
@@ -2025,35 +2046,35 @@ TwistSk  clc
          ldal  PA
          FIN
          tay
-         DO    ]HeatWave
+         DO    BF_HeatWav
          phb
          pea   #>ForeFld
          plb
          plb
-]lp      =     ]SizLine-]CodeSiz
+]lp      =     BF_SizLine-BF_SizCode
 ]lp2     =     0
          LUP   #128
          lda   #]lp2*$100+$e5 ; sbc ##
          sta   ForeFld+]lp,y
-]lp      =     ]lp+]SizLine
+]lp      =     ]lp+BF_SizLine
 ]lp2     =     ]lp2+2
          --^
 ]lp2     =     0
          LUP   #62
-         lda   #]lp2*$100+$f5 ; sbc ##,x
+         lda   #]lp2*$100+$f5 ; sbc ##,x    Using X to reach beyond the direct page
          sta   ForeFld+]lp,y
-]lp      =     ]lp+]SizLine
+]lp      =     ]lp+BF_SizLine
 ]lp2     =     ]lp2+2
          --^
          lda   #$f41b     ; tcs, pea #$xxxx
-]lp      =     ]SizLine-]CodeSiz+2
+]lp      =     BF_SizLine-BF_SizCode+2
          LUP   #190
          sta   ForeFld+]lp,y
-]lp      =     ]lp+]SizLine
+]lp      =     ]lp+BF_SizLine
          --^
          plb
          FIN
-         DO    ]DoBlComp
+         DO    BF_BlkComp
          LDA   Tmp
          CLC
          ADC   CLMs
@@ -2101,7 +2122,7 @@ TwistSk  clc
          plb
          FIN
          RTS
-         DO    ]ScrlLeft
+         DO    BF_ScrlLft
 IncBr3B  rep   #$30
          lda   DMsp
          ASLS  3          ; x8
@@ -2118,11 +2139,11 @@ IncBr3B  rep   #$30
          bra   IncBr3B
          FIN
 
-         DO    ]ScrlLeft
+         DO    BF_ScrlLft
 PeaDec   REP   #$31       ; Draw grafix 1st, in the dec routine
          LDA   #$000B
          STA   Tmp
-         DO    ]VertFunk
+         DO    BF_VrtFunk
          lda   ExStats
          and   #$0001
          bne   TwistS3
@@ -2140,7 +2161,7 @@ TwistS2  clc
          FIN
          ADCl  PA
          tay
-         DO    ]DoBlComp
+         DO    BF_BlkComp
          LDA   Tmp        ; Compiled-set routine:
          CLC
          ADC   CLMs
@@ -2192,7 +2213,7 @@ TwistS2  clc
          SEP   #$30       ; THEN do computing:
          lda   #$80
          tsb   Mdir
-         DO    ]VertFunk
+         DO    BF_VrtFunk
          lda   ExStats
          and   #$01
          beq   DecBr2
@@ -2312,7 +2333,7 @@ PeaBlit  phb
          STAL  ForeFld,x
          LDA   #>PeaCR
          STAL  ForeFld+2,x
-         DO    ]HeatWave
+         DO    BF_HeatWav
          LDA   HeatSync
          clc
          adc   SizStack
@@ -2342,7 +2363,7 @@ PeaCR    SEP   #$20
          tcd
          lda   ST
          TCS              ; Recover stack
-         DO    ]HeatWave
+         DO    BF_HeatWav
          lda   HeatCnt
          asl
          adc   AcidIndx
@@ -2438,7 +2459,7 @@ Toad     txa
          inc
 
 Ren      sec
-         sbc   #]SizLine   ; Down 1 line
+         sbc   #BF_SizLine   ; Down 1 line
          sta   Tmp        ; Horitontal computed
          phb              ; (entry point for pipes)
          pea   #>ForeFld
@@ -2615,7 +2636,7 @@ Chompem  sta   DWNt       ; Store the blox down for safekeeping
          sbc   Tmp        ; - the total
          clc
          adcl  PA         ; + the current offset
-         DO    ]DoBlComp
+         DO    BF_BlkComp
          tay
          lda   #$0400
          ORA   Tmp3
@@ -2738,7 +2759,7 @@ RSideOut stx   VARX       ; Frame in PEA field
 
 DownOut  txa              ; Frame in PEA field
          clc
-         adc   #]SizLine
+         adc   #BF_SizLine
          sta   VARX
          txa
          clc
@@ -2770,7 +2791,7 @@ DownOut  txa              ; Frame in PEA field
          jsr   CutPaste
          lda   VARY
          sec
-         sbc   #]SizLine
+         sbc   #BF_SizLine
          sta   VARY
          dec   Lupe
          bne   ]lp
@@ -2789,13 +2810,13 @@ CutPaste sep   #$30
          stal  ForeFld+$F,x
          lda   #$1b00
          stal  ForeFld+$11,x
-         lda   #]SizLine-$16*$100+$82
+         lda   #BF_SizLine-$16*$100+$82
          stal  ForeFld+$13,x ; Establish frame
          lda   #$0000
          stal  ForeFld+$15,x
          txa
          clc
-         adc   #]SizLine
+         adc   #BF_SizLine
          tax
          dey
          bne   ]lp
@@ -2825,7 +2846,7 @@ HalfDo   sta   DaSpot+2
          jmp   Ren
 
 DoorFade =     *
-         DO    ]DeRezz
+         DO    BF_DeRezz
          jsr   RezzOut
          ELSE
          rep   #$30
@@ -2926,7 +2947,7 @@ DuckPoop jmp   TrolPlay
          brk   00
          brk   00
 
-         DO    ]DoBlComp
+         DO    BF_BlkComp
 Box      =     $030000    ; Block set
          ELSE
 Box      =     *          ; OR block drawing subroutine
@@ -2957,7 +2978,7 @@ Box      =     *          ; OR block drawing subroutine
 ActList  =     *
 ]lp      =     0
 
-         DO    ]Flower
+         DO    BF_S_Flowr
          DA    Flower10,Flower01,Flower11
 ]lp      =     ]lp+3
          FIN
@@ -3022,20 +3043,20 @@ KillDis  sep   #$20       ; REMOVE the current sprite
 KillRet  rts
 
 SprList  DA    KillMe,AnBrik,Flag,PufSmok,Mushey,CoinGet
-         DO    ]Turtle
+         DO    BF_S_Turtl
          DA    TurtleSp,Shell
          FIN
-         DO    ]Flower
+         DO    BF_S_Flowr
 IDFlower =     *-SprList/2
          DA    FlowerSp
          FIN
-         DO    ]Snail
+         DO    BF_S_Snail
          DA    SlimBal
          FIN
-         DO    ]BChester
+         DO    BF_S_Chstr
          DA    Chester
          FIN
-         DO    ]GdRecord
+         DO    BF_Recordr
          DA    Recorder
          FIN
          DA    Player
@@ -3051,33 +3072,33 @@ IDPlayer =     *-SprList/2
 
          PUT   LIB/COINGET
 
-         DO    ]Turtle
+         DO    BF_S_Turtl
          PUT   LIB/TURTLE
          FIN
 
-         DO    ]Flower
+         DO    BF_S_Flowr
          PUT   LIB/FLOWER
          FIN
 
-         DO    ]Snail
+         DO    BF_S_Snail
          PUT   LIB/SLIMBAL
          FIN
 
-         DO    ]BChester
+         DO    BF_S_Chstr
          PUT   LIB/CHESTER
          FIN
 
-         DO    ]GdRecord
+         DO    BF_Recordr
          PUT   LIB/RECORDER
          FIN
 
          PUT   LIB/PLAYER
 
-         DO    ]SFXcode
+         DO    BF_SFXCode
          PUT   LIB/PLAYSFX
          FIN
 
-         DO    ]DeRezz
+         DO    BF_DeRezz
          PUT   LIB/DEREZZ
          FIN
 
