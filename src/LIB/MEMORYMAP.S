@@ -3,8 +3,8 @@
 * Bank 00 -----------------------------------------------------
 
 PA       =     $000800    ; Long jump location (Important)
-ShelPage =     $001000    ; Shell/loader zero page
-Zpl      =     $001100    ; Zero page location
+ShelPage =     $001000    ; Zero page for title/loader mode
+Zpl      =     $001100    ; Zero page location for play mode
          DO    BF_HeatWav
 AcidPtrn =     $001600    ; Acid land wave patterns
          FIN

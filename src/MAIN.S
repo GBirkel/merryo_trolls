@@ -3,33 +3,28 @@
 *  Merryo Trolls player v1.8
 *       (c) Garote '2024
 *
-         lst   off
-
-World   =       "1"
-
-BF_SFXCode  =     1
-BF_BlkComp  =     1          ; Assemble compiled blockset
-BF_S_Flowr  =     1          ; Include these sprites:
-BF_S_Turtl  =     1
-BF_S_Chstr  =     1
-BF_S_Snail  =     1
-BF_Recordr  =     1          ; Include joystick path recorder
-BF_Slopes   =     0          ; Include platform slopes
-BF_VrtFunk  =     0          ; Vertical "funky" effect
-BF_ScrlLft  =     0          ; Whether the screen can scroll left
-BF_HeatWav  =     0
-BF_DeRezz   =     1          ; Techno Land de-rez effect
-BF_Buttons  =     0          ; Half-height connect-based-sprite buttons
-BF_TVScrns  =     0          ; Techno Land tv screens (buttons required)
-BF_SizLine  =     $F0        ; Length of one line on the PEA field
-BF_SizCode  =     $00
-
-*World    KBD   "World number compiling for (1-7)"  ; Not supported by Merlin32
+         LST   OFF
 
          TR    ADR
          LSTDO OFF
 *         CAS   SE  ; Merlin32 is case-sensitive by default and does not support this pseudo-opcode
          MX    %00
+
+* We used to ask for the World we were building by waiting for keyboard input
+* during assembly in Merlin 16.  KBD is not supported in Merlin32.
+*World    KBD   "World number compiling for (1-7)"
+
+* We used to define build flags by performing a calculation on the World number,
+* using the result to trigger conditional code inclusion.
+* Merlin32's compile sequence is different and cannot do this,
+* so instead we stitch a WORLD#.S file to the beginning of this one before building.
+*  DO    World-2/-1 ; Happy land
+* BF_BlkComp  =     1
+* ...
+*  FIN
+* DO    World-3/-1 ; Unhappy land
+* ...
+*  FIN
 
 Debugger =     1
 

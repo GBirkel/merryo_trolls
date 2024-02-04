@@ -147,13 +147,30 @@ def main(argv):
 	if check_all_paths() == False:
 		sys.exit()
 
-	# Phase 1: Invoke build
+	# Phase 1: Assemble World build files
+
+	main_s_file_path = os.path.join(src_folder, "MAIN.S")
+	main_s_file_h = open(main_s_file_path, "r")
+	main_s_file = main_s_file_h.read()
+
+	for world in ['1', '2', '3', '4', '5', '6', '7']:
+
+		world_flags_file_path = os.path.join(src_folder, "BUILDFLAGS", "WORLD" + world + "FLAGS.S")
+		world_flags_h = open(world_flags_file_path, "r")
+		world_flags = world_flags_h.read()
+
+		world_build_path = os.path.join(src_folder, "WORLD" + world + ".S")
+		world_build_h = open(world_build_path, "w")
+		world_build_h.write(world_flags + main_s_file)
+		world_build_h.close()
+
+	# Phase 2: Invoke builds
 
 	run_build('TROLL.SYSTEM.S')
-	#sys.exit()
+	run_build('WORLD1.S')
 
 	#
-	# Phase 2: Make a new blank disk image
+	# Phase 3: Make a new blank disk image
 	#
 
 	print("Creating image " + path_to_disk)
@@ -168,11 +185,22 @@ def main(argv):
 	create_cmd_out = subprocess.check_output(create_cmd, shell=True)
 
 	#
-	# Phase 3: Add the baseline files
+	# Phase 4: Add the boot files
 	#
 
 	add_boot_dependency_to_image('PRODOS', '0xFF', '0x0000')
 	#add_boot_dependency_to_image('BASIC.System', '0xFF', '0x2000')
+
+	#
+	# Phase 5: Add the built files
+	#
+
+	add_obj_file_to_image('', 'TROLL.SYSTEM', '0xFF', '0x2000')
+	add_obj_file_to_image('', 'WORLD1', '0x06', '0x0000')
+
+	#
+	# Phase 6: Add the library files
+	#
 
 	add_obj_file_to_image('PX', 'SPLASH.Z', '0x06', '0x0000')
 	add_obj_file_to_image('PX', 'TITLE', '0x06', '0x0000')
@@ -189,8 +217,6 @@ def main(argv):
 	add_obj_file_to_image('SFX', 'HADOU', '0x06', '0x0000')
 
 	add_obj_file_to_image('MAPS', 'WD1A', '0x06', '0x3000')
-
-	add_obj_file_to_image('', 'TROLL.SYSTEM', '0xFF', '0x2000')
 
 	print("Done.")
 
