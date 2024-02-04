@@ -8,13 +8,11 @@
 * type: KQ = Special 3-D PEA-cutting mode
 
          TR    ADR
-         XC
-         XC
          MX    %00
 
-BF_BlkComp  =     0          ; This has to show up in any TROLL# file
-BF_S_Flowr  =     0          ; to remain compatible with all the PUT
-BF_S_Turtl  =     0          ; code objects.
+BF_BlkComp  =     0          ; This has to show up in any WORLD# file
+BF_S_Flowr  =     0          ; to remain compatible with the memory map the PUT
+BF_S_Turtl  =     0          ; and various references in PUT code.
 BF_S_Chstr  =     0
 BF_S_Snail  =     0
 BF_Recordr  =     0
@@ -25,10 +23,57 @@ BF_HeatWav  =     0
 BF_SizLine  =     $F0
 BF_SizCode  =     $00
 
-]Z1      =     $00
-]Z2      =     $00
+         TYP   $69
+         ORG   ThisProg
+         jmp   ProgBegn
 
-         DUM   ]Z1        ;Zpage for all shell programs
+ASLS     MAC
+         LUP   ]1
+         asl
+         --^
+         EOM
+
+LSRS     MAC
+         LUP   ]1
+         lsr
+         --^
+         EOM
+
+PalNum   =     $10        ; Standard number of palletes to fade.
+
+MMinXv   =     0          ; Full screen
+MMaxXv   =     312        ; mouse window
+MMinYv   =     8
+MMaxYv   =     176
+
+PA       =     $000800    ; Long jump location (Important)
+ShelPage =     $001000    ; Shell/loader zero page
+Zpl      =     $001000    ; Using same zero page for "play mode" in World 8
+Loader   =     $009000
+
+SHR      =     $012500    ; ShrA start of PEA window (standard)
+ShrA     =     $012000
+
+ThisProg =     $020000
+Char     =     $025000    ; Character set
+FadeDat  =     $02FE00    ; Fader data
+
+ForeFld  =     $030000    ; Storage slot for scene
+RawSCB   =     $037D00    ; Scene SCB
+RawPal   =     $037E00    ; Scene pallete
+BackFld  =     $038000    ; Screen attributes field area
+OverVals =     $03E400    ; background plane overlay values
+
+SprGuido =     $040000
+
+ShrB     =     $E12000
+
+* Zero page declared in TROLLS.System, and used during level building 
+]ZPSys   =     $00
+
+* Here in WORLD8.S we are joining ]ZPPlay onto the end of ]ZPSys
+
+         DUM   ]ZPSys        ;Zpage for all shell programs
 WldNumb  DS    2          ; Globals
 WldSect  DS    2          ; Map packet #
 WldIndx  DS    2          ; Map index # (0-3)
@@ -39,10 +84,12 @@ WldScore ds    8          ; Initial score
 WldCondt ds    2          ; Initial condition (0-3)
 WldStats ds    2          ; Initial status (form)
 TmpB     DS    2
-]Z1      =     *
+]ZPSys      =     *
          DEND
 
-         DUM   ]Z2
+         PUT   LIB/MOUSE
+
+         DUM   ]ZPSys
 Tmp      DS    2          ; Temporary storage
 Tmp2     DS    2          ; More Temporary storage
 Tmp3     DS    2          ; Even more
@@ -67,63 +114,13 @@ NewY     ds    2          ; Potential new Guido Y location
 FlagX    ds    2          ; Guido X location change flag
 FlagY    ds    2          ; Guido Y location change flag
 ColrStat ds    16         ; Flags for color transparency
-]Z2      =     *
+]ZPSys      =     *
+]ZPPlay     =     *
          DEND             ; Nifty, huh?
 
-ASLS     MAC
-         LUP   ]1
-         asl
-         --^
-         EOM
-
-LSRS     MAC
-         LUP   ]1
-         lsr
-         --^
-         EOM
-
-PalNum   =     $10        ; Standard number of palletes to fade.
-
-MMinXv   =     0          ; Full screen
-MMaxXv   =     312        ; mouse window
-MMinYv   =     8
-MMaxYv   =     176
-
-PA       =     $000800    ; Long jump location (Important)
-ShelPage =     $001000    ; Shell/loader zero page
-Zpl      =     $001100    ; Zero page location
-Loader   =     $009000
-
-SHR      =     $012500    ; ShrA start of PEA window (standard)
-ShrA     =     $012000
-
-ThisProg =     $020000
-Char     =     $025000    ; Character set
-FadeDat  =     $02FE00    ; Fader data
-
-ForeFld  =     $030000    ; Storage slot for scene
-RawSCB   =     $037D00    ; Scene SCB
-RawPal   =     $037E00    ; Scene pallete
-BackFld  =     $038000    ; Screen attributes field area
-OverVals =     $03E400    ; background plane overlay values
-
-SprGuido =     $040000
-
-ShrB     =     $E12000
-
-         TYP   $69
-
-         ORG   ThisProg
-
-         jmp   ProgBegn
-
-]Z0      =     ]Z2
          PUT   LIB/CHARGEN
 
-         PUT   LIB/MOUSE
-
          PUT   LIB/FADER
-]Z2      =     ]Z0
 
 ProgBegn SEC
          XCE

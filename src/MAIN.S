@@ -266,7 +266,7 @@ ProgBegn SEC
          rep   #$30
          lda   #ShelPage
          tcd
-         lda   #World-'1'*2+$f
+         lda   #World-1*2+$f
          jsl   Loader     ; Level sprites
          lda   #Zpl
          tcd
@@ -321,7 +321,7 @@ ProgBegn SEC
          rep   #$30
          lda   #ShelPage
          tcd
-         lda   #World-'1'*2+$10
+         lda   #World-1*2+$10
          jsl   Loader     ; Guido sprites
 
          lda   #Zpl
@@ -377,11 +377,11 @@ ProgBegn SEC
          lda   #ShelPage
          tcd
 
-         lda   #World-'1'
+         lda   #World-1
          jsl   Loader     ; Blocks
 
          DO    BF_BlkComp
-         lda   #World-'1'+8
+         lda   #World-1+8
          jsl   Loader     ; Block Table
          lda   #Zpl
          tcd
@@ -420,7 +420,7 @@ ProgBegn SEC
          sta   Amth       ; Guido: mouth
 
 NewPack  rep   #$20
-         lda   #World-'1'*2+$21
+         lda   #World-1*2+$21
          jsl   Loader     ; Map
          clc
          xce
@@ -661,17 +661,17 @@ PostCond pld
          HEX   FF000000          ; C:H=0,V=0
          HEX   FF0300FF020010    ; C:Hm=0 C:data offset = $1000
          HEX   FF015555          ; C:col=funky
-         HEX   26271a1c28290000          ; "SSMMTT  " (8)[8]
+         HEX   26271a1c28290000          ; "SSMMTT  "   (8)[8]
          HEX   FF01FFFFFF020000          ; C:col=white C:offset=$0000
-         HEX   92c2ced1c448                     ; "Score:" (6)[14]
+         HEX   92c2ced1c448              ; "Score:"     (6)[14]
 ScoreM   HEX   7474747474747474000088d3c4ccd248 ; "00000000  Items:" (16)[30]
-         HEX   3e5c3e5c3e5c3e5c0000           ; "=-=-=-=-  " (10)[40]
-         HEX   82c0cbced1c8c4d248               ; "Calories:" (9)[49]
-TimeM    HEX   7474740000020348          ; "000  @@:" (8)[57]
-LivesM   HEX   747474740000464748        ; "()()  HH:" (9)[66]
-ConditnM HEX   1617161716170000          ; "()()()  " (8)[74]
-         DFB   World-'0'*2+$60,World-'0'*2+$61   ; "##" (2)[76]
-         HEX   5CFF020010                ; "-" (1)[77] C:data offset = $1000
+         HEX   3e5c3e5c3e5c3e5c0000      ; "=-=-=-=-  " (10)[40]
+         HEX   82c0cbced1c8c4d248        ; "Calories:"  (9)[49]
+TimeM    HEX   7474740000020348          ; "000  @@:"   (8)[57]
+LivesM   HEX   747474740000464748        ; "()()  HH:"  (9)[66]
+ConditnM HEX   1617161716170000          ; "()()()  "   (8)[74]
+         DFB   World*2+$60,World*2+$61   ; "##"         (2)[76]
+         HEX   5CFF020010                ; "-"          (1)[77] C:data offset = $1000
 LevelM   HEX   8283       ; "##" (2)[79]
          HEX   FF020000   ; C:data offset = $0000
          HEX   C0         ; "a" (1)[80]

@@ -1,6 +1,6 @@
                LST        ON
-* Trolls pre-loader v0.1e2
-* (c) Garote '94
+* Trolls pre-loader v0.2
+* (c) Garote '2024
 *
          LST   OFF
 
@@ -61,7 +61,7 @@ BF_VrtFunk =     1          ; Vertical "funky" effect
 BF_ScrlLft =     1          ; Whether the screen can scroll left
 BF_HeatWav =     1
 
-* Memory map and zer page
+* Memory map and zero page
 
          PUT   LIB/MEMORYMAP
 
@@ -98,12 +98,12 @@ Tmp4     DS    2
 
          PUT   LIB/MOUSE
 
-         PUT   LIB/WAITSYN
-
 * These libs are also used by the player program, which uses two
 * different direct pages.  Here in TROLL.System we're using one joined direct page.
-* variable for specifying their direct page.
-]ZPPlay  =     ]ZPSys
+
+         DUM   ]ZPSys
+]ZPPlay  =     *
+         DEND
 
          PUT   LIB/CHARGEN
 
@@ -478,6 +478,8 @@ NoCompac clc
 
          PUT   LIB/DECOMPACT
 
+         PUT   LIB/WAITSYN
+
          MX    %11
 
 SysDeth  ASLS  4
@@ -619,14 +621,14 @@ FileList DIR   'BLKS/WD11';Blox ; Wd1 Blocks             00
          DIR   'ERROR';0  ; Empty slot 4E
          DIR   'ERROR';0  ; Empty slot 4F
 
-         DIR   'TROLL1';ThisProg ; Main Prog 50
-         DIR   'TROLL2';ThisProg ; Main Prog 51
-         DIR   'TROLL3';ThisProg ; Main Prog 52
-         DIR   'TROLL4';ThisProg ; Main Prog 53
-         DIR   'TROLL5';ThisProg ; Main Prog 54
-         DIR   'TROLL6';ThisProg ; Main Prog 55
-         DIR   'TROLL7';ThisProg ; Main Prog 56
-* DIR 'TROLL8';ThisProg ; Main Prog 57
+         DIR   'WORLD1';ThisProg ; Main Prog 50
+         DIR   'WORLD2';ThisProg ; Main Prog 51
+         DIR   'WORLD3';ThisProg ; Main Prog 52
+         DIR   'WORLD4';ThisProg ; Main Prog 53
+         DIR   'WORLD5';ThisProg ; Main Prog 54
+         DIR   'WORLD6';ThisProg ; Main Prog 55
+         DIR   'WORLD7';ThisProg ; Main Prog 56
+* DIR 'WORLD8';ThisProg ; Main Prog 57
          DIR   'CREDITS';ThisProg ; Main Prog 57 (test)
 
          DS    \

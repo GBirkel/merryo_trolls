@@ -1,6 +1,6 @@
 PalUpdate = *   ; Dealing with a Merlin32 addressing ambiguity
 
-         IF    1=World    ; Happy land
+         IF    BuildingWorld1    ; Happy land
          lst   on
 * World 1 pallete modifier v0.2b
          lst   off
@@ -71,7 +71,7 @@ Palette2 HEX   40042002200230034004500560067007
          DA    $660,$550
          FIN
 
-         IF    2=World      ; Unhappy land
+         IF    BuildingWorld2      ; Unhappy land
          lst   on
 * World 2 pallete modifier v0.2b
          lst   off
@@ -95,7 +95,7 @@ Palette2 HEX   40042002200230034004500560067007
 :Br1     RTS
          FIN
 
-         IF    3=World      ; Munchies land
+         IF    BuildingWorld3      ; Munchies land
          lst   on
 * World 3 pallete modifier v0.2b
          lst   off
@@ -119,7 +119,7 @@ Palette2 HEX   40042002200230034004500560067007
 :Br1     RTS
          FIN
 
-         IF    4=World      ; Gothic land
+         IF    BuildingWorld4      ; Gothic land
          lst   on
 * World 4 pallete modifier v0.2b
          lst   off
@@ -143,7 +143,7 @@ Palette2 HEX   40042002200230034004500560067007
 :Br1     RTS
          FIN
 
-         IF    5=World      ; Techno land
+         IF    BuildingWorld5      ; Techno land
          lst   on
 * World 5 pallete modifier v0.1
          lst   off
@@ -167,7 +167,7 @@ Palette2 HEX   40042002200230034004500560067007
 :Br1     RTS
          FIN
 
-         IF    6=World      ; Acid land
+         IF    BuildingWorld6      ; Acid land
          lst   on
 * World 6 pallete modifier v0.1
          lst   off
@@ -191,7 +191,7 @@ Palette2 HEX   40042002200230034004500560067007
 :Br1     RTS
          FIN
 
-         IF    7=World      ; Aliens land
+         IF    BuildingWorld7      ; Aliens land
          lst   on
 * World 7 pallete modifier v0.1
          lst   off
