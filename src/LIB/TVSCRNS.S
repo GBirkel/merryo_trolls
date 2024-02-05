@@ -9,7 +9,7 @@ DrawScrn php
          pea   #>ForeFld
          plb
          plb
-         ldal  PA
+         ldal  PeaJumpPtr
          tay
          lda   TVcntr
          and   #$0003

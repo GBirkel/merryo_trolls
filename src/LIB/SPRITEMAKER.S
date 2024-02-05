@@ -42,9 +42,9 @@ SpriteMk REP   #$30
          TYA
          XBA
          AND   #$00FF
-         BNE   NoFlippr   ; If flipflag is 0, make second page
+         BNE   :NoFlip   ; If flipflag is 0, make second page
          jsr   FlipThem   ; mirror of 1st.  If 1, don't.
-NoFlippr STZ   Prog       ;start of code
+:NoFlip  STZ   Prog       ;start of code
          STZ   Prog2      ;start of erasers
          STZ   JmpOff     ;start of jmp tbls
          STZ   Pass       ;start of conversion
@@ -90,35 +90,35 @@ Loop     LDA   #$0AA0
          STA   Index
          TAX
          LDA   SpriRaw-$A2,X
-         BNE   Exists
+         BNE   :Exists
          JMP   Next
-Exists   TAX
+:Exists  TAX
          STA   Data
          LDY   #$FFFF
          AND   #$F000
-         BEQ   Chk2
+         BEQ   :Chk2
          TYA
          AND   #$0FFF
          TAY
-Chk2     TXA
+:Chk2    TXA
          AND   #$0F00
-         BEQ   Chk3
+         BEQ   :Chk3
          TYA
          AND   #$F0FF
          TAY
-Chk3     TXA
+:Chk3    TXA
          AND   #$00F0
-         BEQ   Chk4
+         BEQ   :Chk4
          TYA
          AND   #$FF0F
          TAY
-Chk4     TXA
+:Chk4    TXA
          AND   #$000F
-         BEQ   ChkD
+         BEQ   :ChkD
          TYA
          AND   #$FFF0
          TAY
-ChkD     LDX   Pass
+:ChkD    LDX   Pass
          JMP   (PassTbl,X)
 
 PassTbl  DA    Partial,Full,Par2,Full2

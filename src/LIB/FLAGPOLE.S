@@ -8,7 +8,7 @@ FlagPole lda   ExStats
          and   #$0040
          beq   :Br1
          rts
-:Br1     ldal  PA         ; Push vital values
+:Br1     ldal  PeaJumpPtr ; Push vital values
          pha
          lda   SizTotal
          pha
@@ -105,7 +105,7 @@ FlagPole lda   ExStats
          pla
          sta   SizTotal
          pla
-         stal  PA
+         stal  PeaJumpPtr
          RTS
 
 

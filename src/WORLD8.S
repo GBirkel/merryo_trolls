@@ -46,7 +46,7 @@ MMaxXv   =     312        ; mouse window
 MMinYv   =     8
 MMaxYv   =     176
 
-PA       =     $000800    ; Long jump location (Important)
+PeaJumpPtr =     $000800    ; Long jump location (Important)
 ShelPage =     $001000    ; Shell/loader zero page
 Zpl      =     $001000    ; Using same zero page for "play mode" in World 8
 Loader   =     $009000

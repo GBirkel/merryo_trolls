@@ -1,5 +1,5 @@
          LST   OFF
-PA       =     $000800    ; Long jump location (Important)
+PeaJumpPtr =     $000800    ; Long jump location (Important)
 ShelPage =     $001000    ; Shell/loader zero page
 Zpl      =     $001100    ; Zero page location
 AcidPtrn =     $001600    ; Acid land wave patterns

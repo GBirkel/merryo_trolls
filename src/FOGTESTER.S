@@ -28,7 +28,7 @@ LSRS     MAC
          --^
          EOM
 
-PA       =     $000800    ; Long jump location (Important)
+PeaJumpPtr =     $000800    ; Long jump location (Important)
 Zpl      =     $001100    ; Zero page location
 
 RawScren =     $012500
@@ -70,9 +70,9 @@ BackFld  =     $060000    ; Background feild bank
          bpl   ]lp
 
          lda   #ForeFld
-         stal  PA
+         stal  PeaJumpPtr
          LDA   #^ForeFld
-         STAl  PA+2       ; Set the PEA bank correctly
+         STAl  PeaJumpPtr+2       ; Set the PEA bank correctly
          lda   #BF_SizLine*$C0 ; x192
          sta   SizTotal
          lda   #$9cff
@@ -171,7 +171,7 @@ PeaBlit  php
          STAl  $e1C005    ; Writes to bank 1
          REP   #$31
          LDa   SizTotal
-         adcl  PA
+         adcl  PeaJumpPtr
          tax
          LDA   #PeaCR*$100+$5C ; Return Jump
          STAL  ForeFld,x
@@ -180,7 +180,7 @@ PeaBlit  php
          LDA   SizStack
          tcs
          sec
-         JML   (PA)
+         JML   [PeaJumpPtr]
 
 PeaCR    SEP   #$20
          STAl  $e1C004

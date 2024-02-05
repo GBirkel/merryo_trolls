@@ -10,4 +10,4 @@ BackBlit php
          REP   #$30
          LDA   #$9CFF     ; Where on the screen?
          TCS
-         JML   (PB)
+         JML   [PB]

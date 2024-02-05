@@ -570,7 +570,7 @@ LivesRef HEX   7474       ; "##"   (2)[9]
          dex              ; Every scanline 320 mode
          bpl   ]lp        ; pointing to blank pallette 0.
          LDA   #^ForeFld
-         STAl  PA+2       ; Set the PEA bank correctly
+         STAl  PeaJumpPtr+2       ; Set the PEA bank jump address correctly
          stz   ExStats    ; ExStats flag set standard off for now
          stz   MapIndex   ; MapIndex initially at first entry
          stz   Mhs
@@ -776,7 +776,7 @@ DoorKnob lda   Mhb
          sec
          sbc   #$d7ff     ; result same as subtracting it from 2800
          tax
-         stal  PA         ; according to the horizontal block
+         stal  PeaJumpPtr ; according to the horizontal block
          phb
          pea   #>ForeFld
          plb
@@ -794,7 +794,7 @@ DoorKnob lda   Mhb
          tax
          dey
          bne   ]lp
-         plb
+         plb    ; 02/105F
 
          DO    BF_HeatWav
          stz   HeatCnt
@@ -816,7 +816,7 @@ DoorKnob lda   Mhb
          jsr   SprUp      ; Update them once
          lda   ErAc
          beq   *+5
-         JSR   DraEm      ; draw active spridez
+         JSR   DraEm      ; draw active sprites
          JSR   PeaBlit    ; then blit to shr
 
          rep   #$30
@@ -1925,6 +1925,9 @@ Die      rep   #$30       ; Mario death routine so far!
          sta   Amth       ; Guido: mouth: normal
          jmp   TrolPlay
 
+* Scroll "forward":
+* Extend the PEA field down in memory, making room for another 4 pixels on the
+* right edge of the screen, and draw a stripe of graphics there.
 PeaInc   SEP   #$30
          lda   #$80
          trb   Mdir       ; Set the forward scroll flag
@@ -1953,9 +1956,9 @@ IncBr2   =     *
          FIN
          REP   #$31
          inc   ClBk
-         ldal  PA
+         ldal  PeaJumpPtr
          sbc   #$0002
-         stal  PA
+         stal  PeaJumpPtr
          taX
          LDA   #$01F4     ; Make new PEA
          STAL  ForeFld,X
@@ -2036,9 +2039,9 @@ IncBr3   rep   #$30
          sbc   FunkReg
          ASLS  4
 TwistSk  clc
-         ADCl  PA
+         ADCl  PeaJumpPtr
          ELSE
-         ldal  PA
+         ldal  PeaJumpPtr
          FIN
          tay
          DO    BF_HeatWav
@@ -2087,7 +2090,7 @@ TwistSk  clc
          DEC   Tmp3
          DEC   Tmp
          bpl   ]lp
-         ELSE             ; Non-compiled-set  routine:
+         ELSE             ; Non-compiled-set routine:
          phb
          pea   #>Blok
          plb
@@ -2134,6 +2137,9 @@ IncBr3B  rep   #$30
          bra   IncBr3B
          FIN
 
+* Scroll "backward":
+* Extend the PEA field up in memory, making room for another 4 pixels on the
+* left edge of the screen, and draw a stripe of graphics there.
          DO    BF_ScrlLft
 PeaDec   REP   #$31       ; Draw grafix 1st, in the dec routine
          LDA   #$000B
@@ -2154,7 +2160,7 @@ TwistS2  clc
          lda   #$00F0
          clc
          FIN
-         ADCl  PA
+         ADCl  PeaJumpPtr
          tay
          DO    BF_BlkComp
          LDA   Tmp        ; Compiled-set routine:
@@ -2232,15 +2238,15 @@ DecBr1   inc   FunkReg
          FIN
 DecBr2   REP   #$31
          dec   ClBk
-         ldal  PA
+         ldal  PeaJumpPtr
          tay
          adc   SizTotal   ; Add total size to get to end of stack
          tax
          tya
          inc
          inc
-         inc              ; Increase PA for new location
-         stal  PA
+         inc              ; Increase PeaJumpPtr for new location
+         stal  PeaJumpPtr
          sep   #$20
          LDA   #$F4
          STAL  ForeFld,X  ; Don't mess up the new data!
@@ -2322,7 +2328,7 @@ PeaBlit  phb
          tsc
          sta   ST         ; Save stack
          LDa   SizTotal
-         adcl  PA
+         adcl  PeaJumpPtr   ; Starts as 26e6 , total dae6
          tax
          LDA   #PeaCR*$100+$5C ; Return Jump
          STAL  ForeFld,x
@@ -2348,7 +2354,7 @@ PeaBlit  phb
          STAl  $e1C005
          STAl  $e1C005    ; Writes to bank 1
          REP   #$30
-         JML   (PA)
+         JML   [PeaJumpPtr]    ; JML () doesn't compile correctly in Merlin32. Need to use JML []
 
 PeaCR    SEP   #$20
          STAl  $e1C004
@@ -2393,7 +2399,7 @@ Earlobe  dec
          asl
          adc   DraW+1,x
          sec
-         adcl  PA
+         adcl  PeaJumpPtr
          sta   Tmp
          lda   DraW,x
          and   #$00FF
@@ -2448,7 +2454,7 @@ Toad     txa
          sec
          sbc   Mbl
          sec              ; adds 1 as well
-         adcl  PA         ; (i.e. no this is not a mistake!)
+         adcl  PeaJumpPtr ; (i.e. no this is not a mistake!)
          inc
          inc              ; in one slice for left overlap
          inc
@@ -2630,7 +2636,7 @@ Chompem  sta   DWNt       ; Store the blox down for safekeeping
          sec
          sbc   Tmp        ; - the total
          clc
-         adcl  PA         ; + the current offset
+         adcl  PeaJumpPtr ; + the current offset
          DO    BF_BlkComp
          tay
          lda   #$0400
@@ -2693,7 +2699,7 @@ DoorComp REP   #$30
          sec
          sbc   Tmp2       ; Vertical done
          sta   Tmp2
-         ldal  PA
+         ldal  PeaJumpPtr
          sec
          sbc   Mbl
          sec
@@ -2798,7 +2804,7 @@ CutPaste sep   #$30
          jsr   HalfDo
          MX    %00
          lda   VARX
-         stal  PA
+         stal  PeaJumpPtr
          tax
          ldy   #$0021
 ]lp      lda   #$a0e9
@@ -2818,7 +2824,7 @@ CutPaste sep   #$30
          clc
          adc   #$000F
          sec
-         sbcl  PA
+         sbcl  PeaJumpPtr
          sta   SizTotal
          jsr   PeaBlit    ; Blit frame
          sep   #$30
