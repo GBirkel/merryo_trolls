@@ -76,11 +76,13 @@ TmpB     DS    2
 * Zero page while playing
 
          DUM   ]ZPPlay
-ST       DS    2          ; Stack storage
-CLM      DS    2          ; Window column # on map
-CLMs     DS    2          ; Window column # on map for MapBl
-BK       DS    2          ; Strip pointer (0-4)
-ClBk     DS    2          ; Block x 5 plus strip, for sprites
+ST               DS    2          ; Stack storage
+
+WinXEdgeBlk      DS    2  ; Play window _right_edge_ X position on level map, in blocks
+WinXBlkIDsPtr    DS    2  ; WinXEdgeBlk x12, used as a pointer into the level map IDs
+WinXEdgeBlkFifth DS    2  ; Play window _right_edge_ X offset into one block, in fifths (0-4)
+WinXEdgeTotalFifths DS 2  ; WinXEdgeBlk x 5 plus WinXEdgeBlkFifth, for sprites
+
 MapIndex DS    2          ; Starting position for troll
 Tmp      DS    2          ; Temporary storage
 Tmp2     DS    2          ; More Temporary storage
@@ -165,9 +167,15 @@ AcidIndx DS    2
          FIN
 
 
+EsqA            = $01C03E  ; Ensoniq Address reg
+EsqC            = $01C03C  ; Ensoniq Control reg
+EsqD            = $01C03D  ; Ensoniq Data reg
+
 PalNum          = $10  ; Standard number of palletes to fade.
 MhMsv           = $82  ; Horizontal movement lower level (walking)
 MhMfv           = $86  ; Horizontal movement upper level (running)
+
+* A key for interpreting the block IDs in the level map
 
 Gclr            = $00  ; Clear invisible space i.d
 Gsp1            = $01  ; 1st clear sprite-activatior i.d
@@ -199,10 +207,6 @@ MapTypeButton   = $3B  ; Half-height button i.d , only useful if BF_Buttons = 1
 Gsdi            = $3F  ; Solid deadly block i.d
 
 Gloc            = $48  ; Standard location of blank solids in blox MOD
-
-EsqA            = $01C03E    ;Ensoniq Address reg
-EsqC            = $01C03C    ;Ensoniq Control reg
-EsqD            = $01C03D    ;Ensoniq Data reg
 
 
 ProgBegn SEC
@@ -452,9 +456,9 @@ TrolPlay sep   #$20
          dey
          dey
          bpl   ]lp
-         stz   CLM        ; Blank ONLY THE NEEDED zero page areas
-         stz   CLMs
-         stz   BK
+         stz   WinXEdgeBlk ; Blank ONLY THE NEEDED zero page areas
+         stz   WinXBlkIDsPtr
+         stz   WinXEdgeBlkFifth
          stz   DCnt
          stz   Mbl
          stz   Mhb
@@ -678,7 +682,7 @@ LevelM   HEX   8283       ; "##" (2)[79]
          HEX   FFFF       ; Command:finish
 
 NewLoc2  rep   #$30
-         stz   BK
+         stz   WinXEdgeBlkFifth
          stz   Flashing
          lda   #BF_SizLine*$C0 ; x192
          sta   SizTotal
@@ -719,25 +723,25 @@ NewLoc2  rep   #$30
          rep   #$20
          lda   Connects+4,x ; window location
          and   #$00FF
-         sta   CLM
+         sta   WinXEdgeBlk
          asl              ; x2
          tax
-         adc   CLM        ; x3
+         adc   WinXEdgeBlk ; x3
          ASLS  2          ; x12
-         sta   CLMs
+         sta   WinXBlkIDsPtr
          txa
          asl              ; x4
-         adc   CLM        ; x5
-         sta   ClBk
+         adc   WinXEdgeBlk ; x5
+         sta   WinXEdgeTotalFifths
 
          stz   SpAc       ; Kill all sprites
          stz   ErAc
-         stz   IMsp       ; This takes the CLM value
+         stz   IMsp       ; This takes the WinXEdgeBlk value
          ldx   #$0000
 ]lp      lda   MapSpr,x   ; And runs through the sprite list
          and   #$00FF
-         beq   Bonk     ; until is hits something with a
-         cmp   CLM
+         beq   Bonk     ; until it hits something with a
+         cmp   WinXEdgeBlk
          bcs   Bonk     ; window value equal or higher.
          inc   IMsp
          txa              ;  - So the sprite handler is
@@ -753,22 +757,27 @@ Bonk     lda   IMsp
          ELSE
 Bonk     stz   Lupe
          FIN
-         lda   CLM
-         beq   DoorKnob   ; If screen is at start of level,
-         lda   BK         ; can't do the special update :(
-         dec              ; Decrement starting
-         bpl   :Br1       ; screen location by 1 section
-         dec   CLM
-         lda   CLMs       ; so initial screen
-         sec              ; comes out o.k.
+
+* Unless the screen is at the start of level,
+         lda   WinXEdgeBlk
+         beq   :CantDo
+
+* Decrement the starting screen column by one block fifth
+* so the initial screen draw comes out complete.
+         lda   WinXEdgeBlkFifth
+         dec
+         bpl   :WasntZero
+         dec   WinXEdgeBlk
+         lda   WinXBlkIDsPtr
+         sec
          sbc   #$000C
-         sta   CLMs
+         sta   WinXBlkIDsPtr
          lda   #$0004
-:Br1     sta   BK
-         dec   ClBk
+:WasntZero sta   WinXEdgeBlkFifth
+         dec   WinXEdgeTotalFifths
          inc   Lupe
 
-DoorKnob lda   Mhb
+:CantDo lda   Mhb
          ASLS  4
          sec
          sbc   Mhb        ; x15
@@ -885,7 +894,7 @@ NotPause cmp   #$9B       ; ESC
          DO    Debugger
          jsr   DebugWin
          ELSE
-]lp      jsr   WaitKey
+]lp      jsr   WaitKey    ; Freeze and do nothing, until ESC is hit again
          cmp   #$9B
          bne   ]lp
          FIN
@@ -1743,11 +1752,11 @@ Mono1    lda   Mbl        ; Check screen loc.
          bcc   UpThere
          sbc   #$33       ; Right border -1
          sta   DCnt
-Nested   ldx   CLM
+Nested   ldx   WinXEdgeBlk
          lda   ClmInfo,x
          and   #$80
          bpl   UpDwn      ; If column no-scroll-left flag is set, stop
-         lda   BK
+         lda   WinXEdgeBlkFifth
          cmp   #$04
          beq   UpHere
 UpDwn    JSR   PeaInc
@@ -1767,11 +1776,11 @@ UpThere  lda   Mbl        ; Check screen loc.
          sec
          sbc   Mbl        ; Left border
          sta   DCnt
-Chuck    ldx   CLM
+Chuck    ldx   WinXEdgeBlk
          lda   ClmInfo-15,x
          and   #$40
          beq   Babe       ; If column no-scroll-right flag is set, stop
-         lda   BK
+         lda   WinXEdgeBlkFifth
          cmp   #$04
          beq   Eediot
 Babe     JSR   PeaDec
@@ -1955,7 +1964,7 @@ IncBr1   inc   FunkReg
 IncBr2   =     *
          FIN
          REP   #$31
-         inc   ClBk
+         inc   WinXEdgeTotalFifths
          ldal  PeaJumpPtr
          sbc   #$0002
          stal  PeaJumpPtr
@@ -1963,20 +1972,20 @@ IncBr2   =     *
          LDA   #$01F4     ; Make new PEA
          STAL  ForeFld,X
          STAL  BackFld,x
-         INC   BK
-         LDA   BK
+         INC   WinXEdgeBlkFifth
+         LDA   WinXEdgeBlkFifth
          CMP   #$0005     ; Not gone a block?
          DO    BF_ScrlLft
          BNE   IncBr4     ; Don't check new sprites.
          ELSE
          bne   IncBr3
          FIN
-         STZ   BK
-         INC   CLM
-         LDA   CLMs
+         STZ   WinXEdgeBlkFifth
+         INC   WinXEdgeBlk
+         LDA   WinXBlkIDsPtr
          CLC
          ADC   #$000C
-         STA   CLMs
+         STA   WinXBlkIDsPtr
 ]lp      lda   IMsp
          ASLS  3          ; x8
          adc   IMsp       ; x9
@@ -1984,7 +1993,7 @@ IncBr2   =     *
          LDA   MapSpr,x
          and   #$00ff
          beq   IncBr3     ; If it's a 0, end of list.
-         cmp   CLM
+         cmp   WinXEdgeBlk
          bne   IncBr3     ; If it's >, can't add yet.
          inc   IMsp
          lda   SpAc
@@ -2075,10 +2084,10 @@ TwistSk  clc
          DO    BF_BlkComp
          LDA   Tmp
          CLC
-         ADC   CLMs
+         ADC   WinXBlkIDsPtr
          sta   Tmp3
 ]lp      ldx   Tmp3
-         lda   BK-1
+         lda   WinXEdgeBlkFifth-1
          sep   #$20
          LDAl  MapVl,x
          rep   #$21
@@ -2095,10 +2104,10 @@ TwistSk  clc
          pea   #>Blok
          plb
          plb
-         LDA   BK
+         LDA   WinXEdgeBlkFifth
          asl
-         sta   Tmp3       ; Prepare a BKx2
-         lda   CLMs
+         sta   Tmp3       ; Prepare a WinXEdgeBlkFifth x 2
+         lda   WinXBlkIDsPtr
          asl
          adc   #$0016
          sta   Tmp4
@@ -2127,7 +2136,7 @@ IncBr3B  rep   #$30
          adc   DMsp       ; x9
          tax
          sep   #$21
-         lda   CLM
+         lda   WinXEdgeBlk
          sbc   #$10
          cmp   MapSpr,x   ; -So we can check it.
          beq   *+5
@@ -2165,11 +2174,11 @@ TwistS2  clc
          DO    BF_BlkComp
          LDA   Tmp        ; Compiled-set routine:
          CLC
-         ADC   CLMs
+         ADC   WinXBlkIDsPtr
          sta   Tmp3
 ]lp      lda   Tmp3
          TAX
-         lda   BK-1
+         lda   WinXEdgeBlkFifth-1
          sep   #$20
          LDAl  MapVl-$C0,x
          rep   #$20
@@ -2186,10 +2195,10 @@ TwistS2  clc
          pea   #>Blok
          plb
          plb
-         LDA   BK
+         LDA   WinXEdgeBlkFifth
          asl
-         sta   Tmp3       ; Prepare a BKx2
-         lda   CLMs
+         sta   Tmp3       ; Prepare a WinXEdgeBlkFifth x 2
+         lda   WinXBlkIDsPtr
          asl
          ADC   #$0016
          sta   Tmp4
@@ -2237,7 +2246,7 @@ DecBr1   inc   FunkReg
          sta   FunkReg    ; there
          FIN
 DecBr2   REP   #$31
-         dec   ClBk
+         dec   WinXEdgeTotalFifths
          ldal  PeaJumpPtr
          tay
          adc   SizTotal   ; Add total size to get to end of stack
@@ -2252,24 +2261,24 @@ DecBr2   REP   #$31
          STAL  ForeFld,X  ; Don't mess up the new data!
          STAL  BackFld,x
          rep   #$20       ; Note: this is kind of unstable,
-         LDA   BK         ; since we drew the grafix BEFORE
+         LDA   WinXEdgeBlkFifth ; since we drew the grafix BEFORE
          BEQ   DecBr3     ; we ran this variable adjustment
-         DeC   BK         ; routine
+         DEC   WinXEdgeBlkFifth ; routine
          bra   DecBr5
 DecBr3   lda   #$04
-         sta   BK
-         DeC   CLM
-         LDA   CLMs
+         sta   WinXEdgeBlkFifth
+         DeC   WinXEdgeBlk
+         LDA   WinXBlkIDsPtr
          seC
          sbC   #$000C
-         STA   CLMs
+         STA   WinXBlkIDsPtr
 ]lp      lda   DMsp
          beq   DecBr4     ; Not at 0th entry in list!
          ASLS  3          ; x8
          adc   DMsp       ; x9
          tax
          sep   #$21
-         lda   CLM
+         lda   WinXEdgeBlk
          sbc   #$10
          cmp   MapSpr-9,x ; -So we can check it.
          bne   DecBr4
@@ -2316,7 +2325,7 @@ DecBr4   rep   #$20
          LDA   MapSpr-9,x
          and   #$00ff
          beq   DecBr5     ; If it's a 0, end of list.
-         cmp   CLM
+         cmp   WinXEdgeBlk
          bne   DecBr5     ; If it's >, can't add yet.
          dec   IMsp
          bra   ]lp
@@ -2584,7 +2593,7 @@ BlokZap  rep   #$31
          txa
          adc   #$00C0
          sec
-         sbc   CLMs       ; subtract the calculated column
+         sbc   WinXBlkIDsPtr ; subtract the calculated column
          cmp   #$000b     ; if the remainder is initially below one column,
          bcc   Kissem     ; set up a partial erasure
 ]lp      cmp   #$000b
@@ -2599,7 +2608,7 @@ Bitem    ldx   #$0005
 Kissem   tax
          lda   #$0004
          sec
-         sbc   BK
+         sbc   WinXEdgeBlkFifth
          sta   Tmp2
          txa
 Chompem  sta   DWNt       ; Store the blox down for safekeeping
@@ -2625,9 +2634,9 @@ Chompem  sta   DWNt       ; Store the blox down for safekeeping
          sec
          sbc   Tmp
          tax
-         lda   BK
+         lda   WinXEdgeBlkFifth
          asl
-         adc   BK         ; section offset, x3
+         adc   WinXEdgeBlkFifth ; Sub-block offset, x3
          eor   #$0F
          sec
          sbc   #$03
@@ -3049,10 +3058,10 @@ SprList  DA    KillMe,AnBrik,Flag,PufSmok,Mushey,CoinGet
          FIN
          DO    BF_S_Flowr
 IDFlower =     *-SprList/2
-         DA    FlowerSp
+         DA    SH_Flower
          FIN
          DO    BF_S_Snail
-         DA    SlimBal
+         DA    SH_Snail
          FIN
          DO    BF_S_Chstr
          DA    Chester

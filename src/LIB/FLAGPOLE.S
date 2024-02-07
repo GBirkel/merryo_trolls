@@ -113,24 +113,28 @@ FlagPole lda   ExStats
 * Sprite: Flag v0.02
          lst   off
 
+* 1- Caught flag (nonzero=caught)
+* 4,5- H strip
+* 6- V strip (bottom=1)
+
 Flag     sep   #$20       ; actual entry point
          ldx   Tmp
          lda   SprI+1,x
          bne   Flag1
          rep   #$20
          lda   SprI+4,x
-         cmp   ClBk
+         cmp   WinXEdgeTotalFifths
          bcs   Flag1      ; Not on screen
-         lda   ClBk
+         lda   WinXEdgeTotalFifths
          sec
          sbc   SprI+4,x
          cmp   #$004E
          bcs   Flag1      ; Not on screen
          sta   Tmp2
-         lda   SprI+6,x   ; 1- Caught flag (nonzero=caught)
+         lda   SprI+6,x   ; 
          and   #$00ff     ;
-         sta   Tmp        ; 4,5- H strip
-         ASLS  2          ; 6- V strip (bottom=1)
+         sta   Tmp        ; 
+         ASLS  2          ; 
          adc   Tmp        ; Vert.strip x 5
          ASLS  2          ; x 80
          adc   Tmp2       ; plus horizontal offset

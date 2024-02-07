@@ -56,10 +56,10 @@ ShrB     =     $E12000
 
          DUM   $00
 ST       DS    2          ; Stack storage
-CLM      DS    2          ; Window column # on map
-CLMs     DS    2          ; Window column # on map for MapBl
-BK       DS    2          ; Strip pointer (0-4)
-ClBk     DS    2          ; Block x 5 plus strip, for sprites
+WinXEdgeBlk DS    2       ; Window column # on map
+WinXBlkIDsPtr DS    2     ; Window column # on map for MapBl
+WinXEdgeBlkFifth DS    2  ; Strip pointer (0-4)
+WinXEdgeTotalFifths DS 2  ; Block x 5 plus strip, for sprites
 MapIndex DS    2          ; Starting position for troll
 Tmp      DS    2          ; Temporary storage
 Tmp2     DS    2          ; More Temporary storage

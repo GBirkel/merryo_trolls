@@ -2,12 +2,17 @@
 * Sprite: CoinGet v0.12
          lst   off
 
+* 1- animation stage (0-4)
+* 2- flip count
+* 4,5- H strip
+* 6- V strip (bottom=1)
+
 CoinGet  rep   #$20       ; actual entry point
          ldx   Tmp
-         lda   SprI+4,x   ; 1- animation stage (0-4)
-         cmp   ClBk       ; 2- flip count
-         bcs   CoinGetC   ; 4,5- H strip
-         lda   ClBk       ; 6- V strip (bottom=1)
+         lda   SprI+4,x
+         cmp   WinXEdgeTotalFifths
+         bcs   CoinGetC
+         lda   WinXEdgeTotalFifths       
          sec
          sbc   SprI+4,x
          cmp   #$004F

@@ -100,7 +100,7 @@ SpamTabs DA    $205,$285,$305,$385
          DA    $269,$2e9,$369,$3e9
 
 DebugDat ASC   " Super? Merryo Trolls Debug Screen v1.0 "
-         ASC   "ClBk:0000 Xaxs:0000 ErAc:0000  00000000 "
+         ASC   "FifT:0000 Xaxs:0000 ErAc:0000  00000000 "
          ASC   "Mbl :0000 Ahed:0000 SizT:0000           "
          DS    8
          ASC   "                                        "
@@ -119,14 +119,14 @@ DebugDat ASC   " Super? Merryo Trolls Debug Screen v1.0 "
          ASC   "Tmp3:0000 VARY:0000 IMsp:0000 Time2:    "
          ASC   "MhK :0000 Awlk:0000 Pal2:0000           "
          DS    8
-         ASC   "CLM :0000 Mdir:0000 Aeye:0000  00000000 "
+         ASC   "WinX:0000 Mdir:0000 Aeye:0000  00000000 "
          ASC   "Tmp4:0000 Bt01:0000 DMsp:0000  00000000 "
          ASC   "Mhv :0000 Amth:0000                     "
          DS    8
-         ASC   "CLMs:0000 NoFl:0000 Itm :0000  00000000 "
+         ASC   "WBCl:0000 NoFl:0000 Itm :0000  00000000 "
          ASC   "DCnt:0000 Lupe:0000 OVRt:0000           "
          ASC   "Mvb :0000 Ably:0000                     "
          DS    8
-         ASC   "BK  :0000 Yaxs:0000 Itm2:0000 Score2:   "
+         ASC   "WSbB:0000 Yaxs:0000 Itm2:0000 Score2:   "
          ASC   "DCsl:0000 Acnr:0000 DWNt:0000           "
          ASC   "Mvs :0000 Amtf:0000                     "

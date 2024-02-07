@@ -2,16 +2,23 @@
 * Sprite: Chester v0.11
          lst   off
 
+* 1: animation stage (0-7)
+* 2: jump height (velocity)(inverted!)
+* 3: velocity/timer status
+* 4-5: H strip
+* 6: V strip (bottom=1)
+* 7: timer delay value
+
 Chester  sep   #$20       ; actual entry point
          ldx   Tmp
          lda   SprI+3,x
          cmp   SprI+2,x   ; If in timer mode, skip
-         bcc   ChesterC   ; 1: animation stage (0-7)
-         rep   #$20       ; 2: jump height (velocity)(inverted!)
-         lda   ClBk       ; 3: velocity/timer status
-         sec              ; 4-5: H strip
-         sbc   SprI+4,x   ; 6: V strip (bottom=1)
-         cmp   #$004E     ; 7: timer delay value
+         bcc   ChesterC
+         rep   #$20
+         lda   WinXEdgeTotalFifths
+         sec
+         sbc   SprI+4,x
+         cmp   #$004E
          bcs   ChesterB
          sta   Tmp2       ; onscreen
          lda   SprI+6,x

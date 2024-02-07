@@ -2,13 +2,18 @@
 * Activator: Flower10 v0.02
          lst   off
 
+* There are three triggers to deal with:
+* A block with one left-facing flower (10),
+* a block with one right-racing flower (01), and a block with both (11).
+* In the case of the block with both, only one flower will be activated. 
+
          MX    %10
 Flower10 sep   #$20
          lda   Mdir       ; If not facing forward,
          and   #$01       ; no valid contact.
-         beq   Flowr10b
+         beq   :Continue
          rts
-Flowr10b lda   #Gclr
+:Continue lda   #Gclr
          ldx   Itm
          sta   MapBl,x    ; Non-activating now
          lda   #$01
@@ -25,7 +30,7 @@ Flowr10b lda   #Gclr
          lda   #IDFlower
          sta   SprI,x     ; Sets ID and anim. stage
          lda   #$0000     ; Sets type to L
-         bra   Flowr01c   ; Code is identical from here on
+         jmp   FlFinish   ; Code is identical from here on
 
          lst   on
 * Activator: Flower01 v0.03
@@ -35,9 +40,9 @@ Flowr10b lda   #Gclr
 Flower01 sep   #$20
          lda   Mdir       ; If not facing forward,
          and   #$01       ; no valid contact.
-         bne   Flowr01b
+         bne   :Continue
          rts
-Flowr01b lda   #Gclr
+:Continue lda   #Gclr
          ldx   Itm
          sta   MapBl,x    ; Non-activating now
          lda   #$01
@@ -54,31 +59,7 @@ Flowr01b lda   #Gclr
          lda   #IDFlower
          sta   SprI,x     ; Sets ID and anim. stage
          lda   #$0003     ; Set type to R
-Flowr01c sta   SprI+2,x
-         lda   CLM
-         sec
-         sbc   #$0010
-         clc
-         adc   OVRt
-         sta   Tmp
-         ASLS  2
-         clc
-         adc   Tmp        ; Current map block x5
-         dec
-         sta   SprI+4,x   ; Sets horizontal strip location
-         lda   #$000b
-         sec
-         sbc   DWNt
-         ASLS  4          ; x16
-         dec
-         sta   SprI+6,x   ; Sets vertical strip location
-         inc   SpAc
-         sep   #$20
-         lda   #$FF
-         sta   SprI+8,x   ; Sets non-level I.D.
-         lda   #$05
-         sta   Score2
-         jmp   ScoreAdd
+         jmp   FlFinish
 
          lst   on
 * Activator: Flower11 v0.05
@@ -106,7 +87,8 @@ Flower11 sep   #$20
          lda   #IDFlower
          sta   SprI,x     ; Sets ID and anim. stage
          lda   #$0000     ; Type to L
-         bra   Flowr01c   ; Code is identical from here on
+         bra   FlFinish   ; Code is identical from here on
+
          MX    %10
 Flowr11c lda   #Gsp1
          ldx   Itm
@@ -125,18 +107,43 @@ Flowr11c lda   #Gsp1
          lda   #IDFlower
          sta   SprI,x     ; Sets ID and anim. stage
          lda   #$0003     ; Set type to R
-         jmp   Flowr01c   ; Code is identical from here on
+
+FlFinish sta   SprI+2,x
+         lda   WinXEdgeBlk
+         sec
+         sbc   #$0010
+         clc
+         adc   OVRt
+         sta   Tmp
+         ASLS  2
+         clc
+         adc   Tmp        ; Current map block x5
+         dec
+         sta   SprI+4,x   ; Sets horizontal strip location
+         lda   #$000b
+         sec
+         sbc   DWNt
+         ASLS  4          ; x16
+         dec
+         sta   SprI+6,x   ; Sets vertical strip location
+         inc   SpAc
+         sep   #$20
+         lda   #$FF
+         sta   SprI+8,x   ; Sets non-level I.D.
+         lda   #$05
+         sta   Score2
+         jmp   ScoreAdd
 
          lst   on
 * Sprite: Flower v0.02
          lst   off
 
-FlowerSp rep   #$20       ; actual entry point
+SH_Flower rep   #$20       ; actual entry point
          ldx   Tmp
          lda   SprI+4,x
-         cmp   ClBk
+         cmp   WinXEdgeTotalFifths
          bcs   Flower1    ; Not on screen
-         lda   ClBk
+         lda   WinXEdgeTotalFifths
          sec
          sbc   SprI+4,x
          cmp   #$004E

@@ -2,7 +2,7 @@
 * Sprite: SlimBal v0.1A
          lst   off
 
-SlimBal  ldx   Tmp
+SH_Snail ldx   Tmp
          lda   SprI+2,x
          inc
          cmp   #$03       ; 1- bit 8=backwards, bits 1-2:
@@ -307,9 +307,9 @@ SlimBal5 rep   #$21
          adc   Tmp2
          adc   Tmp        ; Slice in map now in A
          sta   Tmp
-         cmp   ClBk
+         cmp   WinXEdgeTotalFifths
          bcs   SlimBal3   ; Not on screen
-         lda   ClBk
+         lda   WinXEdgeTotalFifths
          sec
          sbc   Tmp
          cmp   #$004d

@@ -58,7 +58,7 @@ CoinBox  ldx   Itm
          lda   #$0305
          sta   SprI,x     ; C: sets ID and anim. stage
          stz   SprI+2,x   ; C: clear flip counter
-         lda   CLM
+         lda   WinXEdgeBlk
          sec
          sbc   #$0010
          clc
@@ -187,7 +187,7 @@ BreakEm  ldx   Itm
          eor   #$8000     ; and directions
          sta   SprI+2,x   ; for the
          sta   SprI+20,x  ; new sprites
-         lda   CLM
+         lda   WinXEdgeBlk
          sec
          sbc   #$0010
          clc
@@ -261,7 +261,7 @@ BreakEm  ldx   Itm
          lda   #$0305
          sta   SprI,x     ; C: sets ID and anim. stage
          stz   SprI+2,x   ; C: clear flip counter
-         lda   CLM
+         lda   WinXEdgeBlk
          sec
          sbc   #$0010
          clc
@@ -313,7 +313,7 @@ Mushrm   sec
          sta   SprI,x     ; M: sets ID and pause counter
 Parakeet lda   #$8000
          sta   SprI+2,x   ; M: Standard mushroom, Vv at $80
-         lda   CLM
+         lda   WinXEdgeBlk
          sec
          sbc   #$0010
          clc

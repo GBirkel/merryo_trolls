@@ -2,6 +2,15 @@
 * Sprite: Mushey v0.19
          lst   off
 
+* 1- bits 1-4: 0=moving, 1-7=frozen
+*    bit 8: backwards
+* 2- mushroom type indicator
+* 3- Vertical velocity
+* 4- Map Y in blocks
+* 5- Sub-Block Y 16th (from bottom)
+* 6- Map X in blocks
+* 7- Sub-Block X fifth (from left)
+
          MX    %10
 Mushey   ldx   Tmp
          lda   #$78
@@ -10,18 +19,18 @@ Mushey   ldx   Tmp
          sta   DraW,y     ; Set up the picture
          lda   SprI+1,x
          and   #$0F
-         beq   Mushey1    ; update freeze counter
+         beq   :NotFrozen    ; update freeze counter
          dec   SprI+1,x
          jmp   Mushey24
-Mushey1  rep   #$20
-         lda   SprI+6,x   ; 1- bit 8=backwards, bits 1-4:
-         and   #$00FF     ;    0=moving, 1-7=frozen
-         ASLS  2          ; 2- mushroom type indicator
-         sta   Tmp2       ; 3- VV
-         asl              ; 4- VB
-         adc   Tmp2       ; 5- VS
-         sta   Tmp2       ; 6- HB
-         lda   SprI+4,x   ; 7- HS
+:NotFrozen rep   #$20
+         lda   SprI+6,x
+         and   #$00FF
+         ASLS  2
+         sta   Tmp2
+         asl
+         adc   Tmp2
+         sta   Tmp2
+         lda   SprI+4,x
          and   #$000F
          eor   #$000F
          sec
@@ -37,7 +46,7 @@ Mushey1  rep   #$20
          beq   Mushey4
          inc
          cmp   #$05
-         bne   Mushey3
+         bne   :NotOnEdge
          inc   SprI+6,x
          rep   #$21
          lda   Tmp3
@@ -45,7 +54,7 @@ Mushey1  rep   #$20
          sta   Tmp3
          sep   #$20
          lda   #$00
-Mushey3  bra   Mushey8
+:NotOnEdge BRA   Mushey8
 Mushey4  ldx   Tmp3
          lda   MapBl+$C,x
          ldx   Tmp
@@ -220,9 +229,9 @@ Mushey24 rep   #$20
          adc   Tmp2
          adc   Tmp        ; Slice in map now in A
          sta   Tmp
-         cmp   ClBk
+         cmp   WinXEdgeTotalFifths
          bcs   Mushey25   ; Not on screen, but still in area
-         lda   ClBk       ; Also left behind- kill!
+         lda   WinXEdgeTotalFifths ; Also left behind- kill!
          sec
          sbc   Tmp        ; In a city where crooks are all roamin',
          cmp   #$004d     ; Got a dirty old rental I made my home in,

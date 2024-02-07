@@ -2,13 +2,22 @@
 * Sprite: Turtle v0.08
          lst   off
 
-TurtleSp ldx   Tmp        ; 1- bit 8=backwards, bit 4=red type
-         lda   SprI+2,x   ; 2- animation stage
-         inc              ; 3- VV
-         cmp   #$04       ; 4- VB
-         bne   Turtle6    ; 5- VS
-         lda   #$00       ; 6- HB
-Turtle6  sta   SprI+2,x   ; 7- HS
+* 1- bit 4: red type
+*    bit 8: backwards
+* 2- animation stage
+* 3- Vertical velocity
+* 4- Map Y in blocks
+* 5- Sub-Block Y 16th (from bottom)
+* 6- Map X in blocks
+* 7- Sub-Block X fifth (from left)
+
+TurtleSp ldx   Tmp
+         lda   SprI+2,x
+         inc
+         cmp   #$04
+         bne   Turtle6
+         lda   #$00
+Turtle6  sta   SprI+2,x
          rep   #$20
          lda   SprI+6,x
          and   #$00FF
@@ -197,7 +206,7 @@ Turtle4  ldx   Tmp
          lda   SprI+6,x
          cmp   Mhb
          beq   TurtleI    ; If on the same block, contact.
-         bcs   TurtleH    ; If before marioguy, check section
+         bcs   TurtleH    ; If before Guido, check section
          lda   SprI+7,x   ; Same if after (dec here)
          dec
          cmp   Mhs
@@ -276,9 +285,9 @@ Turtle5  rep   #$20
          adc   Tmp2
          adc   Tmp        ; Slice in map now in A
          sta   Tmp
-         cmp   ClBk
+         cmp   WinXEdgeTotalFifths
          bcs   Turtle3    ; Not on screen
-         lda   ClBk
+         lda   WinXEdgeTotalFifths
          sec
          sbc   Tmp
          cmp   #$004d
@@ -315,15 +324,25 @@ Turtle3  sep   #$20
 * Sprite: Shell v0.06
          lst   off
 
+* 1- bit 1: still
+*    bit 2: red type
+*    bit 8: backwards
+* 2- shell animation stage
+* 3- Vertical velocity
+* 4- Map Y in blocks
+* 5- Sub-Block Y 16th (from bottom)
+* 6- Map X in blocks
+* 7- Sub-Block X fifth (from left)
+
          MX    %10
 Shell    ldx   Tmp
-         rep   #$20       ; 1- bit 8=backward, bit 2=red, bit 1=still
-         lda   SprI+6,x   ; 2- shell anim. stage
-         and   #$00FF     ; 3- VV
-         ASLS  2          ; 4- VB
-         sta   Tmp2       ; 5- VS
-         asl              ; 6- HB
-         adc   Tmp2       ; 7- HS
+         rep   #$20
+         lda   SprI+6,x
+         and   #$00FF
+         ASLS  2
+         sta   Tmp2
+         asl
+         adc   Tmp2
          sta   Tmp2
          lda   SprI+4,x
          and   #$F
@@ -495,7 +514,7 @@ Shell16  lda   SprI+6,x
          lda   SprI+6,x
          cmp   Mhb
          beq   Shell18    ; If on the same block, contact.
-         bcs   Shell17    ; If before marioguy, check section
+         bcs   Shell17    ; If before Guido, check section
          lda   Mhs
          cmp   SprI+7,x   ; Same if after
          bcc   Shell18    ; Not within boundary? No hit.
@@ -571,17 +590,17 @@ Shell24  rep   #$20
          adc   Tmp2
          adc   Tmp        ; Slice in map now in A
          sta   Tmp
-         cmp   ClBk
+         cmp   WinXEdgeTotalFifths
          bcs   Shell25    ; Not on screen
-         lda   ClBk
+         lda   WinXEdgeTotalFifths
          sec
          sbc   Tmp
          cmp   #$004d
-         bcc   :Br1       ; On screen
+         bcc   :OnScreen       ; On screen
          cmp   #$0068
          bcc   Shell25    ; Not on screen, but still in area
          jmp   KillDis    ; Also left behind- kill!
-:Br1     sta   Tmp3
+:OnScreen sta   Tmp3
          lda   SprI+4,x
          and   #$000F
          ASLS  4

@@ -2,14 +2,21 @@
 * Sprite: AnBrik v0.14
          lst   off
 
+* 1- animation stage (1-3)
+* 2- color of brick x3
+* 3- bit 1=offscreen, bit 8=moving backwards
+* 4,5- HS
+* 6- VS 1=bottom of screen
+* 7- Vertical Velocity <$80=down
+
 AnBrik   sep   #$20
          ldx   Tmp
          lda   SprI+3,x
-         bmi   AnBrik1    ; increment the horizontal
+         bmi   :Left    ; increment the horizontal
          rep   #$20
          inc   SprI+4,x   ; movement according to direction
          bra   AnBrik2
-AnBrik1  rep   #$20
+:Left    REP   #$20
          dec   SprI+4,x
 AnBrik2  sep   #$20
          inc   SprI+7,x
@@ -42,9 +49,9 @@ AnBrikC  dec
          sta   SprI+6,x
 AnBrik8  rep   #$20
          lda   SprI+4,x
-         cmp   ClBk
+         cmp   WinXEdgeTotalFifths
          bcs   AnBrikD    ; Not on screen
-         lda   ClBk
+         lda   WinXEdgeTotalFifths
          sec
          sbc   SprI+4,x
          cmp   #$004E

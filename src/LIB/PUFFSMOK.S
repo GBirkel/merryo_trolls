@@ -5,9 +5,9 @@
 PufSmok  rep   #$20       ; actual entry point
          ldx   Tmp
          lda   SprI+4,x
-         cmp   ClBk
+         cmp   WinXEdgeTotalFifths
          bcs   PufSmokB   ; Not on screen
-         lda   ClBk
+         lda   WinXEdgeTotalFifths
          sec
          sbc   SprI+4,x
          cmp   #$004E
