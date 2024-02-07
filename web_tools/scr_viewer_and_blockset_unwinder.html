@@ -14,6 +14,19 @@
         border:2px solid gray;
 	}
 
+	.dropzone {
+      	border:3px solid rgba(150,150,255,0.8);
+		border-radius: 9px;
+		height: 2.5em;
+		font: 1.2em arial, sans-serif;
+		color: rgb(220,220,255);
+		background-color: rgba(150,150,255,0.5);
+		margin: 0.5em;
+		text-align: center;
+		padding: 0;
+		line-height: 47px;
+	}
+
 </style>
 
 <script>
@@ -32,20 +45,53 @@ const tilesRows = 12;
 
 
 async function startProcess() {
-    document.originalScrFile = await loadFile(rawScrImageEncoded);
-    document.templateScrFile = await loadFile(rawScrImageEncoded);
-    document.processedBlockset = await loadFile(processedBlocksetEncoded);
+    document.originalScrFile = await loadEncodedFile(rawScrImageEncoded);
+    document.templateScrFile = await loadEncodedFile(rawScrImageEncoded);
+    document.processedBlockset = await loadEncodedFile(processedBlocksetEncoded);
 }
 
-async function loadFile(file) {
+
+function dragOverHandler(event) {
+    event.stopPropagation();
+    event.preventDefault();
+}
+
+
+function scrFileDropHandler(event) {
+    console.log(event);
+    event.stopPropagation();
+    event.preventDefault();
+
+    var file = event.dataTransfer.files[0];
+    if (file) {
+        var fileReader = new FileReader();
+            fileReader.onload = (function(file) {
+                return function(e) {
+                    // Make arrays for both the original file and the template file we use for unwinding
+                    document.originalScrFile = makeByteArrayFromBlob(e.target.result);
+                    document.templateScrFile = makeByteArrayFromBlob(e.target.result);
+                    drawScrFileToCanvas(document.originalScrFile);
+                }; 
+            })(file);
+        fileReader.readAsArrayBuffer(file);
+    }
+}
+
+
+async function loadEncodedFile(file) {
     const rawBlob = await fetch(file).then(res => res.blob()).then(res => res.arrayBuffer())
+    return makeByteArrayFromBlob(rawBlob);
+}
+
+
+function makeByteArrayFromBlob(rawBlob) {
     // Make a dataview object to inspect our raw data,
     // then we declare an array of exactly the structure we want
     // (in this case 8-bit unsigned bytes) and cast the data into that array.
-    var data = new DataView(rawBlob);
+    const data = new DataView(rawBlob);
     // The resulting tilePointers data should always be 512 bytes long
-    var rawFile = new Uint8Array(data.byteLength / Uint8Array.BYTES_PER_ELEMENT);
-    var len = rawFile.length;
+    const rawFile = new Uint8Array(data.byteLength / Uint8Array.BYTES_PER_ELEMENT);
+    const len = rawFile.length;
     for (var j = 0; j < len; ++j) {
         rawFile[j] = data.getUint8(j * Uint8Array.BYTES_PER_ELEMENT, true);
     }
@@ -171,7 +217,9 @@ function encodeImageFileAsURL(element) {
 
     <ol>
         <li>
-            <input type="button" value="Render Original SCR file" onClick="drawOriginalScrFileToCanvas();" />
+            <input type="button" value="Render Original SCR file" onClick="drawOriginalScrFileToCanvas();" /> , or:
+
+        	<div class="dropzone" id="scrDropzone" ondragover="dragOverHandler(event);" onDrop="scrFileDropHandler(event);">Drop an .SCR file here</div>
             <p>
                 This takes the raw data of a Super Hi Res .SCR file and paints it onto a canvas at 2x scale.
                 It handles palettes and SCBs fine with two exceptions:
