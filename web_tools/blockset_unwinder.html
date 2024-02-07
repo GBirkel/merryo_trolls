@@ -30,32 +30,85 @@ const tileHeight = 16;
 const tilesColumns = 16;
 const tilesRows = 12;
 
+
 async function startProcess() {
+    document.originalScrFile = await loadFile(rawScrImageEncoded);
+    document.templateScrFile = await loadFile(rawScrImageEncoded);
+    document.processedBlockset = await loadFile(processedBlocksetEncoded);
+}
 
-    const rawScrImageBlob = await fetch(rawScrImageEncoded).then(res => res.blob()).then(res => res.arrayBuffer())
+async function loadFile(file) {
+    const rawBlob = await fetch(file).then(res => res.blob()).then(res => res.arrayBuffer())
     // Make a dataview object to inspect our raw data,
     // then we declare an array of exactly the structure we want
     // (in this case 8-bit unsigned bytes) and cast the data into that array.
-    var data = new DataView(rawScrImageBlob);
+    var data = new DataView(rawBlob);
     // The resulting tilePointers data should always be 512 bytes long
-    var rawScrImage = new Uint8Array(data.byteLength / Uint8Array.BYTES_PER_ELEMENT);
-    var len = rawScrImage.length;
+    var rawFile = new Uint8Array(data.byteLength / Uint8Array.BYTES_PER_ELEMENT);
+    var len = rawFile.length;
     for (var j = 0; j < len; ++j) {
-        rawScrImage[j] = data.getUint8(j * Uint8Array.BYTES_PER_ELEMENT, true);
+        rawFile[j] = data.getUint8(j * Uint8Array.BYTES_PER_ELEMENT, true);
     }
+    return rawFile;
+}
 
-    const processedBlocksetBlob = await fetch(processedBlocksetEncoded).then(res => res.blob()).then(res => res.arrayBuffer())
-    // Make a dataview object to inspect our raw data,
-    // then we declare an array of exactly the structure we want
-    // (in this case 8-bit unsigned bytes) and cast the data into that array.
-    var data = new DataView(processedBlocksetBlob);
-    // The resulting tilePointers data should always be 512 bytes long
-    var processedBlockset = new Uint8Array(data.byteLength / Uint8Array.BYTES_PER_ELEMENT);
-    var len = processedBlockset.length;
-    for (var j = 0; j < len; ++j) {
-        processedBlockset[j] = data.getUint8(j * Uint8Array.BYTES_PER_ELEMENT, true);
+
+function drawOriginalScrFileToCanvas(scrFile) {
+    drawScrFileToCanvas(document.originalScrFile);
+}
+
+
+function drawScrFileToCanvas(scrFile) {
+
+    // Grab our temporary canvas and draw the source image to it, so we can read chunks back out.
+    var tempCanvas = document.getElementById("tempCanvas");
+    var tempContext = tempCanvas.getContext("2d");
+    tempCanvas.width = 640;
+    tempCanvas.height = 400;
+    const imageData = tempContext.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+    const canvasPixels = imageData.data;
+
+    for (var y=0; y < 200; y++) {
+
+        const scb = scrFile[0x7D00 + y];
+        const palette = scb & 0xF;
+
+        for (var x=0; x < 160; x++) {
+
+            const pixelPair = scrFile[(y*160)+x];
+            const firstPixel = (pixelPair & 0xF0) / 16;
+            const secondPixel = pixelPair & 0xF;
+
+            // A four-pixel square for each of two pixels (high nybble, low nybble)
+            var toDraw = [
+                    [ x*4,     y*2,    firstPixel],
+                    [(x*4)+1,  y*2,    firstPixel],
+                    [(x*4)+2,  y*2,    secondPixel],
+                    [(x*4)+3,  y*2,    secondPixel],
+                    [ x*4,    (y*2)+1, firstPixel],
+                    [(x*4)+1, (y*2)+1, firstPixel],
+                    [(x*4)+2, (y*2)+1, secondPixel],
+                    [(x*4)+3, (y*2)+1, secondPixel]
+                ];
+
+        	toDraw.forEach(function(item, index, array) {
+                const colorByteA = scrFile[0x7E00 + (palette * 0x20) + (item[2]*2)];
+                const colorByteB = scrFile[0x7E00 + (palette * 0x20) + (item[2]*2) + 1];
+
+                const pixel = ((640 * item[1]) + item[0]) * 4;
+
+                canvasPixels[pixel] = (colorByteB & 0xF) * 0x11; // Red
+                canvasPixels[pixel+1] = ((colorByteA & 0xF0) / 16) * 0x11; // Green
+                canvasPixels[pixel+2] = (colorByteA & 0xF) * 0x11; // Blue
+                canvasPixels[pixel+3] = 0xFF;
+	        });
+        }
     }
+    tempContext.putImageData(imageData, 0, 0, 0, 0, 640, 400);
+}
 
+
+function unwindBlockDataToScrFile() {
     for (var i=0; i < tilesRows; i++) {
         for (var j=0; j < tilesColumns; j++) {
 
@@ -75,13 +128,13 @@ async function startProcess() {
                     const destIndex =
                         destBlockIndex + x + (y * tileWidth * tilesColumns);
 
-                    rawScrImage[destIndex/2] = processedBlockset[sourceIndex/2];
+                    document.templateScrFile[destIndex/2] = document.processedBlockset[sourceIndex/2];
                 }
             }
         }
     }
 
-    var binstr = Array.prototype.map.call(rawScrImage, function (ch) {
+    var binstr = Array.prototype.map.call(document.templateScrFile, function (ch) {
         return String.fromCharCode(ch);
     }).join('');
     var b64encoded = btoa(binstr);
@@ -93,6 +146,8 @@ async function startProcess() {
     downloadLink.href = linkSource;
     downloadLink.target = '_self';
     downloadLink.download = "MBLOCKSB.SCR";
+
+    drawScrFileToCanvas(document.templateScrFile);
 }
 
 
@@ -110,16 +165,46 @@ function encodeImageFileAsURL(element) {
 
 </head>
 
-<body>
+<body onLoad="startProcess();">
 
-<p>This takes a blockset that's in the Super Merryo Trolls single-stripe format (essentially a 20 x (16*(16*12)) pixel column of blocks) and an .SCR file, and copies the stripe data from the blockset into the .SCR file to make a 320x200 pixel (16x12 blocks at 20x16 pixels each) template suitable for editing in a paint program.  It basically un-pre-processes the block data.  A temporary program used to solve a problem during reverse-engineering.</p>
+    <canvas id="tempCanvas" width="640" height="400"></canvas>
 
-    <input type=button value="go" onClick="startProcess();">
-    <a id="downloadLink" href="">Resulting SCR File</a>
-
-<p>
-    Base64 encoder: <input type="file" onchange="encodeImageFileAsURL(this)" />
-<p>
+    <ol>
+        <li>
+            <input type="button" value="Render Original SCR file" onClick="drawOriginalScrFileToCanvas();" />
+            <p>
+                This takes the raw data of a Super Hi Res .SCR file and paints it onto a canvas at 2x scale.
+                It handles palettes and SCBs fine with two exceptions:
+                It doesn't handle "fill mode" and it doesn't handle the 640-pixel flag.
+            </p>
+        </li>
+        <li>
+            <input type="button" value="Unwind processed blockset to SCR file" onClick="unwindBlockDataToScrFile();" />
+            <p>
+                This takes a blockset that's in the Super Merryo Trolls single-stripe format
+                (essentially a 20 x (16*(16*12)) pixel column of blocks, at two pixels per byte),
+                cuts the stripe up into blocks, and copies the blocks into an .SCR file, making
+                a 320x192 pixel template (16x12 blocks at 20x16 pixels each) suitable for editing
+                in a paint program on the Apple IIgs.  It basically un-pre-processes the block data.
+            </p><p>
+                It then renders the resulting .SCR file.  Note that the palette and SCB data in this .SCR file
+                is inherited from the "original SCR file" above.
+                (A pre-processed block stripe has no palette data of its own.)
+            </p>
+        </li>
+        <li>
+            <a id="downloadLink" href="">Resulting SCR File</a>
+            <p>
+                The HREF in this link points to the raw .SCR file resulting from the previous step. Click to save to disk.
+            </p>
+        </li>
+        <li>
+            Base64 encoder: <input type="file" onchange="encodeImageFileAsURL(this)" />
+            <p>
+                An helpful tool.  Choose a file and it will emit a Base64-encoded version of it to the console, suitable for embedding in Javascript.
+            </p>
+        </li>
+    </ol>
 
 </body>
 </html>
