@@ -18,6 +18,10 @@
 		align-content: center;
     }
 
+    select.levelPulldown {
+        font-size: 1.2rem;
+    }
+
     canvas {
         border:2px solid gray;
 	}
@@ -273,7 +277,7 @@ function encodeImageFileAsURL(element) {
     <div class="topBar">
         <h1>Super Merryo Trolls Map Editor</h1>
         <div>
-            <select id="levelPulldown" onChange="selectLevel();">
+            <select class="levelPulldown" id="levelPulldown" onChange="selectLevel();">
                 <option value="0">Level 1</option>
                 <option value="1">Level 2</option>
                 <option value="2">Level 3</option>
