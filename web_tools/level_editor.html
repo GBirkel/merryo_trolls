@@ -2,6 +2,7 @@
 <html>
 <head>
 <script src="mouse_utils.js"></script> 
+<script src="tile_sets.js"></script> 
 
 <style>
 
@@ -111,146 +112,21 @@ async function startEditor() {
     document.pointerBlockX = 0;
     document.pointerBlockY = 0;
 
-    await loadEditorTiles();
-    await loadMapTiles();
+    var tempCanvas = document.getElementById("tempCanvas");
+    var secondCanvas = document.getElementById("tempBlockSetCanvas");
+    var singleBlockCanvas = document.getElementById("tempBlockCanvas");
+
+    document.editorTiles = new EditorTileset(tempCanvas);
+    document.levelTiles = new WorldTileset(tempCanvas, secondCanvas, singleBlockCanvas);
+
+    await document.editorTiles.load(editorTilesEncoded, 16, 5, tileWidth, tileHeight);
+    await document.levelTiles.load(firstBlockSetEncoded, firstBlocksetPointersEncoded, 16, 12, tileWidth, tileHeight);
 
     redrawMapColumnIndexes();
     await loadLevel();
     drawLevel();
 
     changeLevelPicsOpacity();
-}
-
-
-async function loadEditorTiles() {
-
-    // Load the source image.
-    const editorTilesImg = new Image();
-    editorTilesImg.src = editorTilesEncoded;
-    // Fancy new Image property, solving the "IS IT LOADED?" problem:
-    // https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement/decode
-    await editorTilesImg.decode();
-
-    var editorTiles = [];
-
-    // Number of rows/columns in the source image for the editor tiles.
-    const tilesColumns = 16;
-    const tilesRows = 5;
-
-    // Grab our temporary canvas and draw the source image to it, so we can read chunks back out.
-    var tempCanvas = document.getElementById("tempCanvas");
-    var tempContext = tempCanvas.getContext("2d");
-    tempCanvas.width = editorTilesImg.width;
-    tempCanvas.height = editorTilesImg.height;
-    tempContext.drawImage(editorTilesImg, 0, 0);
-
-    for (var i=0; i < tilesRows; i++) {
-        for (var j=0; j < tilesColumns; j++) {
-            editorTiles.push(tempContext.getImageData(j*tileWidth, i*tileHeight, tileWidth, tileHeight));
-        }
-    }
-
-    document.editorTiles = editorTiles;
-}
-
-
-async function loadMapTiles() {
-
-    // Load the source image.
-    const mapTilesImg = new Image();
-    mapTilesImg.src = firstBlockSetEncoded;
-    // Fancy new Image property, solving the "IS IT LOADED?" problem:
-    // https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement/decode
-    await mapTilesImg.decode();
-
-    var mapTiles = [];
-
-    // Number of rows/columns in the source image for the editor tiles.
-    const tilesColumns = 16;
-    const tilesRows = 12;
-
-    // Grab our temporary canvas and draw the source image to it, so we can read chunks back out.
-    var tempCanvas = document.getElementById("tempCanvas");
-    var tempContext = tempCanvas.getContext("2d");
-    tempCanvas.width = mapTilesImg.width;
-    tempCanvas.height = mapTilesImg.height;
-    tempContext.drawImage(mapTilesImg, 0, 0);
-
-    // Prepare our second canvas where we unroll the blockset into one vertical stripe.
-    var secondCanvas = document.getElementById("tempBlockSetCanvas");
-    var secondContext = secondCanvas.getContext("2d");
-    secondContext.width = tileWidth;
-    secondContext.height = tileHeight * (tilesColumns * tilesRows);
-
-    for (var i=0; i < tilesRows; i++) {
-        for (var j=0; j < tilesColumns; j++) {
-            const oneBlock = tempContext.getImageData(
-                    j*tileWidth,
-                    i*tileHeight,
-                    tileWidth,
-                    tileHeight
-            );
-            secondContext.putImageData(oneBlock,0,((i*tilesColumns)+j)*tileHeight);
-        }
-    }
-
-    const tilePointersBlob = await fetch(firstBlocksetPointersEncoded).then(res => res.blob()).then(res => res.arrayBuffer())
-
-    // Make a dataview object to inspect our raw data,
-    // then we declare an array of exactly the structure we want
-    // (in this case 8-bit unsigned bytes) and cast the data into that array.
-    var data = new DataView(tilePointersBlob);
-    // The resulting tilePointers data should always be 512 bytes long
-    var tilePointers = new Uint8Array(512 / Uint8Array.BYTES_PER_ELEMENT);
-    for (var j = 0; j < 512; ++j) {
-        tilePointers[j] = data.getUint8(j * Uint8Array.BYTES_PER_ELEMENT, true);
-    }
-
-    // Prepare our single-block canvas where we assemble completed blocks from pieces.
-    var singleBlockCanvas = document.getElementById("tempBlockCanvas");
-    var singleBlockContext = singleBlockCanvas.getContext("2d");
-    singleBlockContext.width = tileWidth;
-    singleBlockContext.height = tileHeight;
-
-    for (var j = 0; j < 256; ++j) {
-        // We combine byte pairs to make 16-bit pointers into the image data.
-        // Note that these pointers refer to bytes, and in Super Hi Res, each byte contains two
-        // pixels.  So these values need to be doubled to reach the correct pixel values in our canvas.
-        const tilePointer = (tilePointers[j*2] + (256 * tilePointers[(j*2)+1])) * 2;
-        const blockFraction = tilePointer % 20;
-        const blockIndex = Math.floor(tilePointer / 20);
-        // The canvas is using blocks drawn at 2x scale, e.g. 40x32 instead of 20x16.
-        // So we need to double our values again.
-        const blockLeftPart = secondContext.getImageData(
-                blockFraction * 2,
-                blockIndex * 2,
-                tileWidth - (blockFraction*2),
-                tileHeight
-        );
-        singleBlockContext.putImageData(blockLeftPart,0,0);
-
-        // If the pointer has a fractional remainder, the block wraps partially around
-        // to the next "row" in the stipe data, so we need to do a second copy to catch
-        // the right side of the block, one row down.
-        if (blockFraction > 0) {
-            // The canvas is using blocks drawn at 2x scale, e.g. 40x32 instead of 20x16.
-            // So we need to double our values again.
-            const blockRightPart = secondContext.getImageData(
-                    0,
-                    (blockIndex * 2) + 2,
-                    blockFraction * 2,
-                    tileHeight
-            );
-            singleBlockContext.putImageData(blockRightPart,blockFraction * 2,0);
-        }
-
-        const blockComplete = singleBlockContext.getImageData(
-                0, 0, tileWidth, tileHeight
-        );
-        mapTiles.push(blockComplete);
-    }
-
-    document.mapTiles = mapTiles;
 }
 
 
@@ -300,7 +176,7 @@ function drawLevel() {
     for (var i=0; i < mapColumns; i++) {
         for (var j=0; j < mapRows; j++) {
             var tileId = document.levelData[j+(i*mapRows) + (document.levelNumber * 0x4000)] & 0x3F;
-            levelIdsContext.putImageData(document.editorTiles[tileId],tileWidth*i,(tileHeight*j)+16);
+            levelIdsContext.putImageData(document.editorTiles.tiles[tileId],tileWidth*i,(tileHeight*j)+16);
         }
     }
 
@@ -310,7 +186,7 @@ function drawLevel() {
     for (var i=0; i < mapColumns; i++) {
         for (var j=0; j < mapRows; j++) {
             var tileId = document.levelData[j+(i*mapRows) + (document.levelNumber * 0x4000) + 0x1000];
-            levelPicsContext.putImageData(document.mapTiles[tileId],tileWidth*i,(tileHeight*j)+16);
+            levelPicsContext.putImageData(document.levelTiles.tiles[tileId],tileWidth*i,(tileHeight*j)+16);
         }
     }
 };
@@ -330,11 +206,11 @@ function redrawTileFromMap(x, y) {
 function drawIdTile(x, y, tile, onBoth) {
     var levelIdsCanvas = document.getElementById("levelIdsCanvas");
     var levelIdsContext = levelIdsCanvas.getContext("2d");
-    levelIdsContext.putImageData(document.editorTiles[tileId],tileWidth*x,(tileHeight*y)+16);
+    levelIdsContext.putImageData(document.editorTiles.tiles[tileId],tileWidth*x,(tileHeight*y)+16);
     if (onBoth) {
         var levelPicsCanvas = document.getElementById("levelPicsCanvas");
         var levelPicsContext = levelPicsCanvas.getContext("2d");
-        levelPicsContext.putImageData(document.editorTiles[tileId],tileWidth*x,(tileHeight*y)+16);
+        levelPicsContext.putImageData(document.editorTiles.tiles[tileId],tileWidth*x,(tileHeight*y)+16);
     }
 }
 
@@ -342,7 +218,7 @@ function drawIdTile(x, y, tile, onBoth) {
 function drawPicTile(x, y, tile) {
     var levelPicsCanvas = document.getElementById("levelPicsCanvas");
     var levelPicsContext = levelPicsCanvas.getContext("2d");
-    levelPicsContext.putImageData(document.mapTiles[tileId],tileWidth*x,(tileHeight*y)+16);
+    levelPicsContext.putImageData(document.levelTiles.tiles[tileId],tileWidth*x,(tileHeight*y)+16);
 }
 
 
