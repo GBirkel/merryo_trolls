@@ -68,6 +68,10 @@
         margin: 0 1%;
     }
 
+    div.levelContainer:focus-within > canvas {
+        border:2px solid #4848FF;
+    }
+
     div.mapColumnIndexes {
         width: 10240px;
         display: flex;
@@ -123,8 +127,9 @@ async function startEditor() {
     // but we're rolling with the design of rendering the editor as a giant canvas rather than a grid of image elements,
     // so this approach makes more sense.
 
-    document.pointerBlockX = 0;
-    document.pointerBlockY = 0;
+    document.blockUnderPointer = {x: 0, y: 0};
+    document.blockLastMouseDown = null;
+    document.levelMapHasFocus = false;
 
     var tempCanvas = document.getElementById("tempCanvas");
     var secondCanvas = document.getElementById("tempBlockSetCanvas");
@@ -248,7 +253,7 @@ function drawPicTile(x, y, tileId) {
 function changeLevelPicsOpacity() {
     var levelPicsOpacity = document.getElementById("levelPicsOpacity");
     var levelIdsCanvas = document.getElementById("levelIdsCanvas");
-    levelIdsCanvas.style.opacity = 1 - (levelPicsOpacity.value / 100);
+    levelIdsCanvas.style.opacity = levelPicsOpacity.value / 100;
 };
 
 
@@ -259,19 +264,97 @@ function setLevelPicsOpacitySlider(value) {
 };
 
 
-function mouseOverLevel(event) {
-    var c = document.getElementById("levelIdsCanvas");
-    const currentBlock = mousey.mouseEventToBlockLocation(c, event, 16.0, 255, 11);
+function levelMapFocused(event) {
+    document.levelMapHasFocus = true;
+    console.log("levelMapFocused");
+}
 
-    if ((currentBlock.x == document.pointerBlockX) && (currentBlock.y == document.pointerBlockY)) {
+
+function levelMapBlurred(event) {
+    document.levelMapHasFocus = false;
+    console.log("levelMapBlurred");
+}
+
+
+function onLevelMapMouseOver(event) {
+    var c = document.getElementById("levelInteractionCanvas");
+    const currentBlock = mousey.mouseEventToBlockLocation(c, event, 16.0, 255, 11);
+    if ((currentBlock.x == document.blockUnderPointer.x) && (currentBlock.y == document.blockUnderPointer.y)) {
         return;
     }
-
-    eraseInteractionTile(document.pointerBlockX, document.pointerBlockY);
+    document.levelMapContainsMouse = true;
+    eraseInteractionTile(document.blockUnderPointer.x, document.blockUnderPointer.y);
+    document.blockUnderPointer = currentBlock;
     drawIdTile(currentBlock.x, currentBlock.y, 64, true);
+}
 
-    document.pointerBlockX = currentBlock.x;
-    document.pointerBlockY = currentBlock.y;
+
+function onLevelMapMouseDown(mouseEvent) {
+    var c = document.getElementById("levelInteractionCanvas");
+    const currentBlock = mousey.mouseEventToBlockLocation(c, mouseEvent, 16.0, 255, 11);
+
+    var b = document.getElementById("bodyId");
+    b.addEventListener("mouseup", onLevelMapTriggeredMouseUp, {once: true });
+
+    console.log("levelMap mousedown", currentBlock);
+
+    document.blockLastMouseDown = currentBlock;
+    const shiftKey = mouseEvent.shiftKey;
+}
+
+
+function onLevelMapTriggeredMouseUp(mouseEvent) {
+    console.log("levelMap-triggered mouseup", document.blockUnderPointer);
+    if ((document.blockLastMouseDown == null) || (document.blockUnderPointer == null)) {
+        document.blockLastMouseDown = null;
+        console.log("Inadequate coordinates.");
+        return;
+    }
+    if (mouseEvent.metaKey &&
+        !mouseEvent.shiftKey &&
+        document.levelMapContainsMouse &&
+        (document.blockLastMouseDown.x == document.blockUnderPointer.x) &&
+        (document.blockLastMouseDown.y == document.blockUnderPointer.y) &&
+        (document.blockLastMouseDown.y >= 0)
+    ) {
+        console.log("Eyedropper last clicked location.");
+        var tilePic = document.levelData[document.blockLastMouseDown.y + (document.blockLastMouseDown.x * mapRows) + (document.levelNumber * 0x4000) + 0x1000];
+        selectLevelBlock(tilePic);
+    }
+}
+
+
+function onLevelMapMouseOut(event) {
+    document.levelMapContainsMouse = false;
+    console.log("levelMap mouseout");
+}
+
+
+function onLevelMapCut(event) {
+    if (document.levelMapHasFocus) {
+        console.log("levelMap cut");
+    }
+}
+
+
+function onLevelMapCopy(event) {
+    if (document.levelMapHasFocus) {
+        console.log("levelMap copy");
+    }
+}
+
+
+function onLevelMapPaste(event) {
+    if (document.levelMapHasFocus) {
+        console.log("levelMap paste");
+    }
+}
+
+
+function onLevelMapKeyDown(event) {
+    if (document.levelMapHasFocus) {
+        console.log("levelMap keydown");
+    }
 }
 
 
@@ -327,7 +410,7 @@ function encodeImageFileAsURL(element) {
 
 </head>
 
-<body onLoad="startEditor();">
+<body id="bodyId" onLoad="startEditor();">
 
     <div class="topBar">
         <h1>Super Merryo Trolls Map Editor</h1>
@@ -341,20 +424,30 @@ function encodeImageFileAsURL(element) {
         </div>
 
         <div>
-            <span onclick="setLevelPicsOpacitySlider(0);">IDs</span>
+            <span onclick="setLevelPicsOpacitySlider(0);">Pic</span>
             <input type="range" class="levelPicsOpacitySlider" id="levelPicsOpacity"
-                min="0" max="100" value="80" oninput="changeLevelPicsOpacity();" />
-            <span onclick="setLevelPicsOpacitySlider(100);">Pics</span>
-
+                min="0" max="100" value="20" oninput="changeLevelPicsOpacity();" />
+            <span onclick="setLevelPicsOpacitySlider(100);">Type</span>
+        </div>
     </div>
 
     <canvas style="display:none;" id="tempCanvas" width=640 height=384></canvas>
     <canvas style="display:none;" id="tempBlockSetCanvas" width=40 height=6144></canvas>
     <canvas style="display:none;" id="tempBlockCanvas" width=40 height=32></canvas>
 
-    <div id="levelContainer" class="levelContainer">
+    <div id="levelContainer" class="levelContainer"
+            tabindex="0"
+            onfocus="levelMapFocused(event);"
+            onblur="levelMapBlurred(event);"
+            oncut="onLevelMapCut(event);"
+            oncopy="onLevelMapCopy(event);"
+            onpaste="onLevelMapPaste(event);"
+            onkeydown="onLevelMapKeyDown(event);">
         <canvas id="levelIdsCanvas" class="levelIdsCanvas" width=10240 height=400></canvas>
-        <canvas id="levelInteractionCanvas" class="levelInteractionCanvas" width=10240 height=400 onmousemove="mouseOverLevel(event);"></canvas>
+        <canvas id="levelInteractionCanvas" class="levelInteractionCanvas" width=10240 height=400
+            onmousedown="onLevelMapMouseDown(event);"
+            onmouseout="onLevelMapMouseOut(event);"
+            onmousemove="onLevelMapMouseOver(event);"></canvas>
         <canvas id="levelPicsCanvas" width=10240 height=400></canvas>
         <div class="mapColumnIndexes" id="mapColumnIndexes"></div>
     </div>
@@ -363,6 +456,17 @@ function encodeImageFileAsURL(element) {
         <canvas id="blockSelectionInteractionCanvas" class="blockSelectionInteractionCanvas" width=640 height=512 onclick="clickOnLevelBlockSelector(event);"></canvas>
         <canvas id="blockSelectionCanvas" width=640 height=512></canvas>
     </div>
+
+    <h3>How To Use</h3>
+
+    <p>
+        To switch between block pictures and block types, drag the slider, or click directly on "Pic" or "Type"
+    <p>
+        Click in the blockset (below the map) to select a block picture to draw with.
+    </p>
+    <p>
+        Command-click on a block in the map to draw with that picture.
+    </p>
 
 <input type="file" onchange="encodeImageFileAsURL(this)" />
 
