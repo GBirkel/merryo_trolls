@@ -53,6 +53,10 @@
         border:2px solid gray;
 	}
 
+    canvas.levelInteractionCanvas {
+        position: absolute;
+    }
+
     canvas.levelIdsCanvas {
         position: absolute;
     }
@@ -201,21 +205,28 @@ function redrawTileFromMap(x, y) {
 }
 
 
-// Draw the tile with the given Id at the given x and y on the levelIds canvas.
-// If onBoth is true, draw the tile on the levelPics canvas as well.
-function drawIdTile(x, y, tile, onBoth) {
-    var levelIdsCanvas = document.getElementById("levelIdsCanvas");
-    var levelIdsContext = levelIdsCanvas.getContext("2d");
-    levelIdsContext.putImageData(document.editorTiles.tiles[tileId],tileWidth*x,(tileHeight*y)+16);
-    if (onBoth) {
-        var levelPicsCanvas = document.getElementById("levelPicsCanvas");
-        var levelPicsContext = levelPicsCanvas.getContext("2d");
-        levelPicsContext.putImageData(document.editorTiles.tiles[tileId],tileWidth*x,(tileHeight*y)+16);
-    }
+function eraseInteractionTile(x, y) {
+    var c = document.getElementById("levelInteractionCanvas");
+    var canvasContext = c.getContext("2d");
+    canvasContext.clearRect(tileWidth*x,(tileHeight*y)+16, tileWidth, tileHeight);
 }
 
 
-function drawPicTile(x, y, tile) {
+// Draw the tile with the given Id at the given x and y on the levelIds canvas.
+// If onBoth is true, draw the tile on the levelInteractionCanvas canvas instead.
+function drawIdTile(x, y, tileId, onInteractionLayer) {
+    var canvasToDrawOn;
+    if (onInteractionLayer) {
+        canvasToDrawOn = document.getElementById("levelInteractionCanvas");
+    } else {
+        canvasToDrawOn = document.getElementById("levelIdsCanvas");
+    }
+    var canvasContext = canvasToDrawOn.getContext("2d");
+    canvasContext.putImageData(document.editorTiles.tiles[tileId],tileWidth*x,(tileHeight*y)+16);
+}
+
+
+function drawPicTile(x, y, tileId) {
     var levelPicsCanvas = document.getElementById("levelPicsCanvas");
     var levelPicsContext = levelPicsCanvas.getContext("2d");
     levelPicsContext.putImageData(document.levelTiles.tiles[tileId],tileWidth*x,(tileHeight*y)+16);
@@ -243,6 +254,9 @@ function mouseOverLevel(event) {
     if ((currentBlock.x == document.pointerBlockX) && (currentBlock.y == document.pointerBlockY)) {
         return;
     }
+
+    eraseInteractionTile(document.pointerBlockX, document.pointerBlockY);
+    drawIdTile(currentBlock.x, currentBlock.y, 64, true);
 
     document.pointerBlockX = currentBlock.x;
     document.pointerBlockY = currentBlock.y;
@@ -289,7 +303,8 @@ function encodeImageFileAsURL(element) {
     <canvas style="display:none;" id="tempBlockCanvas" width=40 height=32></canvas>
 
     <div id="levelContainer" class="levelContainer">
-        <canvas id="levelIdsCanvas" class="levelIdsCanvas" width=10240 height=400 onmousemove="mouseOverLevel(event);"></canvas>
+        <canvas id="levelIdsCanvas" class="levelIdsCanvas" width=10240 height=400></canvas>
+        <canvas id="levelInteractionCanvas" class="levelInteractionCanvas" width=10240 height=400 onmousemove="mouseOverLevel(event);"></canvas>
         <canvas id="levelPicsCanvas" width=10240 height=400></canvas>
         <div class="mapColumnIndexes" id="mapColumnIndexes"></div>
     </div>
