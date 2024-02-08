@@ -1,8 +1,9 @@
 <!doctype html>
 <html>
 <head>
-<script src="mouse_utils.js"></script> 
-<script src="tile_sets.js"></script> 
+<script src="mouse_utils.js"></script>
+<script src="edit_history.js"></script>
+<script src="tile_sets.js"></script>
 
 <style>
 
@@ -86,7 +87,7 @@
         text-align: center;
     }
 
-    div.levelBlockSelectionContainer {
+    div.pictureBlockSelectionContainer {
         position: relative;
         margin: 0.5em 1%;
     }
@@ -119,7 +120,10 @@ const mapRows = 12;
 async function startEditor() {
 
     document.levelNumber = 0;
-    document.levelBlockSelection = 0;
+    document.blockPictureSelection = 0;
+    document.blockTypeSelection = 0;
+    document.pendingLevelChanges = null;
+    document.levelHistory = new LevelHistory();
 
     // First task: Load the tiles for the editor.
 
@@ -129,6 +133,11 @@ async function startEditor() {
 
     document.blockUnderPointer = {x: 0, y: 0};
     document.blockLastMouseDown = null;
+
+    document.optionKeyOnMouseDown = false;
+    document.commandKeyOnMouseDown = false;
+    document.shiftKeyOnMouseDown = false;
+
     document.levelMapHasFocus = false;
 
     var tempCanvas = document.getElementById("tempCanvas");
@@ -145,7 +154,7 @@ async function startEditor() {
     await loadLevel();
     drawLevel();
     populateLevelBlockSelector();
-    selectLevelBlock(0);
+    selectPictureBlock(0);
 
     changeLevelPicsOpacity();
 }
@@ -216,7 +225,7 @@ function drawLevel() {
 // Redraws the tile at the given x and y on both canvases - Ids and Pics - using the map data.
 function redrawTileFromMap(x, y) {
     var tileId = document.levelData[y+(x*mapRows) + (document.levelNumber * 0x4000)] & 0x3F;
-    drawIdTile(x, y, tileId, false);
+    drawTypeTile(x, y, tileId, false);
     var tilePic = document.levelData[y+(x*mapRows) + (document.levelNumber * 0x4000) + 0x1000];
     drawPicTile(x, y, tilePic);
 }
@@ -230,8 +239,8 @@ function eraseInteractionTile(x, y) {
 
 
 // Draw the tile with the given Id at the given x and y on the levelIds canvas.
-// If onBoth is true, draw the tile on the levelInteractionCanvas canvas instead.
-function drawIdTile(x, y, tileId, onInteractionLayer) {
+// If onInteractionLayer is true, draw the tile on the levelInteractionCanvas canvas instead.
+function drawTypeTile(x, y, tileId, onInteractionLayer) {
     var canvasToDrawOn;
     if (onInteractionLayer) {
         canvasToDrawOn = document.getElementById("levelInteractionCanvas");
@@ -276,16 +285,25 @@ function levelMapBlurred(event) {
 }
 
 
-function onLevelMapMouseOver(event) {
-    var c = document.getElementById("levelInteractionCanvas");
-    const currentBlock = mousey.mouseEventToBlockLocation(c, event, 16.0, 255, 11);
-    if ((currentBlock.x == document.blockUnderPointer.x) && (currentBlock.y == document.blockUnderPointer.y)) {
-        return;
-    }
-    document.levelMapContainsMouse = true;
-    eraseInteractionTile(document.blockUnderPointer.x, document.blockUnderPointer.y);
-    document.blockUnderPointer = currentBlock;
-    drawIdTile(currentBlock.x, currentBlock.y, 64, true);
+function applyMapChanges(changes) {
+    changes.blockTypeChanges.forEach(function(item, index, array) {
+        document.levelData[item.y + (item.x * mapRows) + (changes.levelNumber * 0x4000)] = item.value;
+    });
+    changes.blockPicChanges.forEach(function(item, index, array) {
+        document.levelData[item.y + (item.x * mapRows) + (changes.levelNumber * 0x4000) + 0x1000] = item.value;
+    });
+}
+
+
+// This assumes that change.levelNumber matches document.levelNumber
+// otherwise the result on the screen would be nonsense.
+function drawMapChanges(changes) {
+    changes.blockTypeChanges.forEach(function(item, index, array) {
+        drawTypeTile(item.x, item.y, item.value, false);
+    });
+    changes.blockPicChanges.forEach(function(item, index, array) {
+        drawPicTile(item.x, item.y, item.value);
+    });
 }
 
 
@@ -299,27 +317,117 @@ function onLevelMapMouseDown(mouseEvent) {
     console.log("levelMap mousedown", currentBlock);
 
     document.blockLastMouseDown = currentBlock;
-    const shiftKey = mouseEvent.shiftKey;
+
+    document.optionKeyOnMouseDown = mouseEvent.altKey;
+    document.commandKeyOnMouseDown = mouseEvent.metaKey;
+    document.shiftKeyOnMouseDown = mouseEvent.shiftKey;
+
+    if (!document.optionKeyOnMouseDown &&
+        document.commandKeyOnMouseDown &&
+        !document.shiftKeyOnMouseDown
+    ) {
+        console.log("New click-write history.");
+        const h = new LevelUndoHistoryEntry(document.levelNumber);
+        if ((currentBlock.y >= 0) && (currentBlock.y >= 0)) {
+            var oldBlockType = document.levelData[currentBlock.y + (currentBlock.x * mapRows) + (document.levelNumber * 0x4000)] & 0x3F;
+            var oldBlockPic = document.levelData[currentBlock.y + (currentBlock.x * mapRows) + (document.levelNumber * 0x4000) + 0x1000];
+            h.oldChanges.blockTypeChanges.push({x: currentBlock.x, y: currentBlock.y, value: oldBlockType});
+            h.oldChanges.blockPicChanges.push({x: currentBlock.x, y: currentBlock.y, value: oldBlockPic});
+            h.newChanges.blockTypeChanges.push({x: currentBlock.x, y: currentBlock.y, value: document.blockTypeSelection});
+            h.newChanges.blockPicChanges.push({x: currentBlock.x, y: currentBlock.y, value: document.blockPictureSelection});
+            applyMapChanges(h.newChanges);
+            drawMapChanges(h.newChanges);
+        }
+        document.pendingLevelChanges = h
+    }
+}
+
+
+function onLevelMapMouseOver(mouseEvent) {
+    var c = document.getElementById("levelInteractionCanvas");
+    const currentBlock = mousey.mouseEventToBlockLocation(c, mouseEvent, 16.0, 255, 11);
+    document.levelMapContainsMouse = true;
+    if ((currentBlock.x == document.blockUnderPointer.x) && (currentBlock.y == document.blockUnderPointer.y)) {
+        return;
+    }
+
+    if (!document.optionKeyOnMouseDown &&
+        document.commandKeyOnMouseDown &&
+        !document.shiftKeyOnMouseDown &&
+        (document.blockLastMouseDown != null) &&
+        (currentBlock.x >= 0) &&
+        (currentBlock.y >= 0)
+    ) {
+        console.log("Add drag write to pending history.");
+        if (document.pendingLevelChanges == null) {
+            console.log("Error: Pending changes not allocated?");
+            return;
+        }
+        if ((currentBlock.y >= 0) && (currentBlock.y >= 0)) {
+            const h = document.pendingLevelChanges;
+            // Basic container for this change, so we don't have to re-apply the whole pending set
+            const c = new LevelChanges(document.levelNumber);
+            const oldBlockType = document.levelData[currentBlock.y + (currentBlock.x * mapRows) + (document.levelNumber * 0x4000)] & 0x3F;
+            const oldBlockPic = document.levelData[currentBlock.y + (currentBlock.x * mapRows) + (document.levelNumber * 0x4000) + 0x1000];
+            const newBlockTypeChange = {x: currentBlock.x, y: currentBlock.y, value: document.blockTypeSelection};
+            const newBlockPicChange = {x: currentBlock.x, y: currentBlock.y, value: document.blockPictureSelection};
+            h.oldChanges.blockTypeChanges.push({x: currentBlock.x, y: currentBlock.y, value: oldBlockType});
+            h.oldChanges.blockPicChanges.push({x: currentBlock.x, y: currentBlock.y, value: oldBlockPic});
+            h.newChanges.blockTypeChanges.push(newBlockTypeChange);
+            h.newChanges.blockPicChanges.push(newBlockPicChange);
+            c.blockTypeChanges.push(newBlockTypeChange);
+            c.blockPicChanges.push(newBlockPicChange);
+            applyMapChanges(c);
+            drawMapChanges(c);
+        }
+    }
+
+    eraseInteractionTile(document.blockUnderPointer.x, document.blockUnderPointer.y);
+    document.blockUnderPointer = currentBlock;
+    drawTypeTile(currentBlock.x, currentBlock.y, 64, true);
 }
 
 
 function onLevelMapTriggeredMouseUp(mouseEvent) {
     console.log("levelMap-triggered mouseup", document.blockUnderPointer);
-    if ((document.blockLastMouseDown == null) || (document.blockUnderPointer == null)) {
-        document.blockLastMouseDown = null;
+    const lastMouseDown = document.blockLastMouseDown;
+    document.blockLastMouseDown = null;
+
+    if ((lastMouseDown == null) || (document.blockUnderPointer == null)) {
         console.log("Inadequate coordinates.");
         return;
     }
-    if (mouseEvent.metaKey &&
-        !mouseEvent.shiftKey &&
+
+    // Apply accumulated changes from a command-click draw (and drag)
+    if (!document.optionKeyOnMouseDown &&
+        document.commandKeyOnMouseDown &&
+        !document.shiftKeyOnMouseDown
+    ) {
+        console.log("Confirm drag writes history.");
+        if (document.pendingLevelChanges == null) {
+            console.log("Error: No pending level changes allocated.");
+        }
+        if (document.pendingLevelChanges.isEmpty()) {
+            console.log("Pending level changes are empty; discarding.");
+        } else {
+            document.levelHistory.addEvent(document.pendingLevelChanges);
+        }
+        document.pendingLevelChanges = null;
+    }
+
+    // Eyedropper the current hovered block into the selections
+    if (document.optionKeyOnMouseDown &&
+        !document.commandKeyOnMouseDown &&
+        !document.shiftKeyOnMouseDown &&
         document.levelMapContainsMouse &&
-        (document.blockLastMouseDown.x == document.blockUnderPointer.x) &&
-        (document.blockLastMouseDown.y == document.blockUnderPointer.y) &&
-        (document.blockLastMouseDown.y >= 0)
+        (lastMouseDown.x == document.blockUnderPointer.x) &&
+        (lastMouseDown.y == document.blockUnderPointer.y) &&
+        (lastMouseDown.x >= 0) &&
+        (lastMouseDown.y >= 0)
     ) {
         console.log("Eyedropper last clicked location.");
-        var tilePic = document.levelData[document.blockLastMouseDown.y + (document.blockLastMouseDown.x * mapRows) + (document.levelNumber * 0x4000) + 0x1000];
-        selectLevelBlock(tilePic);
+        var tilePic = document.levelData[lastMouseDown.y + (lastMouseDown.x * mapRows) + (document.levelNumber * 0x4000) + 0x1000];
+        selectPictureBlock(tilePic);
     }
 }
 
@@ -351,9 +459,30 @@ function onLevelMapPaste(event) {
 }
 
 
-function onLevelMapKeyDown(event) {
-    if (document.levelMapHasFocus) {
-        console.log("levelMap keydown");
+function onLevelMapKeyDown(keyEvent) {
+    if (!document.levelMapHasFocus) { return; }
+    console.log("levelMap keydown");
+
+    // Z with ctrl or meta = undo or redo
+    if ((keyEvent.keyCode = 90.0) && (keyEvent.ctrlKey || keyEvent.metaKey)) {
+        keyEvent.preventDefault()
+        if (keyEvent.shiftKey) {
+            console.log("redo");
+        } else {
+            console.log("undo");
+        }
+//    } else {
+//        let supportedKey =
+//            match keyEvent.keyCode with
+//            | 13.0 -> Some VesselKey.Enter    // Enter key
+//            | 46.0 -> Some VesselKey.Delete   // Delete key
+//            | 8.0 -> Some VesselKey.Delete    // Backspace key
+//            | 38.0 -> Some VesselKey.UpArrow
+//            | 40.0 -> Some VesselKey.DownArrow
+//            | 37.0 -> Some VesselKey.LeftArrow
+//            | 39.0 -> Some VesselKey.RightArrow
+//            | 65.0 -> Some VesselKey.KeyA
+//            | _ -> None
     }
 }
 
@@ -372,27 +501,27 @@ function populateLevelBlockSelector() {
 };
 
 
-function clickOnLevelBlockSelector(event) {
+function clickOnPictureBlockSelector(event) {
     var c = document.getElementById("blockSelectionInteractionCanvas");
     const coordinates = mousey.mouseEventToBlockLocation(c, event, 0.0, 15, 15);
 
-    selectLevelBlock(Math.max(0, coordinates.x) + (Math.max(0, coordinates.y)*16));
+    selectPictureBlock(Math.max(0, coordinates.x) + (Math.max(0, coordinates.y)*16));
 };
 
 
-function selectLevelBlock(newSelection) {
+function selectPictureBlock(newSelection) {
     var c = document.getElementById("blockSelectionInteractionCanvas");
     var canvasContext = c.getContext("2d");
 
-    const xPrevious = document.levelBlockSelection % 16;
-    const yPrevious = Math.floor(document.levelBlockSelection / 16);
+    const xPrevious = document.blockPictureSelection % 16;
+    const yPrevious = Math.floor(document.blockPictureSelection / 16);
     canvasContext.clearRect(tileWidth*xPrevious, tileHeight*yPrevious, tileWidth, tileHeight);
 
     const x = newSelection % 16;
     const y = Math.floor(newSelection / 16);
     canvasContext.putImageData(document.editorTiles.tiles[64], tileWidth*x, tileHeight*y);
 
-    document.levelBlockSelection = newSelection;
+    document.blockPictureSelection = newSelection;
 }
 
 
@@ -452,20 +581,39 @@ function encodeImageFileAsURL(element) {
         <div class="mapColumnIndexes" id="mapColumnIndexes"></div>
     </div>
 
-    <div id="levelBlockSelectionContainer" class="levelBlockSelectionContainer">
-        <canvas id="blockSelectionInteractionCanvas" class="blockSelectionInteractionCanvas" width=640 height=512 onclick="clickOnLevelBlockSelector(event);"></canvas>
+    <div id="pictureBlockSelectionContainer" class="pictureBlockSelectionContainer">
+        <canvas id="blockSelectionInteractionCanvas" class="blockSelectionInteractionCanvas" width=640 height=512 onclick="clickOnPictureBlockSelector(event);"></canvas>
         <canvas id="blockSelectionCanvas" width=640 height=512></canvas>
     </div>
 
     <h3>How To Use</h3>
 
     <p>
-        To switch between block pictures and block types, drag the slider, or click directly on "Pic" or "Type"
-    <p>
-        Click in the blockset (below the map) to select a block picture to draw with.
+        To switch between the block pictures and block types layers, drag the slider, or click directly on "Pic" or "Type".
     </p>
     <p>
-        Command-click on a block in the map to draw with that picture.
+        Click in the block pictures gallery (below the map) to select a block picture to draw with.
+        The standard block type that goes with that picture will be auto-selected in the type gallery.
+    </p>
+    <p>
+        Command-click on a block in the map to place the selected block.  The picture and the type layer will both be affected.
+        Drag while the mouse is down to draw more blocks.
+    </p>
+    <p>
+        Click to make a selection.  A rectangle will appear.  Drag to make the selection larger.
+        Shift-click and drag to add to the current selection.  With a selection you can:
+    </p>
+    <p>
+        <ul>
+            <li>Press "Space" to fill the selection with the currently selected block.</li>
+            <li>Press "Delete" to fill the selection with block 0 (empty space).</li>
+            <li>Perform "Cut", "Copy", and "Paste" operations with the usual keyboard shortcuts.</li>
+            <li>Press an arrow key to move the selection <i>and its contents</i> around on the map.</li>
+            <li>Press "Escape" to de-select.</li>
+        </ul>
+    </p>
+    <p>
+        Option-click on a block in the map to select that type in the blockset.
     </p>
 
 <input type="file" onchange="encodeImageFileAsURL(this)" />
