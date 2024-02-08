@@ -87,12 +87,29 @@
         text-align: center;
     }
 
+    div.bottomPanels {
+        display: flex;
+		flex-flow: row wrap;
+		justify-content: start;
+		align-items: baseline;
+		align-content: start;
+    }
+
     div.pictureBlockSelectionContainer {
         position: relative;
         margin: 0.5em 1%;
     }
 
-    canvas.blockSelectionInteractionCanvas {
+    canvas.pictureBlockSelectionInteractionCanvas {
+        position: absolute;
+    }
+
+    div.typeBlockSelectionContainer {
+        position: relative;
+        margin: 0.5em 1%;
+    }
+
+    canvas.typeBlockSelectionInteractionCanvas {
         position: absolute;
     }
 
@@ -145,16 +162,18 @@ async function startEditor() {
     var singleBlockCanvas = document.getElementById("tempBlockCanvas");
 
     document.editorTiles = new EditorTileset(tempCanvas);
-    document.levelTiles = new WorldTileset(tempCanvas, secondCanvas, singleBlockCanvas);
+    document.pictureTiles = new WorldTileset(tempCanvas, secondCanvas, singleBlockCanvas);
 
     await document.editorTiles.load(editorTilesEncoded, 16, 5, tileWidth, tileHeight);
-    await document.levelTiles.load(firstBlockSetEncoded, firstBlocksetPointersEncoded, 16, 12, tileWidth, tileHeight);
+    await document.pictureTiles.load(firstBlockSetEncoded, firstBlocksetPointersEncoded, 16, 12, tileWidth, tileHeight);
 
     redrawMapColumnIndexes();
     await loadLevel();
     drawLevel();
-    populateLevelBlockSelector();
+    populateTypeBlockSelector();
+    populatePictureBlockSelector();
     selectPictureBlock(0);
+    selectTypeBlock(0);
 
     changeLevelPicsOpacity();
 }
@@ -216,7 +235,7 @@ function drawLevel() {
     for (var i=0; i < mapColumns; i++) {
         for (var j=0; j < mapRows; j++) {
             var tileId = document.levelData[j+(i*mapRows) + (document.levelNumber * 0x4000) + 0x1000];
-            levelPicsContext.putImageData(document.levelTiles.tiles[tileId],tileWidth*i,(tileHeight*j)+16);
+            levelPicsContext.putImageData(document.pictureTiles.tiles[tileId],tileWidth*i,(tileHeight*j)+16);
         }
     }
 };
@@ -255,7 +274,7 @@ function drawTypeTile(x, y, tileId, onInteractionLayer) {
 function drawPicTile(x, y, tileId) {
     var levelPicsCanvas = document.getElementById("levelPicsCanvas");
     var levelPicsContext = levelPicsCanvas.getContext("2d");
-    levelPicsContext.putImageData(document.levelTiles.tiles[tileId],tileWidth*x,(tileHeight*y)+16);
+    levelPicsContext.putImageData(document.pictureTiles.tiles[tileId],tileWidth*x,(tileHeight*y)+16);
 }
 
 
@@ -496,30 +515,68 @@ function onLevelMapKeyDown(keyEvent) {
 }
 
 
-function populateLevelBlockSelector() {
+function populateTypeBlockSelector() {
 
-    var c = document.getElementById("blockSelectionCanvas");
+    var c = document.getElementById("typeBlockSelectionCanvas");
     var canvasContext = c.getContext("2d");
 
-    for (var x=0; x < 16; x++) {
+    for (var x=0; x < 4; x++) {
         for (var y=0; y < 16; y++) {
-            var tileId = (y * 16) + x;
-            canvasContext.putImageData(document.levelTiles.tiles[tileId],tileWidth*x,tileHeight*y);
+            var tileId = (y * 4) + x;
+            canvasContext.putImageData(document.editorTiles.tiles[tileId],tileWidth*x,tileHeight*y);
         }
     }
 };
 
 
+function populatePictureBlockSelector() {
+
+    var c = document.getElementById("pictureBlockSelectionCanvas");
+    var canvasContext = c.getContext("2d");
+
+    for (var x=0; x < 16; x++) {
+        for (var y=0; y < 16; y++) {
+            var tileId = (y * 16) + x;
+            canvasContext.putImageData(document.pictureTiles.tiles[tileId],tileWidth*x,tileHeight*y);
+        }
+    }
+};
+
+
+function clickOnTypeBlockSelector(event) {
+    var c = document.getElementById("typeBlockSelectionInteractionCanvas");
+    const coordinates = mousey.mouseEventToBlockLocation(c, event, 0.0, 3, 15);
+
+    selectTypeBlock(Math.max(0, coordinates.x) + (Math.max(0, coordinates.y)*4));
+};
+
+
 function clickOnPictureBlockSelector(event) {
-    var c = document.getElementById("blockSelectionInteractionCanvas");
+    var c = document.getElementById("pictureBlockSelectionInteractionCanvas");
     const coordinates = mousey.mouseEventToBlockLocation(c, event, 0.0, 15, 15);
 
     selectPictureBlock(Math.max(0, coordinates.x) + (Math.max(0, coordinates.y)*16));
 };
 
 
+function selectTypeBlock(newSelection) {
+    var c = document.getElementById("typeBlockSelectionInteractionCanvas");
+    var canvasContext = c.getContext("2d");
+
+    const xPrevious = document.blockTypeSelection % 4;
+    const yPrevious = Math.floor(document.blockTypeSelection / 4);
+    canvasContext.clearRect(tileWidth*xPrevious, tileHeight*yPrevious, tileWidth, tileHeight);
+
+    const x = newSelection % 4;
+    const y = Math.floor(newSelection / 4);
+    canvasContext.putImageData(document.editorTiles.tiles[65], tileWidth*x, tileHeight*y);
+
+    document.blockTypeSelection = newSelection;
+}
+
+
 function selectPictureBlock(newSelection) {
-    var c = document.getElementById("blockSelectionInteractionCanvas");
+    var c = document.getElementById("pictureBlockSelectionInteractionCanvas");
     var canvasContext = c.getContext("2d");
 
     const xPrevious = document.blockPictureSelection % 16;
@@ -528,7 +585,7 @@ function selectPictureBlock(newSelection) {
 
     const x = newSelection % 16;
     const y = Math.floor(newSelection / 16);
-    canvasContext.putImageData(document.editorTiles.tiles[64], tileWidth*x, tileHeight*y);
+    canvasContext.putImageData(document.editorTiles.tiles[65], tileWidth*x, tileHeight*y);
 
     document.blockPictureSelection = newSelection;
 }
@@ -590,9 +647,18 @@ function encodeImageFileAsURL(element) {
         <div class="mapColumnIndexes" id="mapColumnIndexes"></div>
     </div>
 
-    <div id="pictureBlockSelectionContainer" class="pictureBlockSelectionContainer">
-        <canvas id="blockSelectionInteractionCanvas" class="blockSelectionInteractionCanvas" width=640 height=512 onclick="clickOnPictureBlockSelector(event);"></canvas>
-        <canvas id="blockSelectionCanvas" width=640 height=512></canvas>
+    <div class="bottomPanels">
+
+        <div id="pictureBlockSelectionContainer" class="pictureBlockSelectionContainer">
+            <canvas id="pictureBlockSelectionInteractionCanvas" class="pictureBlockSelectionInteractionCanvas" width=640 height=512 onclick="clickOnPictureBlockSelector(event);"></canvas>
+            <canvas id="pictureBlockSelectionCanvas" width=640 height=512></canvas>
+        </div>
+
+        <div id="typeBlockSelectionContainer" class="typeBlockSelectionContainer">
+            <canvas id="typeBlockSelectionInteractionCanvas" class="typeBlockSelectionInteractionCanvas" width=160 height=512 onclick="clickOnTypeBlockSelector(event);"></canvas>
+            <canvas id="typeBlockSelectionCanvas" width=160 height=512></canvas>
+        </div>
+
     </div>
 
     <h3>How To Use</h3>
@@ -609,8 +675,11 @@ function encodeImageFileAsURL(element) {
         Drag while the mouse is down to draw more blocks.
     </p>
     <p>
+        Use Command-Z to undo changes, and Command-Shift-Z to redo them.
+    </p>
+    <p>
         Click to make a selection.  A rectangle will appear.  Drag to make the selection larger.
-        Shift-click and drag to add to the current selection.  With a selection you can:
+        Shift-click or drag to add to the current selection.  With a selection you can:
     </p>
     <p>
         <ul>
