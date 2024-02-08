@@ -1,14 +1,47 @@
+// Represents a list of changes to blocks. { x, y, value }
+// If preferNewer is set, later changes to the same coordinates will overwrite old ones.
+// This is generally set to true for forward history and false for backward (undo) history.
+class BlockChanges {
+	constructor (preferNewer) {
+		this.preferNewer = preferNewer;
+    	this.changes = []; // { x, y, value }
+	}
+
+	add (change) {
+		if (this.preferNewer) {
+			// Remove any previous change at this x,y before pushing.
+			var c =
+				this.changes.filter(function(item, index, array) {
+					if ((item.y != change.y) || (item.x != change.x)) { return true; } else { return false; }
+				});
+			c.push(change);
+			this.changes = c;
+		} else {
+			// Only push the change if there isn't one for that x,y already.
+			var s =
+				this.changes.some(function(item, index, array) {
+					if ((item.y == change.y) && (item.x == change.x)) { return true; } else { return false; }
+				});
+			if (!s) {
+				this.changes.push(change);
+			}
+		}
+	}
+}
+
+
 // Represents one set of changes to the contents of a level.
 class LevelChanges {
-	constructor (level) {
+	constructor (level, preferNewer) {
+		this.preferNewer = preferNewer;
 		this.levelNumber = level;
-    	this.blockTypeChanges = []; // { x, y, value }
-      	this.blockPicChanges = []; // { x, y, value }
+    	this.blockTypeChanges = new BlockChanges(preferNewer);
+      	this.blockPicChanges = new BlockChanges(preferNewer);
 	}
 
 	isEmpty() {
-		if (this.blockTypeChanges.length > 0) { return false; }
-		if (this.blockPicChanges.length > 0) { return false; }
+		if (this.blockTypeChanges.changes.length > 0) { return false; }
+		if (this.blockPicChanges.changes.length > 0) { return false; }
 		return true;
 	}
 }
@@ -19,8 +52,8 @@ class LevelChanges {
 // These can be used to move forward and backward in the history of edits.
 class LevelUndoHistoryEntry {
 	constructor (level) {
-    	this.oldChanges = new LevelChanges(level);	// LevelChanges
-      	this.newChanges = new LevelChanges(level);	// LevelChanges
+    	this.oldChanges = new LevelChanges(level, false);	// LevelChanges
+      	this.newChanges = new LevelChanges(level, true);	// LevelChanges
 	}
 	isEmpty() {
 		if (!this.oldChanges.isEmpty()) { return false; }
@@ -45,7 +78,7 @@ class LevelHistory {
 	}
 
 	undo() {
-		if (undoHistory.length < 1) { return null; }
+		if (this.undoHistory.length < 1) { return null; }
 
         const u = this.undoHistory.pop();
 		this.redoHistory.push(u);

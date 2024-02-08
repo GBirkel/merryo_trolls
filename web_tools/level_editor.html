@@ -122,7 +122,7 @@ async function startEditor() {
     document.levelNumber = 0;
     document.blockPictureSelection = 0;
     document.blockTypeSelection = 0;
-    document.pendingLevelChanges = null;
+    document.pendingLevelChanges = null;    // LevelUndoHistoryEntry
     document.levelHistory = new LevelHistory();
 
     // First task: Load the tiles for the editor.
@@ -286,10 +286,10 @@ function levelMapBlurred(event) {
 
 
 function applyMapChanges(changes) {
-    changes.blockTypeChanges.forEach(function(item, index, array) {
+    changes.blockTypeChanges.changes.forEach(function(item, index, array) {
         document.levelData[item.y + (item.x * mapRows) + (changes.levelNumber * 0x4000)] = item.value;
     });
-    changes.blockPicChanges.forEach(function(item, index, array) {
+    changes.blockPicChanges.changes.forEach(function(item, index, array) {
         document.levelData[item.y + (item.x * mapRows) + (changes.levelNumber * 0x4000) + 0x1000] = item.value;
     });
 }
@@ -298,10 +298,10 @@ function applyMapChanges(changes) {
 // This assumes that change.levelNumber matches document.levelNumber
 // otherwise the result on the screen would be nonsense.
 function drawMapChanges(changes) {
-    changes.blockTypeChanges.forEach(function(item, index, array) {
+    changes.blockTypeChanges.changes.forEach(function(item, index, array) {
         drawTypeTile(item.x, item.y, item.value, false);
     });
-    changes.blockPicChanges.forEach(function(item, index, array) {
+    changes.blockPicChanges.changes.forEach(function(item, index, array) {
         drawPicTile(item.x, item.y, item.value);
     });
 }
@@ -331,10 +331,10 @@ function onLevelMapMouseDown(mouseEvent) {
         if ((currentBlock.y >= 0) && (currentBlock.y >= 0)) {
             var oldBlockType = document.levelData[currentBlock.y + (currentBlock.x * mapRows) + (document.levelNumber * 0x4000)] & 0x3F;
             var oldBlockPic = document.levelData[currentBlock.y + (currentBlock.x * mapRows) + (document.levelNumber * 0x4000) + 0x1000];
-            h.oldChanges.blockTypeChanges.push({x: currentBlock.x, y: currentBlock.y, value: oldBlockType});
-            h.oldChanges.blockPicChanges.push({x: currentBlock.x, y: currentBlock.y, value: oldBlockPic});
-            h.newChanges.blockTypeChanges.push({x: currentBlock.x, y: currentBlock.y, value: document.blockTypeSelection});
-            h.newChanges.blockPicChanges.push({x: currentBlock.x, y: currentBlock.y, value: document.blockPictureSelection});
+            h.oldChanges.blockTypeChanges.add({x: currentBlock.x, y: currentBlock.y, value: oldBlockType});
+            h.oldChanges.blockPicChanges.add({x: currentBlock.x, y: currentBlock.y, value: oldBlockPic});
+            h.newChanges.blockTypeChanges.add({x: currentBlock.x, y: currentBlock.y, value: document.blockTypeSelection});
+            h.newChanges.blockPicChanges.add({x: currentBlock.x, y: currentBlock.y, value: document.blockPictureSelection});
             applyMapChanges(h.newChanges);
             drawMapChanges(h.newChanges);
         }
@@ -371,12 +371,12 @@ function onLevelMapMouseOver(mouseEvent) {
             const oldBlockPic = document.levelData[currentBlock.y + (currentBlock.x * mapRows) + (document.levelNumber * 0x4000) + 0x1000];
             const newBlockTypeChange = {x: currentBlock.x, y: currentBlock.y, value: document.blockTypeSelection};
             const newBlockPicChange = {x: currentBlock.x, y: currentBlock.y, value: document.blockPictureSelection};
-            h.oldChanges.blockTypeChanges.push({x: currentBlock.x, y: currentBlock.y, value: oldBlockType});
-            h.oldChanges.blockPicChanges.push({x: currentBlock.x, y: currentBlock.y, value: oldBlockPic});
-            h.newChanges.blockTypeChanges.push(newBlockTypeChange);
-            h.newChanges.blockPicChanges.push(newBlockPicChange);
-            c.blockTypeChanges.push(newBlockTypeChange);
-            c.blockPicChanges.push(newBlockPicChange);
+            h.oldChanges.blockTypeChanges.add({x: currentBlock.x, y: currentBlock.y, value: oldBlockType});
+            h.oldChanges.blockPicChanges.add({x: currentBlock.x, y: currentBlock.y, value: oldBlockPic});
+            h.newChanges.blockTypeChanges.add(newBlockTypeChange);
+            h.newChanges.blockPicChanges.add(newBlockPicChange);
+            c.blockTypeChanges.add(newBlockTypeChange);
+            c.blockPicChanges.add(newBlockPicChange);
             applyMapChanges(c);
             drawMapChanges(c);
         }
@@ -461,15 +461,24 @@ function onLevelMapPaste(event) {
 
 function onLevelMapKeyDown(keyEvent) {
     if (!document.levelMapHasFocus) { return; }
+    // Not supporting any keyboard operations while a click is pending.
+    if (document.blockLastMouseDown != null) { return; }
     console.log("levelMap keydown");
 
     // Z with ctrl or meta = undo or redo
-    if ((keyEvent.keyCode = 90.0) && (keyEvent.ctrlKey || keyEvent.metaKey)) {
+    if ((keyEvent.keyCode == 90.0) && (keyEvent.ctrlKey || keyEvent.metaKey)) {
         keyEvent.preventDefault()
+        var changes = null;
         if (keyEvent.shiftKey) {
             console.log("redo");
+            changes = document.levelHistory.redo();
         } else {
             console.log("undo");
+            changes = document.levelHistory.undo();
+        }
+        if (changes != null) {
+            applyMapChanges(changes);
+            drawMapChanges(changes);
         }
 //    } else {
 //        let supportedKey =
