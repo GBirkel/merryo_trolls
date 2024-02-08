@@ -82,6 +82,15 @@
         text-align: center;
     }
 
+    div.levelBlockSelectionContainer {
+        position: relative;
+        margin: 0.5em 1%;
+    }
+
+    canvas.blockSelectionInteractionCanvas {
+        position: absolute;
+    }
+
 </style>
 
 <script>
@@ -106,6 +115,7 @@ const mapRows = 12;
 async function startEditor() {
 
     document.levelNumber = 0;
+    document.levelBlockSelection = 0;
 
     // First task: Load the tiles for the editor.
 
@@ -129,6 +139,8 @@ async function startEditor() {
     redrawMapColumnIndexes();
     await loadLevel();
     drawLevel();
+    populateLevelBlockSelector();
+    selectLevelBlock(0);
 
     changeLevelPicsOpacity();
 }
@@ -248,8 +260,8 @@ function setLevelPicsOpacitySlider(value) {
 
 
 function mouseOverLevel(event) {
-    var levelIdsCanvas = document.getElementById("levelIdsCanvas");
-    const currentBlock = mousey.mouseEventToBlockLocation(levelIdsCanvas, event);
+    var c = document.getElementById("levelIdsCanvas");
+    const currentBlock = mousey.mouseEventToBlockLocation(c, event, 16.0, 255, 11);
 
     if ((currentBlock.x == document.pointerBlockX) && (currentBlock.y == document.pointerBlockY)) {
         return;
@@ -260,6 +272,44 @@ function mouseOverLevel(event) {
 
     document.pointerBlockX = currentBlock.x;
     document.pointerBlockY = currentBlock.y;
+}
+
+
+function populateLevelBlockSelector() {
+
+    var c = document.getElementById("blockSelectionCanvas");
+    var canvasContext = c.getContext("2d");
+
+    for (var x=0; x < 16; x++) {
+        for (var y=0; y < 16; y++) {
+            var tileId = (y * 16) + x;
+            canvasContext.putImageData(document.levelTiles.tiles[tileId],tileWidth*x,tileHeight*y);
+        }
+    }
+};
+
+
+function clickOnLevelBlockSelector(event) {
+    var c = document.getElementById("blockSelectionInteractionCanvas");
+    const coordinates = mousey.mouseEventToBlockLocation(c, event, 0.0, 15, 15);
+
+    selectLevelBlock(Math.max(0, coordinates.x) + (Math.max(0, coordinates.y)*16));
+};
+
+
+function selectLevelBlock(newSelection) {
+    var c = document.getElementById("blockSelectionInteractionCanvas");
+    var canvasContext = c.getContext("2d");
+
+    const xPrevious = document.levelBlockSelection % 16;
+    const yPrevious = Math.floor(document.levelBlockSelection / 16);
+    canvasContext.clearRect(tileWidth*xPrevious, tileHeight*yPrevious, tileWidth, tileHeight);
+
+    const x = newSelection % 16;
+    const y = Math.floor(newSelection / 16);
+    canvasContext.putImageData(document.editorTiles.tiles[64], tileWidth*x, tileHeight*y);
+
+    document.levelBlockSelection = newSelection;
 }
 
 
@@ -307,6 +357,11 @@ function encodeImageFileAsURL(element) {
         <canvas id="levelInteractionCanvas" class="levelInteractionCanvas" width=10240 height=400 onmousemove="mouseOverLevel(event);"></canvas>
         <canvas id="levelPicsCanvas" width=10240 height=400></canvas>
         <div class="mapColumnIndexes" id="mapColumnIndexes"></div>
+    </div>
+
+    <div id="levelBlockSelectionContainer" class="levelBlockSelectionContainer">
+        <canvas id="blockSelectionInteractionCanvas" class="blockSelectionInteractionCanvas" width=640 height=512 onclick="clickOnLevelBlockSelector(event);"></canvas>
+        <canvas id="blockSelectionCanvas" width=640 height=512></canvas>
     </div>
 
 <input type="file" onchange="encodeImageFileAsURL(this)" />

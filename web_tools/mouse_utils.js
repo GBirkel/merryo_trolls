@@ -51,8 +51,8 @@ var mousey = {
 	},
 
 
-	// Using the given block canvas, and a click event, determine the block beneath the click.
-	mouseEventToBlockLocation: function(container, ev) {
+	// Using the given block canvas, and a click event, determine the map block beneath the click.
+	mouseEventToBlockLocation: function(container, ev, topGutter, xMax, yMax) {
 
 		const s = getComputedStyle(container);
 		const borderTop = parseInt(s.getPropertyValue("border-top-width").replace('px',''));
@@ -60,13 +60,11 @@ var mousey = {
 		const x = ev.offsetX - borderLeft;
 		const y = ev.offsetY - borderTop;
 
-		const blockX = Math.min(Math.max(0, Math.floor(x / 40.0)), 255);
+		const blockX = Math.min(Math.floor(x / 40.0), xMax);
 		// Subtracting 16 for the gutter at the top of the canvas.
 		// Note this means we can return an X of -1.
-		const blockY = Math.min(Math.max(0.0-1.0, Math.floor((y - 16.0) / 32.0)), 11);
+		const blockY = Math.min(Math.floor((y - topGutter) / 32.0), yMax);
 
 		return { x: blockX, y: blockY};
 	}
-
-
 };
