@@ -110,15 +110,18 @@ class MapClipboardContents {
 
 	// Accepts an object of class LevelChanges
 	fromLevelChanges (c) {
-    	this.blockTypeChanges = new BlockChanges(true);
-      	this.blockPicChanges = new BlockChanges(true);
+    	const t = new BlockChanges(true);
+      	const p = new BlockChanges(true);
 
 		c.blockTypeChanges.changes.forEach(function(item) {
-			this.blockTypeChanges.add(item);
+			t.add(item);
 		});
 		c.blockPicChanges.changes.forEach(function(item) {
-			this.blockPicChanges.add(item);
+			p.add(item);
 		});
+    	this.blockTypeChanges = t;
+      	this.blockPicChanges = p;
+
 	}
 
 	// The object we expect from the clipboard: {
@@ -141,19 +144,21 @@ class MapClipboardContents {
 		// If this isn't set, the content didn't come from us.
 		if (!c.fromMerryoTrollsEditor) { return; }
 
-    	this.blockTypeChanges = new BlockChanges(true);
-      	this.blockPicChanges = new BlockChanges(true);
+    	const t = new BlockChanges(true);
+      	const p = new BlockChanges(true);
 
 		c.blockTypeChanges.forEach(function(item) {
 			if ((item.x < 0) || (item.x >= this.mapWidth)) { return; }
 			if ((item.y < 0) || (item.y >= this.mapHeight)) { return; }
-			this.blockTypeChanges.add(item);
+			t.add(item);
 		});
 		c.blockPicChanges.forEach(function(item) {
 			if ((item.x < 0) || (item.x >= this.mapWidth)) { return; }
 			if ((item.y < 0) || (item.y >= this.mapHeight)) { return; }
-			this.blockPicChanges.add(item);
+			p.add(item);
 		});
+    	this.blockTypeChanges = t;
+      	this.blockPicChanges = p;
 	}
 
 	isEmpty() {
