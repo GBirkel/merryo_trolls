@@ -55,6 +55,14 @@ class MapSelection {
 		});
 	}
 
+	isEmpty () {
+		for (var i=0; i < this.mapWidth; i++) {
+			const s = this.selectionColumns[i];
+			if (s.size > 0) { return false; }
+		}
+		return true;
+	}
+
 	// Returns an array of {x: int, y: int} describing all selected blocks
 	all () {
 		var wholeSelection = [];

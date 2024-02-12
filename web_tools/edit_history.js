@@ -11,7 +11,7 @@ class BlockChanges {
 		if (this.preferNewer) {
 			// Remove any previous change at this x,y before pushing.
 			var c =
-				this.changes.filter(function(item, index, array) {
+				this.changes.filter(function(item) {
 					if ((item.y != change.y) || (item.x != change.x)) { return true; } else { return false; }
 				});
 			c.push(change);
@@ -19,13 +19,18 @@ class BlockChanges {
 		} else {
 			// Only push the change if there isn't one for that x,y already.
 			var s =
-				this.changes.some(function(item, index, array) {
+				this.changes.some(function(item) {
 					if ((item.y == change.y) && (item.x == change.x)) { return true; } else { return false; }
 				});
 			if (!s) {
 				this.changes.push(change);
 			}
 		}
+	}
+
+	isEmpty() {
+		if (this.changes.length > 0) { return false; }
+		return true;
 	}
 }
 
@@ -40,8 +45,8 @@ class LevelChanges {
 	}
 
 	isEmpty() {
-		if (this.blockTypeChanges.changes.length > 0) { return false; }
-		if (this.blockPicChanges.changes.length > 0) { return false; }
+		if (!this.blockTypeChanges.isEmpty()) { return false; }
+		if (!this.blockPicChanges.isEmpty()) { return false; }
 		return true;
 	}
 }
@@ -90,5 +95,102 @@ class LevelHistory {
         const r = this.redoHistory.pop();
 		this.undoHistory.push(r);
 		return r.newChanges;
+	}
+}
+
+
+class MapClipboardContents {
+	constructor (w, h) {
+		this.mapWidth = w;
+		this.mapHeight = h;
+
+    	this.blockTypeChanges = new BlockChanges(true);
+      	this.blockPicChanges = new BlockChanges(true);
+	}
+
+	// Accepts an object of class LevelChanges
+	fromLevelChanges (c) {
+    	this.blockTypeChanges = new BlockChanges(true);
+      	this.blockPicChanges = new BlockChanges(true);
+
+		c.blockTypeChanges.changes.forEach(function(item) {
+			this.blockTypeChanges.add(item);
+		});
+		c.blockPicChanges.changes.forEach(function(item) {
+			this.blockPicChanges.add(item);
+		});
+	}
+
+	// The object we expect from the clipboard: {
+	//	  fromMerryoTrollsEditor: true,
+	//    blockTypeChanges: [{x: int, y: int, value: int }],
+	//    blockPicChanges: [{x: int, y: int, value: int }]
+	// }
+	fromClipboardPasteEvent (event) {
+
+		const rawPaste = (event.clipboardData || window.clipboardData).getData("text");
+
+		// If there's any parsing error, this content didn't come from us.
+		var c;
+		try {
+			c = JSON.parse(rawPaste);
+		} catch (e) {
+			return;
+		}
+
+		// If this isn't set, the content didn't come from us.
+		if (!c.fromMerryoTrollsEditor) { return; }
+
+    	this.blockTypeChanges = new BlockChanges(true);
+      	this.blockPicChanges = new BlockChanges(true);
+
+		c.blockTypeChanges.forEach(function(item) {
+			if ((item.x < 0) || (item.x >= this.mapWidth)) { return; }
+			if ((item.y < 0) || (item.y >= this.mapHeight)) { return; }
+			this.blockTypeChanges.add(item);
+		});
+		c.blockPicChanges.forEach(function(item) {
+			if ((item.x < 0) || (item.x >= this.mapWidth)) { return; }
+			if ((item.y < 0) || (item.y >= this.mapHeight)) { return; }
+			this.blockPicChanges.add(item);
+		});
+	}
+
+	isEmpty() {
+		if (!this.blockTypeChanges.isEmpty()) { return false; }
+		if (!this.blockPicChanges.isEmpty()) { return false; }
+		return true;
+	}
+
+	sendToClipboard (event) {
+
+		if (this.isEmpty()) { return ; }
+
+		const forClipboard = {
+			fromMerryoTrollsEditor: true,
+			blockTypeChanges: this.blockTypeChanges.changes,
+			blockPicChanges: this.blockPicChanges.changes
+		};
+
+		//const asBlob = new Blob([JSON.stringify(forClipboard)], {type: 'text/plain'});
+		//const item = new ClipboardItem({'text/plain': asBlob });
+
+		event.preventDefault();
+		event.clipboardData.setData("text/plain", JSON.stringify(forClipboard));
+
+		//navigator.permissions.query({name: 'clipboard-write'}).then((result) => {
+		//	if (result.state === 'granted' || result.state === 'prompt') {
+		//	navigator.clipboard.write([item]).catch((ex) => { 
+		//		console.log(ex) 
+		//		} ); 
+		//	}
+		//});
+	}
+
+	asLevelChanges (level) {
+		const c = new LevelChanges(level, true)
+		c.blockTypeChanges = this.blockTypeChanges;
+		c.blockPicChanges = this.blockPicChanges;
+		return c;
 	}
 }

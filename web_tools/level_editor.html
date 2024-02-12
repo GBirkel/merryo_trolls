@@ -198,6 +198,10 @@ async function startEditor() {
     drawLevel();
 
     changeMapPicsLayerOpacity();
+
+    //var c = document.getElementById("levelContainer");
+    //c.appendChild(document.createTextNode("\u200B"));
+    //c.addEventListener("copy", onLevelMapCopy);
 }
 
 
@@ -634,23 +638,75 @@ function onLevelMapMouseOut(event) {
 
 
 function onLevelMapCut(event) {
-    if (document.levelMapHasFocus) {
-        console.log("levelMap cut");
+    if (!document.levelMapHasFocus) { return; }
+    console.log("levelMap cut");
+    if (document.mapSelection.isEmpty()) {
+        console.log("Cannot cut an empty selection.");
+        return;
     }
+
+    const changesToCut = buildLevelChangesBasedOnCurrentSelection();
+
+    const newClipboard = new MapClipboardContents(mapColumns, mapRows);
+    newClipboard.fromLevelChanges(changesToCopy);
+    newClipboard.sendToClipboard(event);
+
+
 }
 
 
 function onLevelMapCopy(event) {
-    if (document.levelMapHasFocus) {
-        console.log("levelMap copy");
+    if (!document.levelMapHasFocus) { return; }
+    console.log("levelMap copy");
+    if (document.mapSelection.isEmpty()) {
+        console.log("Cannot copy an empty selection.");
+        return;
     }
+
+    const changesToCopy = buildLevelChangesBasedOnCurrentSelection();
+
+    const newClipboard = new MapClipboardContents(mapColumns, mapRows);
+    newClipboard.fromLevelChanges(changesToCopy);
+    newClipboard.sendToClipboard(event);
 }
 
 
 function onLevelMapPaste(event) {
-    if (document.levelMapHasFocus) {
-        console.log("levelMap paste");
+    if (!document.levelMapHasFocus) { return; }
+    console.log("levelMap paste");
+    const newClipboard = new MapClipboardContents(mapColumns, mapRows);
+    newClipboard.fromClipboardPasteEvent(event);
+    if (newClipboard.isEmpty()) {
+        console.log("Paste event contained no usable selection.");
+        return;
     }
+
+    document.mapSelection.clear();
+    // Assumes that type and pic selections are identical - may be a bad assumption
+    document.mapSelection.select(newClipboard.blockTypeChanges.changes);
+
+    // Erase any current selection
+    eraseInteractionRectangle({x: 0, y: 0}, {x: mapColumns-1, y: mapRows-1});
+    // Draw the new selection based on the pasted data (could be irregular in shape)
+    const pasteSelection = document.mapSelection.all();
+	pasteSelection.forEach(function(item) {
+        drawTypeTile(item.x, item.y, 65, true);
+    });
+
+    // Now that we've changed the current selection to the pasted area,
+    // use the selection to draw out the data we're going to be pasting over.
+    // We use this to make an undo history entry.
+    const previousContents = buildLevelChangesBasedOnCurrentSelection();
+    const newContents = newClipboard.asLevelChanges(document.levelNumber);
+
+    const h = new LevelUndoHistoryEntry(document.levelNumber);
+    h.oldChanges = previousContents;
+    h.newChanges = newContents;
+
+    applyMapChanges(newContents);
+    drawMapChanges(newContents);
+
+    document.levelHistory.addEvent(h);
 }
 
 
@@ -688,6 +744,19 @@ function onLevelMapKeyDown(keyEvent) {
 //            | 65.0 -> Some VesselKey.KeyA
 //            | _ -> None
     }
+}
+
+
+function buildLevelChangesBasedOnCurrentSelection() {
+    const allLocations = document.mapSelection.all();
+    const changes = new LevelChanges(document.levelNumber, true);
+	allLocations.forEach(function(item) {
+        const oneBlockType = document.levelData[item.y + (item.x * mapRows) + (document.levelNumber * 0x4000)] & 0x3F;
+        const oneBlockPic = document.levelData[item.y + (item.x * mapRows) + (document.levelNumber * 0x4000) + 0x1000];
+        changes.blockTypeChanges.add({x: item.x, y: item.y, value: oneBlockType});
+        changes.blockPicChanges.add({x: item.x, y: item.y, value: oneBlockPic});
+    });
+    return changes;
 }
 
 
