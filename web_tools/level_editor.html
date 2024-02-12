@@ -2,6 +2,7 @@
 <html>
 <head>
 <script src="mouse_utils.js"></script>
+<script src="selection.js"></script>
 <script src="edit_history.js"></script>
 <script src="tile_sets.js"></script>
 
@@ -157,8 +158,11 @@ async function startEditor() {
     document.levelNumber = 0;
     document.blockPictureSelection = 0;
     document.blockTypeSelection = 0;
+
     document.pendingLevelChanges = null;    // LevelUndoHistoryEntry
     document.levelHistory = new LevelHistory();
+
+    document.mapSelection = new MapSelection(mapColumns, mapRows);
 
     // First task: Load the tiles for the editor.
 
@@ -187,13 +191,13 @@ async function startEditor() {
 
     redrawMapColumnIndexes();
     await loadLevel();
-    drawLevel();
     populateTypeBlockSelector();
     populatePictureBlockSelector();
-    selectPictureBlock(0);
     selectTypeBlock(0);
+    selectPictureBlock(0);
+    drawLevel();
 
-    changeLevelPicsOpacity();
+    changeMapPicsLayerOpacity();
 }
 
 
@@ -268,6 +272,82 @@ function redrawTileFromMap(x, y) {
 }
 
 
+// Erase the tiles within the rectangle defined by first {x:int,y:int} and second {x:int,y:int}
+function eraseInteractionRectangle(first, second) {
+    const xa = Math.max(Math.min(first.x, second.x), 0);
+    const xb = Math.min(Math.max(first.x, second.x), mapColumns);
+    const ya = Math.max(Math.min(first.y, second.y), 0);
+    const yb = Math.min(Math.max(first.y, second.y), mapRows);
+
+    var c = document.getElementById("levelInteractionCanvas");
+    var canvasContext = c.getContext("2d");
+    canvasContext.clearRect(tileWidth*xa,(tileHeight*ya)+16, tileWidth*((xb-xa)+1), tileHeight*((yb-ya)+1));
+}
+
+
+// Draw selection indicators for any selected blocks within the rectangle
+// defined by first {x:int,y:int} and second {x:int,y:int}
+function drawSelectionIndicatorsWithinRectangle(first, second) {
+    const xa = Math.max(Math.min(first.x, second.x), 0);
+    const xb = Math.min(Math.max(first.x, second.x), mapColumns);
+    const ya = Math.max(Math.min(first.y, second.y), 0);
+    const yb = Math.min(Math.max(first.y, second.y), mapRows);
+
+    for (var x=xa; x <= xb; x++) {
+        for (var y=ya; y <= yb; y++) {
+            if (document.mapSelection.isSelected(x, y)) {
+                drawTypeTile(x, y, 65, true);
+            }
+        }
+    }
+}
+
+
+// Draw a "pending selection" indicator around the rectangle
+// defined by first {x:int,y:int} and second {x:int,y:int}
+function drawPendingSelectionRectangle(first, second) {
+    const xa = Math.max(Math.min(first.x, second.x), 0);
+    const xb = Math.min(Math.max(first.x, second.x), mapColumns);
+    const ya = Math.max(Math.min(first.y, second.y), 0);
+    const yb = Math.min(Math.max(first.y, second.y), mapRows);
+
+    if (xa == xb) {
+        // Special case: Can't draw a "pending selection" indicator that's one block in size
+        if (ya == yb) {
+            return;
+        }
+        drawTypeTile(xa, ya, 74, true);
+        drawTypeTile(xa, yb, 75, true);
+        for (var y=ya+1; y < yb; y++) {
+            drawTypeTile(xa, y, 79, true);
+        }
+        return;
+    }
+
+    if (ya == yb) {
+        drawTypeTile(xa, ya, 77, true);
+        drawTypeTile(xb, ya, 76, true);
+        for (var x=xa+1; x < xb; x++) {
+            drawTypeTile(x, ya, 78, true);
+        }
+        return;
+    }
+
+    drawTypeTile(xa, ya, 66, true);
+    drawTypeTile(xb, ya, 67, true);
+    drawTypeTile(xa, yb, 72, true);
+    drawTypeTile(xb, yb, 73, true);
+    for (var x=xa+1; x < xb; x++) {
+        drawTypeTile(x, ya, 71, true);
+        drawTypeTile(x, yb, 70, true);
+    }
+    for (var y=ya+1; y < yb; y++) {
+        drawTypeTile(xa, y, 68, true);
+        drawTypeTile(xb, y, 69, true);
+    }
+}
+
+
 function eraseInteractionTile(x, y) {
     var c = document.getElementById("levelInteractionCanvas");
     var canvasContext = c.getContext("2d");
@@ -296,17 +376,17 @@ function drawPicTile(x, y, tileId) {
 }
 
 
-function changeLevelPicsOpacity() {
+function changeMapPicsLayerOpacity() {
     var levelPicsOpacity = document.getElementById("levelPicsOpacity");
     var levelIdsCanvas = document.getElementById("levelIdsCanvas");
     levelIdsCanvas.style.opacity = levelPicsOpacity.value / 100;
 };
 
 
-function setLevelPicsOpacitySlider(value) {
+function setMapPicsLayerOpacitySlider(value) {
     var levelPicsOpacity = document.getElementById("levelPicsOpacity");
     levelPicsOpacity.value = value;
-    changeLevelPicsOpacity();
+    changeMapPicsLayerOpacity();
 };
 
 
@@ -388,6 +468,10 @@ function onLevelMapMouseOver(mouseEvent) {
         return;
     }
 
+    // Situation where the user has command-clicked in some other tile
+    // and dragged the mouse into this one.
+    // Action: Continue painting the currently selected block into this map location,
+    // and move the reticle under the new mouse location.
     if (!document.optionKeyOnMouseDown &&
         document.commandKeyOnMouseDown &&
         !document.shiftKeyOnMouseDown &&
@@ -417,11 +501,54 @@ function onLevelMapMouseOver(mouseEvent) {
             applyMapChanges(c);
             drawMapChanges(c);
         }
+
+        eraseInteractionTile(document.blockUnderPointer.x, document.blockUnderPointer.y);
+        // If the tile the reticle was over previously was also selected, re-draw the selection
+        // indicator after erasing the reticle.
+        if (document.mapSelection.isSelected(document.blockUnderPointer.x, document.blockUnderPointer.y)) {
+            drawTypeTile(document.blockUnderPointer.x, document.blockUnderPointer.y, 65, true);
+        }
+        document.blockUnderPointer = currentBlock;
+        drawTypeTile(currentBlock.x, currentBlock.y, 64, true);
+        return;
     }
 
-    eraseInteractionTile(document.blockUnderPointer.x, document.blockUnderPointer.y);
-    document.blockUnderPointer = currentBlock;
-    drawTypeTile(currentBlock.x, currentBlock.y, 64, true);
+    // Situation where the user has clicked in some other tile
+    // and dragged the mouse into this one, with no modifier keys except possibly shift.
+    // Action: Show a "new selection" rectangle between the other tile and this one.
+    if (!document.optionKeyOnMouseDown &&
+        !document.commandKeyOnMouseDown &&
+        (document.blockLastMouseDown != null) &&
+        (currentBlock.x >= 0) &&
+        (currentBlock.y >= 0)
+    ) {
+        // Remove evidence of old selection indicator and restore any selection visible below it
+        eraseInteractionRectangle(document.blockLastMouseDown, document.blockUnderPointer);
+        drawSelectionIndicatorsWithinRectangle(document.blockLastMouseDown, document.blockUnderPointer);
+        document.blockUnderPointer = currentBlock;
+        drawPendingSelectionRectangle(document.blockLastMouseDown, currentBlock);
+        return;
+    }
+
+    // Situation where the user has NOT previously clicked down in some other tile,
+    // but has moved the mouse into this one.
+    // Action: Move the reticle here.
+    if (!document.optionKeyOnMouseDown &&
+        !document.commandKeyOnMouseDown &&
+        (document.blockLastMouseDown == null) &&
+        (currentBlock.x >= 0) &&
+        (currentBlock.y >= 0)
+    ) {
+        eraseInteractionTile(document.blockUnderPointer.x, document.blockUnderPointer.y);
+        // If the tile the reticle was over previously was also selected, re-draw the selection
+        // indicator after erasing the reticle.
+        if (document.mapSelection.isSelected(document.blockUnderPointer.x, document.blockUnderPointer.y)) {
+            drawTypeTile(document.blockUnderPointer.x, document.blockUnderPointer.y, 65, true);
+        }
+        document.blockUnderPointer = currentBlock;
+        drawTypeTile(currentBlock.x, currentBlock.y, 64, true);
+        return;
+    }
 }
 
 
@@ -450,6 +577,34 @@ function onLevelMapTriggeredMouseUp(mouseEvent) {
             document.levelHistory.addEvent(document.pendingLevelChanges);
         }
         document.pendingLevelChanges = null;
+        return;
+    }
+
+    // Situation where the user has clicked with no modifier keys except possibly shift,
+    // and the reticle is not in the gutter.
+    // Action: Accept current region between mouse down and mouse up as a new selection.
+    // If shift was down, add to the current selection, otherwise replce.
+    if (!document.optionKeyOnMouseDown &&
+        !document.commandKeyOnMouseDown &&
+        (lastMouseDown != null) &&
+        (document.blockUnderPointer.x >= 0) &&
+        (document.blockUnderPointer.y >= 0)
+    ) {
+        console.log("Selecting rectangle.");
+        if (!document.shiftKeyOnMouseDown) {
+            // If we're not adding to the selection, clear the whole interaction layer
+            // and reset the existing selection before remaking it.
+            eraseInteractionRectangle({x: 0, y: 0}, {x: mapColumns-1, y: mapRows-1});
+            document.mapSelection.clear();
+        }
+        document.mapSelection.selectRectangle(lastMouseDown, document.blockUnderPointer);
+        // Remove evidence of pending selection indicator and restore any selection visible below it.
+        // we don't need to worry about drawing or redrawing the region outside this area,
+        // since it will either be deselected and erased already, or unchanged.
+        drawSelectionIndicatorsWithinRectangle(lastMouseDown, document.blockUnderPointer);
+        // The reticle was erased by the previous steps, so we need to redraw it.
+        drawTypeTile(document.blockUnderPointer.x, document.blockUnderPointer.y, 64, true);
+        return;
     }
 
     // Eyedropper the current hovered block into the selections
@@ -467,6 +622,7 @@ function onLevelMapTriggeredMouseUp(mouseEvent) {
         selectTypeBlock(blockType);
         var blockPic = document.levelData[lastMouseDown.y + (lastMouseDown.x * mapRows) + (document.levelNumber * 0x4000) + 0x1000];
         selectPictureBlock(blockPic);
+        return;
     }
 }
 
@@ -640,10 +796,10 @@ function encodeImageFileAsURL(element) {
         </div>
 
         <div>
-            <span onclick="setLevelPicsOpacitySlider(0);">Pic</span>
+            <span onclick="setMapPicsLayerOpacitySlider(0);">Pic</span>
             <input type="range" class="levelPicsOpacitySlider" id="levelPicsOpacity"
-                min="0" max="100" value="20" oninput="changeLevelPicsOpacity();" />
-            <span onclick="setLevelPicsOpacitySlider(100);">Type</span>
+                min="0" max="100" value="20" oninput="changeMapPicsLayerOpacity();" />
+            <span onclick="setMapPicsLayerOpacitySlider(100);">Type</span>
         </div>
     </div>
 
