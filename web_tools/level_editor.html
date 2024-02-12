@@ -199,9 +199,9 @@ async function startEditor() {
 
     changeMapPicsLayerOpacity();
 
-    //var c = document.getElementById("levelContainer");
-    //c.appendChild(document.createTextNode("\u200B"));
-    //c.addEventListener("copy", onLevelMapCopy);
+    document.addEventListener("copy", onLevelMapCopy);
+    document.addEventListener("cut", onLevelMapCut);
+    document.addEventListener("paste", onLevelMapPaste);
 }
 
 
@@ -880,9 +880,6 @@ function encodeImageFileAsURL(element) {
             tabindex="0"
             onfocus="levelMapFocused(event);"
             onblur="levelMapBlurred(event);"
-            oncut="onLevelMapCut(event);"
-            oncopy="onLevelMapCopy(event);"
-            onpaste="onLevelMapPaste(event);"
             onkeydown="onLevelMapKeyDown(event);">
         <canvas id="levelIdsCanvas" class="levelIdsCanvas" width=10240 height=400></canvas>
         <canvas id="levelInteractionCanvas" class="levelInteractionCanvas" width=10240 height=400
