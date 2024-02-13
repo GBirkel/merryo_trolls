@@ -29,9 +29,9 @@
     @media screen and (-webkit-min-device-pixel-ratio:0) {
         input[type='range'] {
             overflow: hidden;
-            -webkit-appearance: none;
             background-color: rgba(255,255,255,0.5);
             border-radius: 0.5em;
+            -webkit-appearance: none;
         }
         input[type='range']::-webkit-slider-thumb {
             width: 15px;
@@ -57,19 +57,19 @@
 
     canvas.levelPicsCanvas {
         height: 400px;
-        aspect-ratio: 23.04;
+        aspect-ratio: 21.76; /* (10240 / 400) * (34 / 40) */
     }
 
     canvas.levelInteractionCanvas {
         position: absolute;
         height: 400px;
-        aspect-ratio: 23.04;
+        aspect-ratio: 21.76; /* (10240 / 400) * (34 / 40) */
     }
 
     canvas.levelIdsCanvas {
         position: absolute;
         height: 400px;
-        aspect-ratio: 23.04; /* Creates blocks 36 pixels wide on a 1:1 screen */
+        aspect-ratio: 21.76; /* (10240 / 400) * (34 / 40) */
     }
 
     div.levelContainer {
@@ -84,16 +84,21 @@
     }
 
     div.mapColumnIndexes {
-        width: 10240px;
+        width: 8704px;
         display: flex;
+		justify-content: stretch;
+		align-items: baseline;
+        padding: 0;
+        margin: 0 2px;
+		align-content: center;
     }
     div.mapColumnIndexes > div {
         display: inline;
         color: gray;
+        width: 34px;
         font-size: 14px;
-        width: 35.015642px;
         margin: 0 0.5px;
-        padding: 1px 0 3px 0;
+        padding: 2px 0 2px 0;
         text-align: center;
     }
     div.mapColumnIndexes > div.odd {
@@ -121,8 +126,15 @@
         margin: 0.5em 1%;
     }
 
+    canvas.pictureBlockSelectionCanvas {
+        height: 512px;
+        aspect-ratio: 1.0625; /* (640 / 512) * (34 / 40) */
+    }
+
     canvas.pictureBlockSelectionInteractionCanvas {
+        height: 512px;
         position: absolute;
+        aspect-ratio: 1.0625; /* (640 / 512) * (34 / 40) */
     }
 
     div.typeBlockSelectionContainer {
@@ -130,8 +142,15 @@
         margin: 0.5em 1%;
     }
 
+    canvas.typeBlockSelectionCanvas {
+        height: 512px;
+        aspect-ratio: 0.265625; /* (160 / 512) * (34 / 40) */
+    }
+
     canvas.typeBlockSelectionInteractionCanvas {
+        height: 512px;
         position: absolute;
+        aspect-ratio: 0.265625; /* (160 / 512) * (34 / 40) */
     }
 
 </style>
@@ -481,7 +500,7 @@ function drawMapChanges(changes) {
 
 function onLevelMapMouseDown(mouseEvent) {
     var c = document.getElementById("levelInteractionCanvas");
-    const currentBlock = mousey.mouseEventToBlockLocation(c, mouseEvent, 16.0, 255, 11, 40/36);
+    const currentBlock = mousey.mouseEventToBlockLocation(c, mouseEvent, 16.0, 255, 11, 40/34);
 
     var b = document.getElementById("bodyId");
     b.addEventListener("mouseup", onLevelMapTriggeredMouseUp, {once: true });
@@ -517,7 +536,7 @@ function onLevelMapMouseDown(mouseEvent) {
 
 function onLevelMapMouseOver(mouseEvent) {
     var c = document.getElementById("levelInteractionCanvas");
-    const currentBlock = mousey.mouseEventToBlockLocation(c, mouseEvent, 16.0, 255, 11, 40/36);
+    const currentBlock = mousey.mouseEventToBlockLocation(c, mouseEvent, 16.0, 255, 11, 40/34);
     document.levelMapContainsMouse = true;
     if ((currentBlock.x == document.blockUnderPointer.x) && (currentBlock.y == document.blockUnderPointer.y)) {
         return;
@@ -945,7 +964,7 @@ function populatePictureBlockSelector() {
 
 function clickOnTypeBlockSelector(event) {
     var c = document.getElementById("typeBlockSelectionInteractionCanvas");
-    const coordinates = mousey.mouseEventToBlockLocation(c, event, 0.0, 3, 15, 1);
+    const coordinates = mousey.mouseEventToBlockLocation(c, event, 0.0, 3, 15, 40/34);
     const type = Math.max(0, coordinates.x) + (Math.max(0, coordinates.y)*4);
     selectTypeBlock(type);
 };
@@ -953,7 +972,7 @@ function clickOnTypeBlockSelector(event) {
 
 function clickOnPictureBlockSelector(event) {
     var c = document.getElementById("pictureBlockSelectionInteractionCanvas");
-    const coordinates = mousey.mouseEventToBlockLocation(c, event, 0.0, 15, 15,1);
+    const coordinates = mousey.mouseEventToBlockLocation(c, event, 0.0, 15, 15, 40/34);
     const type = Math.max(0, coordinates.x) + (Math.max(0, coordinates.y)*16);
     selectPictureBlock(type);
     selectTypeBlock(firstBlocksetTypeEquivalents[type]);
@@ -1049,12 +1068,12 @@ function encodeImageFileAsURL(element) {
 
         <div id="pictureBlockSelectionContainer" class="pictureBlockSelectionContainer">
             <canvas id="pictureBlockSelectionInteractionCanvas" class="pictureBlockSelectionInteractionCanvas" width=640 height=512 onclick="clickOnPictureBlockSelector(event);"></canvas>
-            <canvas id="pictureBlockSelectionCanvas" width=640 height=512></canvas>
+            <canvas id="pictureBlockSelectionCanvas" class="pictureBlockSelectionCanvas" width=640 height=512></canvas>
         </div>
 
         <div id="typeBlockSelectionContainer" class="typeBlockSelectionContainer">
             <canvas id="typeBlockSelectionInteractionCanvas" class="typeBlockSelectionInteractionCanvas" width=160 height=512 onclick="clickOnTypeBlockSelector(event);"></canvas>
-            <canvas id="typeBlockSelectionCanvas" width=160 height=512></canvas>
+            <canvas id="typeBlockSelectionCanvas" class="typeBlockSelectionCanvas" width=160 height=512></canvas>
         </div>
 
     </div>
