@@ -835,6 +835,41 @@ function onLevelMapKeyDown(keyEvent) {
         return;
     }
 
+    // Delete or backspace key = fill current selected are with current type/pic selections
+    if ((keyEvent.keyCode == 46) || (keyEvent.keyCode == 8)) {
+        console.log("Delete/backspace.");
+        if (document.mapSelection.isEmpty()) {
+            console.log("Cannot clear an empty selection.");
+            return;
+        }
+
+        const changesToClear = buildLevelChangesBasedOnCurrentSelection();
+
+        // Assemble a set of new changes based on the current selection,
+        // one change per block, changing it to the currently selected type/pic.
+        const newChanges = new LevelChanges(document.levelNumber);
+        const allLocations = document.mapSelection.all();
+        const newBlockTypeChanges = allLocations.map(function(m) {
+            return {x: m.x, y: m.y, value: document.blockTypeSelection}
+        });
+        const newBlockPicChanges = allLocations.map(function(m) {
+            return {x: m.x, y: m.y, value: document.blockPictureSelection}
+        });
+        newChanges.add(newBlockTypeChanges, newBlockPicChanges);
+
+        const h = new LevelUndoHistoryEntry(document.levelNumber);
+        h.oldChanges = changesToClear;
+        h.newChanges = newChanges;
+
+        applyMapChanges(newChanges);
+        drawMapChanges(newChanges);
+
+        document.levelHistory.addEvent(h);
+
+        keyEvent.preventDefault()
+        return;
+    }
+
     // Space bar with option = read tile under reticle into type/pic selection    
     if ((keyEvent.keyCode == 32) && optionDown) {
         console.log("Eyedropper reticle location.");
@@ -920,9 +955,6 @@ function onLevelMapKeyDown(keyEvent) {
 //        let supportedKey =
 //            match keyEvent.keyCode with
 //            | 13.0 -> Some VesselKey.Enter    // Enter key
-//            | 46.0 -> Some VesselKey.Delete   // Delete key
-//            | 8.0 -> Some VesselKey.Delete    // Backspace key
-//              | 32 = space bar
 //            | 65.0 -> Some VesselKey.KeyA
 //            | _ -> None
 //    }
@@ -1107,8 +1139,7 @@ function encodeImageFileAsURL(element) {
     </p>
     <p>
         <ul>
-            <li>Press "Space" to fill the selection with the currently selected block.</li>
-            <li>Press "Delete" to fill the selection with block 0 (empty space).</li>
+            <li>Press "Delete" to fill the selection with the currently selected block.</li>
             <li>Perform "Cut", "Copy", and "Paste" operations with the usual keyboard shortcuts.</li>
             <li>Hold down Command and press an arrow key to move the selection <i>and its contents</i> around on the map.</li>
             <li>Press "Escape" to de-select.</li>
