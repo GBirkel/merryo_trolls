@@ -19,10 +19,14 @@ class MapSelection {
 
 	// Accepts an array of {x: int, y: int}
 	select (changes) {
-		changes.forEach(function(item, index, array) {
-			if ((item.x >= 0) && (item.x < this.mapWidth)) {
-				if ((item.y >= 0) && (item.y < this.mapHeight)) {
-					const s = this.selectionColumns[item.x];
+		const mw = this.mapWidth;
+		const mh = this.mapHeight;
+		const sc = this.selectionColumns;
+
+		changes.forEach(function(item) {
+			if ((item.x >= 0) && (item.x < mw)) {
+				if ((item.y >= 0) && (item.y < mh)) {
+					const s = sc[item.x];
 					s.add(item.y);
 				}
 			}
@@ -45,10 +49,14 @@ class MapSelection {
 
 	// Accepts an array of {x: int, y: int}
 	deselect (changes) {
-		changes.forEach(function(item, index, array) {
-			if ((item.x >= 0) && (item.x < this.mapWidth)) {
-				if ((item.y >= 0) && (item.y < this.mapHeight)) {
-					const s = this.selectionColumns[item.x];
+		const mw = this.mapWidth;
+		const mh = this.mapHeight;
+		const sc = this.selectionColumns;
+
+		changes.forEach(function(item) {
+			if ((item.x >= 0) && (item.x < mw)) {
+				if ((item.y >= 0) && (item.y < mh)) {
+					const s = sc[item.x];
 					s.delete(item.y);
 				}
 			}
@@ -73,6 +81,22 @@ class MapSelection {
 			}
 		}
 		return wholeSelection;
+	}
+
+	// Returns {x: int, y: int} for the block at the upper left corner of the
+	// smallest rectangle that encompasses the entire selection.
+	getUpperLeftCorner () {
+		const wholeSelection = this.all();
+		if (wholeSelection.length <= 0) { return {x: 0, y: 0}; }
+
+		var xLowest = wholeSelection[0].x;
+		var yLowest = wholeSelection[0].y;
+
+		for (var i=1; i < wholeSelection.length; i++) {
+			xLowest = Math.min(xLowest, wholeSelection[i].x);
+			yLowest = Math.min(yLowest, wholeSelection[i].y);
+		}
+		return { x: xLowest, y: yLowest };
 	}
 
 	clear () {

@@ -28,6 +28,12 @@ class BlockChanges {
 		}
 	}
 
+    asSelection () {
+		return this.changes.map(function(item) {
+	        return { x: item.x, y: item.y};
+		});
+	}
+
 	isEmpty() {
 		if (this.changes.length > 0) { return false; }
 		return true;
@@ -48,6 +54,22 @@ class LevelChanges {
 		if (!this.blockTypeChanges.isEmpty()) { return false; }
 		if (!this.blockPicChanges.isEmpty()) { return false; }
 		return true;
+	}
+
+    asSelection () {
+		const typeSelection = this.blockTypeChanges.asSelection();
+		const picSelection = this.blockPicChanges.asSelection();
+
+		const exclusionSet = new Set();
+		typeSelection.forEach(function(item) {
+			exclusionSet.add(item.x + "," + item.y);
+		});
+
+		const filteredPicSelection = picSelection.filter(function(item) {
+			return !exclusionSet.has(item.x + "," + item.y);
+		});
+
+		return typeSelection.concat(filteredPicSelection);
 	}
 }
 
@@ -113,15 +135,46 @@ class MapClipboardContents {
     	const t = new BlockChanges(true);
       	const p = new BlockChanges(true);
 
+		if (c.isEmpty()) {
+	    	this.blockTypeChanges = t;
+    	  	this.blockPicChanges = p;
+			return;	
+		}
+
+		// We need to find the "upper left" corner of the selection,
+		// so we can subtract it from the entire selection,
+		// to move the selection so the corner is at 0,0 .
+		var xLowest;
+		var yLowest;
+
+		// At this point at least one array should have one entry.
+		if (c.blockTypeChanges.isEmpty()) {
+			xLowest = c.blockPicChanges.changes[0].x;
+			yLowest = c.blockPicChanges.changes[0].y;
+		} else {
+			xLowest = c.blockTypeChanges.changes[0].x;
+			yLowest = c.blockTypeChanges.changes[0].y;
+		}
+
+		// Run through all entries to find the smallest x and y.
 		c.blockTypeChanges.changes.forEach(function(item) {
-			t.add(item);
+			xLowest = Math.min(xLowest, item.x);
+			yLowest = Math.min(yLowest, item.y);
 		});
 		c.blockPicChanges.changes.forEach(function(item) {
-			p.add(item);
+			xLowest = Math.min(xLowest, item.x);
+			yLowest = Math.min(yLowest, item.y);
 		});
+
+		c.blockTypeChanges.changes.forEach(function(item) {
+			t.add({x: item.x-xLowest, y: item.y-yLowest, value: item.value});
+		});
+		c.blockPicChanges.changes.forEach(function(item) {
+			p.add({x: item.x-xLowest, y: item.y-yLowest, value: item.value});
+		});
+
     	this.blockTypeChanges = t;
       	this.blockPicChanges = p;
-
 	}
 
 	// The object we expect from the clipboard: {
@@ -147,14 +200,17 @@ class MapClipboardContents {
     	const t = new BlockChanges(true);
       	const p = new BlockChanges(true);
 
+		const mw = this.mapWidth;
+		const mh = this.mapHeight;
+
 		c.blockTypeChanges.forEach(function(item) {
-			if ((item.x < 0) || (item.x >= this.mapWidth)) { return; }
-			if ((item.y < 0) || (item.y >= this.mapHeight)) { return; }
+			if ((item.x < 0) || (item.x >= mw)) { return; }
+			if ((item.y < 0) || (item.y >= mh)) { return; }
 			t.add(item);
 		});
 		c.blockPicChanges.forEach(function(item) {
-			if ((item.x < 0) || (item.x >= this.mapWidth)) { return; }
-			if ((item.y < 0) || (item.y >= this.mapHeight)) { return; }
+			if ((item.x < 0) || (item.x >= mw)) { return; }
+			if ((item.y < 0) || (item.y >= mh)) { return; }
 			p.add(item);
 		});
     	this.blockTypeChanges = t;
@@ -192,10 +248,14 @@ class MapClipboardContents {
 		//});
 	}
 
-	asLevelChanges (level) {
+	asLevelChanges (level, offset) {
 		const c = new LevelChanges(level, true)
-		c.blockTypeChanges = this.blockTypeChanges;
-		c.blockPicChanges = this.blockPicChanges;
+		this.blockTypeChanges.changes.forEach(function(item) {
+			c.blockTypeChanges.add({x: item.x+offset.x, y: item.y+offset.y, value: item.value});
+		});
+		this.blockPicChanges.changes.forEach(function(item) {
+			c.blockPicChanges.add({x: item.x+offset.x, y: item.y+offset.y, value: item.value});
+		});
 		return c;
 	}
 }

@@ -219,9 +219,18 @@ function redrawMapColumnIndexes() {
 }
 
 
-async function selectLevel() {
+async function levelPulldownChanged() {
     const s = document.getElementById("levelPulldown");
     document.levelNumber = s.value;
+    drawLevel();
+}
+
+
+function forceLevelSelect(newLevel) {
+    if (document.levelNumber == newLevel) { return; }
+    const s = document.getElementById("levelPulldown");
+    s.value = newLevel;
+    document.levelNumber = newLevel;
     drawLevel();
 }
 
@@ -307,6 +316,14 @@ function drawSelectionIndicatorsWithinRectangle(first, second) {
 }
 
 
+// Draw selection indicators for the given array of coordinate pairs {x:int,y:int}
+function drawSelectionIndicators(locations) {
+    locations.forEach(function(item) {
+        drawTypeTile(item.x, item.y, 65, true);
+    });
+}
+
+
 // Draw a "pending selection" indicator around the rectangle
 // defined by first {x:int,y:int} and second {x:int,y:int}
 function drawPendingSelectionRectangle(first, second) {
@@ -337,10 +354,12 @@ function drawPendingSelectionRectangle(first, second) {
         return;
     }
 
+    // Four unique corner tiles of a selection area that is at least 2x2
     drawTypeTile(xa, ya, 66, true);
     drawTypeTile(xb, ya, 67, true);
     drawTypeTile(xa, yb, 72, true);
     drawTypeTile(xb, yb, 73, true);
+    // Any straight pieces connecting the corners (may be none)
     for (var x=xa+1; x < xb; x++) {
         drawTypeTile(x, ya, 71, true);
         drawTypeTile(x, yb, 70, true);
@@ -406,6 +425,8 @@ function levelMapBlurred(event) {
 }
 
 
+// Reads content from a LevelChanges and writes it to the map with the associated levelNumber.
+// Note that this function does not care which level is visible in the editor.
 function applyMapChanges(changes) {
     changes.blockTypeChanges.changes.forEach(function(item, index, array) {
         document.levelData[item.y + (item.x * mapRows) + (changes.levelNumber * 0x4000)] = item.value;
@@ -587,7 +608,7 @@ function onLevelMapTriggeredMouseUp(mouseEvent) {
     // Situation where the user has clicked with no modifier keys except possibly shift,
     // and the reticle is not in the gutter.
     // Action: Accept current region between mouse down and mouse up as a new selection.
-    // If shift was down, add to the current selection, otherwise replce.
+    // If shift was down, add to the current selection, otherwise replace.
     if (!document.optionKeyOnMouseDown &&
         !document.commandKeyOnMouseDown &&
         (lastMouseDown != null) &&
@@ -681,23 +702,30 @@ function onLevelMapPaste(event) {
         return;
     }
 
+    // Get the upper left corner of the current selection _before_ clearing it!
+    const upperLeft = document.mapSelection.getUpperLeftCorner();
     document.mapSelection.clear();
+
     // Assumes that type and pic selections are identical - may be a bad assumption
-    document.mapSelection.select(newClipboard.blockTypeChanges.changes);
+    const newSelection = newClipboard.blockTypeChanges.asSelection();
+    const offsetSelection = newSelection.map(function(item) {
+        return { x: item.x + upperLeft.x, y: item.y + upperLeft.y }
+    });
+
+    // Assumes that type and pic selections are identical - may be a bad assumption
+    document.mapSelection.select(offsetSelection);
 
     // Erase any current selection
     eraseInteractionRectangle({x: 0, y: 0}, {x: mapColumns-1, y: mapRows-1});
     // Draw the new selection based on the pasted data (could be irregular in shape)
     const pasteSelection = document.mapSelection.all();
-	pasteSelection.forEach(function(item) {
-        drawTypeTile(item.x, item.y, 65, true);
-    });
+    drawSelectionIndicators(pasteSelection);
 
     // Now that we've changed the current selection to the pasted area,
-    // use the selection to draw out the data we're going to be pasting over.
+    // use the selection to read out the data we're going to be pasting over.
     // We use this to make an undo history entry.
     const previousContents = buildLevelChangesBasedOnCurrentSelection();
-    const newContents = newClipboard.asLevelChanges(document.levelNumber);
+    const newContents = newClipboard.asLevelChanges(document.levelNumber, upperLeft);
 
     const h = new LevelUndoHistoryEntry(document.levelNumber);
     h.oldChanges = previousContents;
@@ -716,8 +744,12 @@ function onLevelMapKeyDown(keyEvent) {
     if (document.blockLastMouseDown != null) { return; }
     console.log("levelMap keydown");
 
+    const optionDown = keyEvent.altKey;
+    const commandDown = keyEvent.metaKey;
+    const controlDown = keyEvent.ctrlKey;
+
     // Z with ctrl or meta = undo or redo
-    if ((keyEvent.keyCode == 90.0) && (keyEvent.ctrlKey || keyEvent.metaKey)) {
+    if ((keyEvent.keyCode == 90) && (controlDown || commandDown)) {
         keyEvent.preventDefault()
         var changes = null;
         if (keyEvent.shiftKey) {
@@ -728,22 +760,115 @@ function onLevelMapKeyDown(keyEvent) {
             changes = document.levelHistory.undo();
         }
         if (changes != null) {
+            const newSelection = changes.asSelection();
+
+            document.mapSelection.clear();
+            eraseInteractionRectangle({x: 0, y: 0}, {x: mapColumns-1, y: mapRows-1});
+
+            document.mapSelection.select(newSelection);
+            drawSelectionIndicators(newSelection);
+
             applyMapChanges(changes);
-            drawMapChanges(changes);
+            if (document.levelNumber != changes.levelNumber) {
+                // This will redraw all of both map layers,
+                // so there's no need to drawMapChanges in this case.
+                forceLevelSelect(changes.levelNumber);
+            } else {
+                drawMapChanges(changes);
+            }
         }
+        return;
+    }
+
+    // Space bar with option = read tile under reticle into type/pic selection    
+    if ((keyEvent.keyCode == 32) && optionDown) {
+        console.log("Eyedropper reticle location.");
+
+        const m = document.blockUnderPointer;
+        var blockType = document.levelData[m.y + (m.x * mapRows) + (document.levelNumber * 0x4000)] & 0x3F;
+        selectTypeBlock(blockType);
+        var blockPic = document.levelData[m.y + (m.x * mapRows) + (document.levelNumber * 0x4000) + 0x1000];
+        selectPictureBlock(blockPic);
+
+        keyEvent.preventDefault()
+        return;
+    }
+
+    // Space bar without option = write selected tile under reticle
+    if ((keyEvent.keyCode == 32) && (!optionDown)) {
+        console.log("Spacebar write.");
+
+        const m = document.blockUnderPointer;
+        // Can't do this operation over a gutter tile.
+        if ((m.y < 0) || (m.y < 0)) { return; }
+
+        // New undo history entry with one changed tile
+        const h = new LevelUndoHistoryEntry(document.levelNumber);
+        var oldBlockType = document.levelData[m.y + (m.x * mapRows) + (document.levelNumber * 0x4000)] & 0x3F;
+        var oldBlockPic = document.levelData[m.y + (m.x * mapRows) + (document.levelNumber * 0x4000) + 0x1000];
+        h.oldChanges.blockTypeChanges.add({x: m.x, y: m.y, value: oldBlockType});
+        h.oldChanges.blockPicChanges.add({x: m.x, y: m.y, value: oldBlockPic});
+        h.newChanges.blockTypeChanges.add({x: m.x, y: m.y, value: document.blockTypeSelection});
+        h.newChanges.blockPicChanges.add({x: m.x, y: m.y, value: document.blockPictureSelection});
+        applyMapChanges(h.newChanges);
+        drawMapChanges(h.newChanges);
+        document.levelHistory.addEvent(h);
+
+        keyEvent.preventDefault()
+        return;
+    }
+
+    // Escape key = clear selection
+    if (keyEvent.keyCode == 27) {
+        keyEvent.preventDefault()
+        document.mapSelection.clear();
+        eraseInteractionRectangle({x: 0, y: 0}, {x: mapColumns-1, y: mapRows-1});
+        drawTypeTile(document.blockUnderPointer.x, document.blockUnderPointer.y, 64, true);
+        return;
+    }
+
+    // Arrow keys = move reticle
+    if ((keyEvent.keyCode == 38) || (keyEvent.keyCode == 40) ||
+        (keyEvent.keyCode == 37) || (keyEvent.keyCode == 39))   {
+
+        var newLocation = {
+            x: document.blockUnderPointer.x,
+            y: document.blockUnderPointer.y
+        };
+        if (keyEvent.keyCode == 38) {   // Up arrow
+            newLocation.y = Math.max(document.blockUnderPointer.y-1, 0);
+        } else if (keyEvent.keyCode == 40) {    // Down arrow
+            newLocation.y = Math.min(document.blockUnderPointer.y+1, mapRows-1);
+        } else if (keyEvent.keyCode == 37) {    // Left arrow
+            newLocation.x = Math.max(document.blockUnderPointer.x-1, 0);
+        } else if (keyEvent.keyCode == 39) {    // Right arrow
+            newLocation.x = Math.min(document.blockUnderPointer.x+1, mapColumns-1);
+        }
+
+        eraseInteractionTile(document.blockUnderPointer.x, document.blockUnderPointer.y);
+        // If the tile the reticle was over previously was also selected, re-draw the selection
+        // indicator after erasing the reticle.
+        if (document.mapSelection.isSelected(document.blockUnderPointer.x, document.blockUnderPointer.y)) {
+            drawTypeTile(document.blockUnderPointer.x, document.blockUnderPointer.y, 65, true);
+        }
+        document.blockUnderPointer = newLocation;
+        drawTypeTile(newLocation.x, newLocation.y, 64, true);
+
+        keyEvent.preventDefault()
+
+        return;
+    }
+
 //    } else {
 //        let supportedKey =
 //            match keyEvent.keyCode with
 //            | 13.0 -> Some VesselKey.Enter    // Enter key
 //            | 46.0 -> Some VesselKey.Delete   // Delete key
 //            | 8.0 -> Some VesselKey.Delete    // Backspace key
-//            | 38.0 -> Some VesselKey.UpArrow
-//            | 40.0 -> Some VesselKey.DownArrow
-//            | 37.0 -> Some VesselKey.LeftArrow
-//            | 39.0 -> Some VesselKey.RightArrow
+//              | 32 = space bar
 //            | 65.0 -> Some VesselKey.KeyA
 //            | _ -> None
-    }
+//    }
 }
 
 
@@ -856,7 +981,7 @@ function encodeImageFileAsURL(element) {
     <div class="topBar">
         <h1>Super Merryo Trolls Map Editor</h1>
         <div>
-            <select class="levelPulldown" id="levelPulldown" onchange="selectLevel();">
+            <select class="levelPulldown" id="levelPulldown" onchange="levelPulldownChanged();">
                 <option value="0">Level 1</option>
                 <option value="1">Level 2</option>
                 <option value="2">Level 3</option>
@@ -911,14 +1036,14 @@ function encodeImageFileAsURL(element) {
     </p>
     <p>
         Click in the block pictures gallery (below the map) to select a block picture to draw with.
-        The standard block type that goes with that picture will be auto-selected in the type gallery.
+        The standard block type that goes with that picture will be auto-selected in the type gallery to the right.
     </p>
     <p>
         Command-click on a block in the map to place the selected block.  The picture and the type layer will both be affected.
         Drag while the mouse is down to draw more blocks.
     </p>
     <p>
-        Use Command-Z to undo changes, and Command-Shift-Z to redo them.
+        Use Command-Z (or Control-Z) to undo changes, and Command-Shift-Z (Control-Shift-Z) to redo them.
     </p>
     <p>
         Click to make a selection.  A rectangle will appear.  Drag to make the selection larger.
@@ -929,9 +1054,13 @@ function encodeImageFileAsURL(element) {
             <li>Press "Space" to fill the selection with the currently selected block.</li>
             <li>Press "Delete" to fill the selection with block 0 (empty space).</li>
             <li>Perform "Cut", "Copy", and "Paste" operations with the usual keyboard shortcuts.</li>
-            <li>Press an arrow key to move the selection <i>and its contents</i> around on the map.</li>
+            <li>Hold down Command and press an arrow key to move the selection <i>and its contents</i> around on the map.</li>
             <li>Press "Escape" to de-select.</li>
         </ul>
+    </p>
+    <p>
+        You can also use the arrow keys to move the hover indicator.
+        Press Space to write the currently selected block, and Option-Space to read the hovered block into the selection.
     </p>
     <p>
         Option-click on a block in the map to select that type in the blockset.
