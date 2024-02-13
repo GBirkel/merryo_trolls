@@ -52,15 +52,24 @@
     }
 
     canvas {
-        border:2px solid gray;
+        border: 2px solid gray;
 	}
+
+    canvas.levelPicsCanvas {
+        height: 400px;
+        aspect-ratio: 23.04;
+    }
 
     canvas.levelInteractionCanvas {
         position: absolute;
+        height: 400px;
+        aspect-ratio: 23.04;
     }
 
     canvas.levelIdsCanvas {
         position: absolute;
+        height: 400px;
+        aspect-ratio: 23.04; /* Creates blocks 36 pixels wide on a 1:1 screen */
     }
 
     div.levelContainer {
@@ -82,10 +91,21 @@
         display: inline;
         color: gray;
         font-size: 14px;
-        width: 40px;
-        margin: 0;
-        padding: 0 0 4px 0;
+        width: 35.015642px;
+        margin: 0 0.5px;
+        padding: 1px 0 3px 0;
         text-align: center;
+    }
+    div.mapColumnIndexes > div.odd {
+        background-color: rgba(200, 200, 200, 0.2);
+    }
+    div.mapColumnIndexes > div.roundleft {
+        border-top-left-radius: 4px;
+        border-bottom-left-radius: 4px;
+    }
+    div.mapColumnIndexes > div.roundright {
+        border-top-right-radius: 4px;
+        border-bottom-right-radius: 4px;
     }
 
     div.bottomPanels {
@@ -212,7 +232,17 @@ function redrawMapColumnIndexes() {
 
     for (var i=0; i < mapColumns; i++) {
         const d = document.createElement("div");
-        const t = document.createTextNode(i.toString(16));
+        var classes = [];
+        if (Math.floor(i / 16) % 2) {
+            classes.push("odd");
+            if ((i % 16) == 0) {
+                classes.push("roundleft");
+            } else if ((i % 16) == 15) {
+                classes.push("roundright");
+            }
+        }
+        d.className = classes.join(" ");
+        const t = document.createTextNode(i.toString(16).toUpperCase());
         d.appendChild(t);
         c.appendChild(d);
     }
@@ -451,7 +481,7 @@ function drawMapChanges(changes) {
 
 function onLevelMapMouseDown(mouseEvent) {
     var c = document.getElementById("levelInteractionCanvas");
-    const currentBlock = mousey.mouseEventToBlockLocation(c, mouseEvent, 16.0, 255, 11);
+    const currentBlock = mousey.mouseEventToBlockLocation(c, mouseEvent, 16.0, 255, 11, 40/36);
 
     var b = document.getElementById("bodyId");
     b.addEventListener("mouseup", onLevelMapTriggeredMouseUp, {once: true });
@@ -487,7 +517,7 @@ function onLevelMapMouseDown(mouseEvent) {
 
 function onLevelMapMouseOver(mouseEvent) {
     var c = document.getElementById("levelInteractionCanvas");
-    const currentBlock = mousey.mouseEventToBlockLocation(c, mouseEvent, 16.0, 255, 11);
+    const currentBlock = mousey.mouseEventToBlockLocation(c, mouseEvent, 16.0, 255, 11, 40/36);
     document.levelMapContainsMouse = true;
     if ((currentBlock.x == document.blockUnderPointer.x) && (currentBlock.y == document.blockUnderPointer.y)) {
         return;
@@ -915,7 +945,7 @@ function populatePictureBlockSelector() {
 
 function clickOnTypeBlockSelector(event) {
     var c = document.getElementById("typeBlockSelectionInteractionCanvas");
-    const coordinates = mousey.mouseEventToBlockLocation(c, event, 0.0, 3, 15);
+    const coordinates = mousey.mouseEventToBlockLocation(c, event, 0.0, 3, 15, 1);
     const type = Math.max(0, coordinates.x) + (Math.max(0, coordinates.y)*4);
     selectTypeBlock(type);
 };
@@ -923,7 +953,7 @@ function clickOnTypeBlockSelector(event) {
 
 function clickOnPictureBlockSelector(event) {
     var c = document.getElementById("pictureBlockSelectionInteractionCanvas");
-    const coordinates = mousey.mouseEventToBlockLocation(c, event, 0.0, 15, 15);
+    const coordinates = mousey.mouseEventToBlockLocation(c, event, 0.0, 15, 15,1);
     const type = Math.max(0, coordinates.x) + (Math.max(0, coordinates.y)*16);
     selectPictureBlock(type);
     selectTypeBlock(firstBlocksetTypeEquivalents[type]);
@@ -1011,7 +1041,7 @@ function encodeImageFileAsURL(element) {
             onmousedown="onLevelMapMouseDown(event);"
             onmouseout="onLevelMapMouseOut(event);"
             onmousemove="onLevelMapMouseOver(event);"></canvas>
-        <canvas id="levelPicsCanvas" width=10240 height=400></canvas>
+        <canvas id="levelPicsCanvas" class="levelPicsCanvas" width=10240 height=400></canvas>
         <div class="mapColumnIndexes" id="mapColumnIndexes"></div>
     </div>
 

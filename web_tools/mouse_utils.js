@@ -52,12 +52,12 @@ var mousey = {
 
 
 	// Using the given block canvas, and a click event, determine the map block beneath the click.
-	mouseEventToBlockLocation: function(container, ev, topGutter, xMax, yMax) {
+	mouseEventToBlockLocation: function(container, ev, topGutter, xMax, yMax, xScale) {
 
 		const s = getComputedStyle(container);
 		const borderTop = parseInt(s.getPropertyValue("border-top-width").replace('px',''));
 		const borderLeft = parseInt(s.getPropertyValue("border-left-width").replace('px',''));
-		const x = ev.offsetX - borderLeft;
+		const x = (ev.offsetX - borderLeft) * xScale;
 		const y = ev.offsetY - borderTop;
 
 		const blockX = Math.min(Math.floor(x / 40.0), xMax);
