@@ -56,15 +56,27 @@ class LevelChanges {
 		return true;
 	}
 
+	// Accepts arrays of { x, y, value }.  Arrays can be empty.
+	add(typeChanges, picChanges) {
+		const t = this.blockTypeChanges;
+		const p = this.blockPicChanges;
+		typeChanges.forEach(function(item) {
+			t.add(item);
+		});
+		picChanges.forEach(function(item) {
+			p.add(item);
+		});
+	}
+
     asSelection () {
 		const typeSelection = this.blockTypeChanges.asSelection();
 		const picSelection = this.blockPicChanges.asSelection();
 
+		// De-duplicate the selection, wonky Javascript hash set style.
 		const exclusionSet = new Set();
 		typeSelection.forEach(function(item) {
 			exclusionSet.add(item.x + "," + item.y);
 		});
-
 		const filteredPicSelection = picSelection.filter(function(item) {
 			return !exclusionSet.has(item.x + "," + item.y);
 		});

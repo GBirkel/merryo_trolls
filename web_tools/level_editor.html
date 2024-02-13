@@ -1,10 +1,11 @@
 <!doctype html>
 <html>
 <head>
-<script src="mouse_utils.js"></script>
-<script src="selection.js"></script>
-<script src="edit_history.js"></script>
-<script src="tile_sets.js"></script>
+<script src="level_editor_parts/mouse_utils.js"></script>
+<script src="level_editor_parts/selection.js"></script>
+<script src="level_editor_parts/edit_history.js"></script>
+<script src="level_editor_parts/tile_sets.js"></script>
+<script src="level_editor_parts/level_set.js"></script>
 
 <style>
 
@@ -223,13 +224,15 @@ async function startEditor() {
     var singleBlockCanvas = document.getElementById("tempBlockCanvas");
 
     document.editorTiles = new EditorTileset(tempCanvas);
-    document.pictureTiles = new WorldTileset(tempCanvas, secondCanvas, singleBlockCanvas);
-
     await document.editorTiles.load(editorTilesEncoded, 16, 5, tileWidth, tileHeight);
+
+    document.pictureTiles = new WorldTileset(tempCanvas, secondCanvas, singleBlockCanvas);
     await document.pictureTiles.load(firstBlockSetEncoded, firstBlocksetPointersEncoded, 16, 12, tileWidth, tileHeight);
 
+    document.levelData = new LevelSet(mapColumns, mapRows);
+    await document.levelData.load(levelEncoded);
+
     redrawMapColumnIndexes();
-    await loadLevel();
     populateTypeBlockSelector();
     populatePictureBlockSelector();
     selectTypeBlock(0);
@@ -284,23 +287,6 @@ function forceLevelSelect(newLevel) {
 }
 
 
-async function loadLevel() {
-
-    const levelBlob = await fetch(levelEncoded).then(res => res.blob()).then(res => res.arrayBuffer())
-
-    // Make a dataview object to inspect our raw data,
-    // then we declare an array of exactly the structure we want
-    // (in this case 8-bit unsigned bytes) and cast the data into that array.
-    var data = new DataView(levelBlob);
-    var byteData = new Uint8Array(data.byteLength / Uint8Array.BYTES_PER_ELEMENT);
-    var len = byteData.length;
-    for (var j = 0; j < len; ++j) {
-        byteData[j] = data.getUint8(j * Uint8Array.BYTES_PER_ELEMENT, true);
-    }
-    document.levelData = byteData;
-};
-
-
 function drawLevel() {
 
     var levelIdsCanvas = document.getElementById("levelIdsCanvas");
@@ -308,8 +294,8 @@ function drawLevel() {
 
     for (var i=0; i < mapColumns; i++) {
         for (var j=0; j < mapRows; j++) {
-            var tileId = document.levelData[j+(i*mapRows) + (document.levelNumber * 0x4000)] & 0x3F;
-            levelIdsContext.putImageData(document.editorTiles.tiles[tileId],tileWidth*i,(tileHeight*j)+16);
+            const blockType = document.levelData.getTypeBlock(i, j, document.levelNumber);
+            levelIdsContext.putImageData(document.editorTiles.tiles[blockType],tileWidth*i,(tileHeight*j)+16);
         }
     }
 
@@ -318,8 +304,8 @@ function drawLevel() {
 
     for (var i=0; i < mapColumns; i++) {
         for (var j=0; j < mapRows; j++) {
-            var tileId = document.levelData[j+(i*mapRows) + (document.levelNumber * 0x4000) + 0x1000];
-            levelPicsContext.putImageData(document.pictureTiles.tiles[tileId],tileWidth*i,(tileHeight*j)+16);
+            const blockPic = document.levelData.getPictureBlock(i, j, document.levelNumber);
+            levelPicsContext.putImageData(document.pictureTiles.tiles[blockPic],tileWidth*i,(tileHeight*j)+16);
         }
     }
 };
@@ -327,9 +313,9 @@ function drawLevel() {
 
 // Redraws the tile at the given x and y on both canvases - Ids and Pics - using the map data.
 function redrawTileFromMap(x, y) {
-    var tileId = document.levelData[y+(x*mapRows) + (document.levelNumber * 0x4000)] & 0x3F;
+    var tileId = document.levelData.getTypeBlock(x, y, document.levelNumber);
     drawTypeTile(x, y, tileId, false);
-    var tilePic = document.levelData[y+(x*mapRows) + (document.levelNumber * 0x4000) + 0x1000];
+    var tilePic = document.levelData.getPictureBlock(x, y, document.levelNumber);
     drawPicTile(x, y, tilePic);
 }
 
@@ -478,10 +464,10 @@ function levelMapBlurred(event) {
 // Note that this function does not care which level is visible in the editor.
 function applyMapChanges(changes) {
     changes.blockTypeChanges.changes.forEach(function(item, index, array) {
-        document.levelData[item.y + (item.x * mapRows) + (changes.levelNumber * 0x4000)] = item.value;
+        document.levelData.setTypeBlock(item.x, item.y, changes.levelNumber, item.value);
     });
     changes.blockPicChanges.changes.forEach(function(item, index, array) {
-        document.levelData[item.y + (item.x * mapRows) + (changes.levelNumber * 0x4000) + 0x1000] = item.value;
+        document.levelData.setPicBlock(item.x, item.y, changes.levelNumber, item.value);
     });
 }
 
@@ -520,16 +506,18 @@ function onLevelMapMouseDown(mouseEvent) {
         console.log("New click-write history.");
         const h = new LevelUndoHistoryEntry(document.levelNumber);
         if ((currentBlock.y >= 0) && (currentBlock.y >= 0)) {
-            var oldBlockType = document.levelData[currentBlock.y + (currentBlock.x * mapRows) + (document.levelNumber * 0x4000)] & 0x3F;
-            var oldBlockPic = document.levelData[currentBlock.y + (currentBlock.x * mapRows) + (document.levelNumber * 0x4000) + 0x1000];
-            h.oldChanges.blockTypeChanges.add({x: currentBlock.x, y: currentBlock.y, value: oldBlockType});
-            h.oldChanges.blockPicChanges.add({x: currentBlock.x, y: currentBlock.y, value: oldBlockPic});
-            h.newChanges.blockTypeChanges.add({x: currentBlock.x, y: currentBlock.y, value: document.blockTypeSelection});
-            h.newChanges.blockPicChanges.add({x: currentBlock.x, y: currentBlock.y, value: document.blockPictureSelection});
+            const oldBlockType = document.levelData.getTypeBlock(currentBlock.x, currentBlock.y, document.levelNumber);
+            const oldBlockPic = document.levelData.getPictureBlock(currentBlock.x, currentBlock.y, document.levelNumber);
+            const oldTypeChange = {x: currentBlock.x, y: currentBlock.y, value: oldBlockType};
+            const oldPicChange = {x: currentBlock.x, y: currentBlock.y, value: oldBlockPic};
+            h.oldChanges.add([oldTypeChange], [oldPicChange]);
+            const newTypeChange = {x: currentBlock.x, y: currentBlock.y, value: document.blockTypeSelection};
+            const newPicChange = {x: currentBlock.x, y: currentBlock.y, value: document.blockPictureSelection};
+            h.newChanges.add([newTypeChange], [newPicChange]);
             applyMapChanges(h.newChanges);
             drawMapChanges(h.newChanges);
         }
-        document.pendingLevelChanges = h
+        document.pendingLevelChanges = h;
     }
 }
 
@@ -561,17 +549,16 @@ function onLevelMapMouseOver(mouseEvent) {
         if ((currentBlock.y >= 0) && (currentBlock.y >= 0)) {
             const h = document.pendingLevelChanges;
             // Basic container for this change, so we don't have to re-apply the whole pending set
-            const c = new LevelChanges(document.levelNumber);
-            const oldBlockType = document.levelData[currentBlock.y + (currentBlock.x * mapRows) + (document.levelNumber * 0x4000)] & 0x3F;
-            const oldBlockPic = document.levelData[currentBlock.y + (currentBlock.x * mapRows) + (document.levelNumber * 0x4000) + 0x1000];
+            const oldBlockType = document.levelData.getTypeBlock(currentBlock.x, currentBlock.y, document.levelNumber);
+            const oldBlockPic = document.levelData.getPictureBlock(currentBlock.x, currentBlock.y, document.levelNumber);
+            const oldBlockTypeChange = {x: currentBlock.x, y: currentBlock.y, value: oldBlockType};
+            const oldBlockPicChange = {x: currentBlock.x, y: currentBlock.y, value: oldBlockPic};
+            h.oldChanges.add([oldBlockTypeChange], [oldBlockPicChange]);
             const newBlockTypeChange = {x: currentBlock.x, y: currentBlock.y, value: document.blockTypeSelection};
             const newBlockPicChange = {x: currentBlock.x, y: currentBlock.y, value: document.blockPictureSelection};
-            h.oldChanges.blockTypeChanges.add({x: currentBlock.x, y: currentBlock.y, value: oldBlockType});
-            h.oldChanges.blockPicChanges.add({x: currentBlock.x, y: currentBlock.y, value: oldBlockPic});
-            h.newChanges.blockTypeChanges.add(newBlockTypeChange);
-            h.newChanges.blockPicChanges.add(newBlockPicChange);
-            c.blockTypeChanges.add(newBlockTypeChange);
-            c.blockPicChanges.add(newBlockPicChange);
+            h.newChanges.add([newBlockTypeChange], [newBlockPicChange]);
+            const c = new LevelChanges(document.levelNumber);
+            c.add([newBlockTypeChange], [newBlockPicChange]);
             applyMapChanges(c);
             drawMapChanges(c);
         }
@@ -692,9 +679,9 @@ function onLevelMapTriggeredMouseUp(mouseEvent) {
         (lastMouseDown.y >= 0)
     ) {
         console.log("Eyedropper last clicked location.");
-        var blockType = document.levelData[lastMouseDown.y + (lastMouseDown.x * mapRows) + (document.levelNumber * 0x4000)] & 0x3F;
+        const blockType = document.levelData.getTypeBlock(lastMouseDown.x, lastMouseDown.y, document.levelNumber);
+        const blockPic = document.levelData.getPictureBlock(lastMouseDown.x, lastMouseDown.y, document.levelNumber);
         selectTypeBlock(blockType);
-        var blockPic = document.levelData[lastMouseDown.y + (lastMouseDown.x * mapRows) + (document.levelNumber * 0x4000) + 0x1000];
         selectPictureBlock(blockPic);
         return;
     }
@@ -718,10 +705,29 @@ function onLevelMapCut(event) {
     const changesToCut = buildLevelChangesBasedOnCurrentSelection();
 
     const newClipboard = new MapClipboardContents(mapColumns, mapRows);
-    newClipboard.fromLevelChanges(changesToCopy);
+    newClipboard.fromLevelChanges(changesToCut);
     newClipboard.sendToClipboard(event);
 
+    // Assemble a set of new changes based on the current selection,
+    // one change per block, changing it to the currently selected type/pic.
+    const newChanges = new LevelChanges(document.levelNumber);
+    const allLocations = document.mapSelection.all();
+    const newBlockTypeChanges = allLocations.map(function(m) {
+        return {x: m.x, y: m.y, value: document.blockTypeSelection}
+    });
+    const newBlockPicChanges = allLocations.map(function(m) {
+        return {x: m.x, y: m.y, value: document.blockPictureSelection}
+    });
+    newChanges.add(newBlockTypeChanges, newBlockPicChanges);
 
+    const h = new LevelUndoHistoryEntry(document.levelNumber);
+    h.oldChanges = changesToCut;
+    h.newChanges = newChanges;
+
+    applyMapChanges(newChanges);
+    drawMapChanges(newChanges);
+
+    document.levelHistory.addEvent(h);
 }
 
 
@@ -834,9 +840,9 @@ function onLevelMapKeyDown(keyEvent) {
         console.log("Eyedropper reticle location.");
 
         const m = document.blockUnderPointer;
-        var blockType = document.levelData[m.y + (m.x * mapRows) + (document.levelNumber * 0x4000)] & 0x3F;
+        const blockType = document.levelData.getTypeBlock(m.x, m.y, document.levelNumber);
+        const blockPic = document.levelData.getPictureBlock(m.x, m.y, document.levelNumber);
         selectTypeBlock(blockType);
-        var blockPic = document.levelData[m.y + (m.x * mapRows) + (document.levelNumber * 0x4000) + 0x1000];
         selectPictureBlock(blockPic);
 
         keyEvent.preventDefault()
@@ -853,12 +859,14 @@ function onLevelMapKeyDown(keyEvent) {
 
         // New undo history entry with one changed tile
         const h = new LevelUndoHistoryEntry(document.levelNumber);
-        var oldBlockType = document.levelData[m.y + (m.x * mapRows) + (document.levelNumber * 0x4000)] & 0x3F;
-        var oldBlockPic = document.levelData[m.y + (m.x * mapRows) + (document.levelNumber * 0x4000) + 0x1000];
-        h.oldChanges.blockTypeChanges.add({x: m.x, y: m.y, value: oldBlockType});
-        h.oldChanges.blockPicChanges.add({x: m.x, y: m.y, value: oldBlockPic});
-        h.newChanges.blockTypeChanges.add({x: m.x, y: m.y, value: document.blockTypeSelection});
-        h.newChanges.blockPicChanges.add({x: m.x, y: m.y, value: document.blockPictureSelection});
+        const oldBlockType = document.levelData.getTypeBlock(m.x, m.y, document.levelNumber);
+        const oldBlockPic = document.levelData.getPictureBlock(m.x, m.y, document.levelNumber);
+        const oldTypeChange = {x: m.x, y: m.y, value: oldBlockType};
+        const oldPicChange = {x: m.x, y: m.y, value: oldBlockPic};
+        h.oldChanges.add([oldTypeChange], [oldPicChange]);
+        const newTypeChange = {x: m.x, y: m.y, value: document.blockTypeSelection};
+        const newPicChange = {x: m.x, y: m.y, value: document.blockPictureSelection};
+        h.newChanges.add([newTypeChange], [newPicChange]);
         applyMapChanges(h.newChanges);
         drawMapChanges(h.newChanges);
         document.levelHistory.addEvent(h);
@@ -924,11 +932,10 @@ function onLevelMapKeyDown(keyEvent) {
 function buildLevelChangesBasedOnCurrentSelection() {
     const allLocations = document.mapSelection.all();
     const changes = new LevelChanges(document.levelNumber, true);
-	allLocations.forEach(function(item) {
-        const oneBlockType = document.levelData[item.y + (item.x * mapRows) + (document.levelNumber * 0x4000)] & 0x3F;
-        const oneBlockPic = document.levelData[item.y + (item.x * mapRows) + (document.levelNumber * 0x4000) + 0x1000];
-        changes.blockTypeChanges.add({x: item.x, y: item.y, value: oneBlockType});
-        changes.blockPicChanges.add({x: item.x, y: item.y, value: oneBlockPic});
+	allLocations.forEach(function(m) {
+        const blockType = document.levelData.getTypeBlock(m.x, m.y, document.levelNumber);
+        const blockPic = document.levelData.getPictureBlock(m.x, m.y, document.levelNumber);
+        changes.add([{x: m.x, y: m.y, value: blockType}], [{x: m.x, y: m.y, value: blockPic}]);
     });
     return changes;
 }
