@@ -19,12 +19,42 @@
         display: flex;
 		flex-flow: row wrap;
 		justify-content: space-between;
-		align-items: baseline;
+		align-items: center;
 		align-content: center;
     }
 
     select.levelPulldown {
         font-size: 1.2rem;
+    }
+
+    div.panelTabs {
+        display: flex;
+		flex-flow: row;
+		justify-content: left;
+		align-items: baseline;
+		align-content: center;
+    }
+
+    div.panelTabs div:first-child {
+        border-top-left-radius: 10px;
+        border-bottom-left-radius: 10px;
+    }
+
+    div.panelTabs div:last-child {
+        border-top-right-radius: 10px;
+        border-bottom-right-radius: 10px;
+    }
+
+    div.panelTabs div {
+        border-color: gray;
+        border-style: solid;
+        border-width: 2px;
+        padding: 0.2em 2em 0.2em 2em;
+        font-size: 0.8em;
+    }
+
+    div.panelTabs div.selected {
+        background-color: rgba(200, 200, 200, 0.7);
     }
 
     @media screen and (-webkit-min-device-pixel-ratio:0) {
@@ -114,7 +144,7 @@
         border-bottom-right-radius: 4px;
     }
 
-    div.bottomPanels {
+    div.bottomPanel {
         display: flex;
 		flex-flow: row wrap;
 		justify-content: start;
@@ -232,6 +262,7 @@ async function startEditor() {
     document.levelData = new LevelSet(mapColumns, mapRows);
     await document.levelData.load(levelEncoded);
 
+    selectMapPanel();
     redrawMapColumnIndexes();
     populateTypeBlockSelector();
     populatePictureBlockSelector();
@@ -287,8 +318,37 @@ function forceLevelSelect(newLevel) {
 }
 
 
-function drawLevel() {
+function selectMapPanel() {
+    const mt = document.getElementById("mapEditingPanelTab");
+    const ct = document.getElementById("connectsPanelTab");
 
+    mt.className = "selected";
+    ct.className = "";
+
+    const mp = document.getElementById("mapEditingPanel");
+    const cp = document.getElementById("connectsPanel");
+
+    mp.style.display = "flex";
+    cp.style.display = "none";
+}
+
+
+function selectConnectsPanel() {
+    const mt = document.getElementById("mapEditingPanelTab");
+    const ct = document.getElementById("connectsPanelTab");
+
+    mt.className = "";
+    ct.className = "selected";
+
+    const mp = document.getElementById("mapEditingPanel");
+    const cp = document.getElementById("connectsPanel");
+
+    mp.style.display = "none";
+    cp.style.display = "flex";
+}
+
+
+function drawLevel() {
     var levelIdsCanvas = document.getElementById("levelIdsCanvas");
     var levelIdsContext = levelIdsCanvas.getContext("2d");
 
@@ -1067,7 +1127,7 @@ function encodeImageFileAsURL(element) {
 <body id="bodyId" onLoad="startEditor();">
 
     <div class="topBar">
-        <h1>Super Merryo Trolls Map Editor</h1>
+        <h3>SMT Map Editor</h3>
         <div>
             <select class="levelPulldown" id="levelPulldown" onchange="levelPulldownChanged();">
                 <option value="0">Level 1</option>
@@ -1075,6 +1135,13 @@ function encodeImageFileAsURL(element) {
                 <option value="2">Level 3</option>
                 <option value="3">Level 4</option>
             </select>
+        </div>
+
+        <div>
+            <div class="panelTabs">
+                <div id="mapEditingPanelTab" onclick="selectMapPanel();">Map</div>
+                <div id="connectsPanelTab" onclick="selectConnectsPanel();">Connects</div>
+            </div>
         </div>
 
         <div>
@@ -1103,7 +1170,7 @@ function encodeImageFileAsURL(element) {
         <div class="mapColumnIndexes" id="mapColumnIndexes"></div>
     </div>
 
-    <div class="bottomPanels">
+    <div id="mapEditingPanel" class="bottomPanel">
 
         <div id="pictureBlockSelectionContainer" class="pictureBlockSelectionContainer">
             <canvas id="pictureBlockSelectionInteractionCanvas" class="pictureBlockSelectionInteractionCanvas" width=640 height=512 onclick="clickOnPictureBlockSelector(event);"></canvas>
@@ -1115,6 +1182,30 @@ function encodeImageFileAsURL(element) {
             <canvas id="typeBlockSelectionCanvas" class="typeBlockSelectionCanvas" width=160 height=512></canvas>
         </div>
 
+    </div>
+
+    <div id="connectsPanel" class="bottomPanel">
+        <div id="connectsGrid" class="connectsGrid">
+            <div id="connect1" class="connect">
+                <div><input type="text" id="connect1x" /></div>
+                <div><input type="text" id="connect1y" /></div>
+                <div><input type="text" id="connect1destinationx" /></div>
+                <div><input type="text" id="connect1destinationy" /></div>
+                <div><input type="text" id="connect1destinationwindowx" /></div>
+                <div><input type="text" id="connect1destinationxfifthoffset" /></div>
+                <div><input type="text" id="connect1extradata" /></div>
+                <div>
+                    <select class="destinationTypePulldown" id="connect1destinationtype"
+                        onchange="connectDestinationTypeChanged(event, 1);">
+                        <option value="0">This Level</option>
+                        <option value="1">Other Level</option>
+                        <option value="2">Other Level Set</option>
+                        <option value="3">Other World</option>
+                    </select>
+                </div>
+                <div><input type="text" id="connect1destinationnumber" /></div>
+            </div>
+        </div>
     </div>
 
     <h3>How To Use</h3>
