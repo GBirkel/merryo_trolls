@@ -60,17 +60,21 @@ class LevelSet {
 		var connects = [];
 		for (var c = 0; c < 32; c++) {
 			const cOffset = (c*8) + (levelNumber * 0x4000) + 0x2800;
+			const sourceLocationWord = this.levelData[cOffset] + (this.levelData[cOffset+1] * 0x100);
+			// This was not stored in a straightforward way.  See MapLocWrite in MAIN.S code.
+			const sourceLocationX = Math.floor(sourceLocationWord / this.mapRows);
+			const sourceLocationY = (this.mapRows - 1) - (sourceLocationWord % this.mapRows)
 
 			const connect = {
-				x: this.levelData[cOffset],
-				y: this.levelData[cOffset+1],
+				x: sourceLocationX,
+				y: sourceLocationY,
 				destinationX: this.levelData[cOffset+2],
 				destinationY: this.levelData[cOffset+3],
 				destinationWindowX: this.levelData[cOffset+4],
 				destinationXFifthOffset: this.levelData[cOffset+5],
 				extraData: this.levelData[cOffset+6],
 				destinationType: this.levelData[cOffset+7] & 0x0F,
-				destinationNumber: (this.levelData[cOffset+7] & 0xF0) / 16
+				destinationId: (this.levelData[cOffset+7] & 0xF0) / 16
 			};
 			connects.push(connect);
 		}

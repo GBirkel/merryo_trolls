@@ -152,6 +152,84 @@
 		align-content: start;
     }
 
+    div.connectsEditingForm {
+        display: flex;
+        margin: 0.5em 0.5em;
+		flex-flow: row;
+		justify-content: start;
+		align-items: baseline;
+		align-content: center;
+        background-color: rgba(100, 100, 100, 0.8);
+		justify-content: space-between;
+        border-radius: 7px;
+    }
+
+    div.connectsEditingSubForm {
+        display: flex;
+		flex-flow: row wrap;
+		justify-content: start;
+		align-items: baseline;
+		align-content: center;
+    }
+
+    div.connectsEditingSubForm > div.oneItem {
+        padding: 0.2em 0.4em;
+    }
+
+    div.connectsEditingRow {
+        display: flex;
+		flex-flow: row;
+		justify-content: start;
+		align-items: baseline;
+		align-content: start;
+    }
+
+    div.connectsEditingRow > div {
+        font-size: 0.9em;
+        padding: 0.2em 0.4em;
+    }
+
+    div.connectsGrid {
+        display: flex;
+		flex-flow: row wrap;
+		justify-content: start;
+		align-items: baseline;
+		align-content: center;
+    }
+
+    table.connectsTable {
+        margin: 0 1.1em 0 0.5em;
+        border-spacing: 0;
+    }
+
+    table.connectsTable thead tr th {
+        color: gray;
+        font-size: 0.9em;
+        text-align: right;
+        padding: 0 0 0.3em 0.3em;
+    }
+
+    table.connectsTable tbody tr:nth-child(even) {
+        background-color: rgba(60,60,60,0.5);
+    }
+
+    table.connectsTable tbody tr td {
+        padding: 0.1em 0.2em 0.1em 0.4em;
+        text-align: right;
+    }
+
+    table.connectsTable tbody tr td:first-child {
+        color: gray;
+        padding-left: 0.6em;
+        border-radius: 6px 0 0 6px;
+        font-size: 0.9em;
+    }
+
+    table.connectsTable tbody tr td:last-child {
+        padding-right: 0.6em;
+        border-radius: 0 6px 6px 0;
+    }
+
     div.pictureBlockSelectionContainer {
         position: relative;
         margin: 0.5em 1%;
@@ -262,7 +340,9 @@ async function startEditor() {
     document.levelData = new LevelSet(mapColumns, mapRows);
     await document.levelData.load(levelEncoded);
 
-    selectMapPanel();
+    //selectMapPanel();
+    selectConnectsPanel();
+    redrawConnectsPanel();
     redrawMapColumnIndexes();
     populateTypeBlockSelector();
     populatePictureBlockSelector();
@@ -305,6 +385,7 @@ function redrawMapColumnIndexes() {
 async function levelPulldownChanged() {
     const s = document.getElementById("levelPulldown");
     document.levelNumber = s.value;
+    redrawConnectsPanel();
     drawLevel();
 }
 
@@ -314,6 +395,7 @@ function forceLevelSelect(newLevel) {
     const s = document.getElementById("levelPulldown");
     s.value = newLevel;
     document.levelNumber = newLevel;
+    redrawConnectsPanel();
     drawLevel();
 }
 
@@ -345,6 +427,46 @@ function selectConnectsPanel() {
 
     mp.style.display = "none";
     cp.style.display = "flex";
+}
+
+
+function redrawConnectsPanel() {
+    const ft = document.getElementById("connectsFirstTableBody");
+    const st = document.getElementById("connectsSecondTableBody");
+
+    const bodies = [ft, st];
+    const connects = document.levelData.getDoorConnects(document.levelNumber);
+
+	bodies.forEach(function(tableBody, tableIndex) {
+        while (tableBody.firstChild) { tableBody.removeChild(tableBody.lastChild); }
+        for (var index=0; index < 16; index++) {
+            const connectIndex = index + (tableIndex*16);
+            const c = connects[connectIndex];
+            const tr = document.createElement("tr");
+
+            const textNodes = [
+                (connectIndex+1) + ".",
+                c.x.toString(16).toUpperCase(),
+                c.y.toString(16).toUpperCase(),
+                c.destinationType,
+                c.destinationId,
+                c.destinationX.toString(16).toUpperCase(),
+                c.destinationY.toString(16).toUpperCase(),
+                c.destinationWindowX.toString(16).toUpperCase(),
+                c.destinationXFifthOffset,
+                c.extraData
+            ];
+
+            textNodes.forEach(function(v) {
+                const td = document.createElement("td");
+                const t = document.createTextNode(v);
+                td.appendChild(t);
+                tr.appendChild(td);
+            });
+
+            tableBody.appendChild(tr);
+        }
+    });
 }
 
 
@@ -1185,26 +1307,94 @@ function encodeImageFileAsURL(element) {
     </div>
 
     <div id="connectsPanel" class="bottomPanel">
-        <div id="connectsGrid" class="connectsGrid">
-            <div id="connect1" class="connect">
-                <div><input type="text" id="connect1x" /></div>
-                <div><input type="text" id="connect1y" /></div>
-                <div><input type="text" id="connect1destinationx" /></div>
-                <div><input type="text" id="connect1destinationy" /></div>
-                <div><input type="text" id="connect1destinationwindowx" /></div>
-                <div><input type="text" id="connect1destinationxfifthoffset" /></div>
-                <div><input type="text" id="connect1extradata" /></div>
-                <div>
-                    <select class="destinationTypePulldown" id="connect1destinationtype"
-                        onchange="connectDestinationTypeChanged(event, 1);">
-                        <option value="0">This Level</option>
-                        <option value="1">Other Level</option>
-                        <option value="2">Other Level Set</option>
-                        <option value="3">Other World</option>
-                    </select>
-                </div>
-                <div><input type="text" id="connect1destinationnumber" /></div>
+        <div id="connectsEditingForm" class="connectsEditingForm">
+            <div class="connectsEditingSubForm">
+                <div class="oneItem">Origin:</div>
+                <div class="oneItem"><input type="button" value="Set Origin" /></div>
             </div>
+            <div class="connectsEditingSubForm">
+                <div class="oneItem">Destination:</div>
+                <div class="connectsEditingSubForm">
+                    <div class="connectsEditingRow">
+                        <div>
+                            <select class="destinationTypePulldown" id="connectDestinationType"
+                                onchange="connectDestinationTypeChanged(event, 1);">
+                                <option value="0">This Level</option>
+                                <option value="1">Other Level</option>
+                                <option value="2">Other Level Set</option>
+                                <option value="3">Other World</option>
+                            </select>
+                        </div>
+                        <div>Identifier: 
+                            <select class="connectIdentifierPulldown" id="connectIdentifierPulldown"
+                                onchange="connectIdentifierChanged(event);">
+                                <option value="0">1 / a</option>
+                                <option value="1">2 / b</option>
+                                <option value="2">3 / c</option>
+                                <option value="3">4 / d</option>
+                                <option value="4">5 / e</option>
+                                <option value="5">6 / f</option>
+                                <option value="6">7 / g</option>
+                                <option value="7">8 / h</option>
+                            </select>
+                        </div>
+                        <div>Extra data: <input type="text" id="connectExtraData" size="4" /></div>
+                    </div>
+                    <div class="connectsEditingRow">
+                        <div><input type="button" value="Set X/Y" /></div>
+                        <div><input type="button" value="Set X Of Screen Left Edge" /></div>
+                        <div>Block Offset: 
+                            <select class="fifthOffsetPulldown" id="connectFifthOffset"
+                                onchange="connectFifthOffsetChanged(event);">
+                                <option value="0">None</option>
+                                <option value="1">1/5 Right</option>
+                                <option value="2">2/5 Right</option>
+                                <option value="3">3/5 Right</option>
+                                <option value="4">4/5 Right</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="connectsGrid" class="connectsGrid">
+            <table class="connectsTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>x</th>
+                        <th>y</th>
+                        <th>type</th>
+                        <th>id</th>
+                        <th>dx</th>
+                        <th>dy</th>
+                        <th>wx</th>
+                        <th>fifth</th>
+                        <th>extra</th>
+                    </tr>
+                </thead>
+                <tbody id="connectsFirstTableBody" >
+                </tbody>
+            </table>
+            <table class="connectsTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>x</th>
+                        <th>y</th>
+                        <th>type</th>
+                        <th>id</th>
+                        <th>dx</th>
+                        <th>dy</th>
+                        <th>wx</th>
+                        <th>fifth</th>
+                        <th>extra</th>
+                    </tr>
+                </thead>
+                <tbody id="connectsSecondTableBody" >
+                </tbody>
+            </table>
         </div>
     </div>
 
