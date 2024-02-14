@@ -26,15 +26,18 @@ ChSolid2 sta   Itm2
 OutAHere ldx   Itm
          rts
 
-SldList  DA    CoinBox,Mushrm,Mushrm,Mushrm,Mushrm
-         DA    Mushrm,OutAHere,BreakEm,BreakEm,MesagBl
+SldList  DA    Bl_Coin,Bl_Mushroom,Bl_Mushroom,Bl_Mushroom,Bl_Mushroom
+         DA    Bl_Mushroom,Bl_Ladder,Bl_Breakable,Bl_Breakable,Bl_Message
+
+* Action-solid 7: Ladder (not implemented)
+Bl_Ladder jmp OutAHere
 
          lst   on
-* Action-solid 1: CoinBox v0.02
+* Action-solid 1: Coin Block v0.02
          lst   off
 
          mx    %10
-CoinBox  ldx   Itm
+Bl_Coin  ldx   Itm
          lda   #Gsld
          sta   MapBl,x    ; Coin block is solid now
          lda   MapVl,x    ; Get the current coin pic value
@@ -81,23 +84,23 @@ CoinBox  ldx   Itm
          rts
 
          lst   on
-* Action-solid 2: MesagBl v0.02
+* Action-solid 2: Message Block v0.02
          lst   off
 
          MX    %10
-MesagBl  rep   #$31
+Bl_Message rep   #$31
          lda   Itm
          tax
          ldy   #$0000
 ]lp      cmp   Connects,y ; Check the list for the message location
-         beq   :Br1
+         beq   :Found
          LUP   8
          iny
          --^
          cpy   #$0100
          bne   ]lp
          bra   MesagEr    ; Not found?  Too bad, no message...
-:Br1     lda   Connects+2,y
+:Found   lda   Connects+2,y
          clc
          adc   #MsgList-1
          sty   Erotic+1
@@ -146,10 +149,10 @@ Amused   pha
          jmp   MsgPrint
 
          lst   on
-* Action-solid 3: BreakEm v0.05
+* Action-solid 3: Breakable Block v0.05
          lst   off
 
-BreakEm  ldx   Itm
+Bl_Breakable  ldx   Itm
          stz   MapBl,x    ; Change I.D to clear
          and   #$01       ; Set proper background
          sta   Tmp3
@@ -284,11 +287,11 @@ BreakEm  ldx   Itm
          rts
 
          lst   on
-* Action-solid 4: Mushrm v0.02
+* Action-solid 4: Mushroom Block v0.02
          lst   off
 
          MX    %10
-Mushrm   sec
+Bl_Mushroom sec
          sbc   #Gbi1+1
          sta   Parakeet+1
          lda   #Gsld
