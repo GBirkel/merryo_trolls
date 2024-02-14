@@ -1208,10 +1208,10 @@ GenrlBoy lda   Xaxs
 ]lp      inc   Xaxs       ; and corrects it.
          inc
          bne   ]lp
-         bra   Twit
+         bra   CheckDoorDown
 
 Fester   cmp   #$4b
-         bcc   Twit       ; And this is a similar check for the
+         bcc   CheckDoorDown       ; And this is a similar check for the
          ldy   #$0080     ; right border
          sty   Mhv
 ]lp      dec   Xaxs
@@ -1219,19 +1219,19 @@ Fester   cmp   #$4b
          cmp   #$4a
          bne   ]lp
 
-Twit     sep   #$20
+CheckDoorDown sep   #$20
          lda   VARY       ; If joystick is down,
          cmp   #80
-         bcc   Tart
+         bcc   CheckDoorRight
          lda   Mhv        ; And horiz velocity is still,
          cmp   #$80
-         bne   Tart
+         bne   CheckDoorRight
          lda   Mvv        ; And vertical velocity is still,
          cmp   #$80
-         bne   Tart
+         bne   CheckDoorRight
          lda   Mhs
          cmp   #$02       ; And slice is not 0 or 1
-         bcc   Tart
+         bcc   CheckDoorRight
          rep   #$31       ; map loc in X...
          lda   Mhb
          asl
@@ -1241,64 +1241,65 @@ Twit     sep   #$20
          sec
          sbc   Mvb
          tax
-         sta   Corpse+1   ; (Save that map location)
+         sta   MapLocWrite+1   ; (Save that map location)
          sep   #$20
          lda   MapBl,x
          cmp   #Gppd      ; And there is a down pipe under Merry-Man,
-         bne   Tart
+         bne   CheckDoorRight
          lda   MapBl+$C,x
          cmp   #Gppd
-         bne   Tart       ; AND there is a down pipe right of Guido,
+         bne   CheckDoorRight ; AND there is a down pipe right of Guido,
          lda   Mvb        ; SHOVE HIS ASS OFF!! 8)
          cmp   #$0c
          bcs   *+8        ; If vertical is off map, no draw :(
          rep   #$20
-         jsr   DoorComp
+         jsr   DoorCompute
          jsr   DownOut
-         jmp   DoorFade
+         jmp   DoorGo
 
          MX    %10
-Tart     lda   Xaxs       ; If joystick is right,
+CheckDoorRight lda   Xaxs       ; If joystick is right,
          cmp   #$80
-         bcs   Sprinkle
+         bcs   CheckDoorLeft
          lda   Mvv        ; And vertical velocity is still,
          cmp   #$80
-         bne   Sprinkle
+         bne   CheckDoorLeft
          lda   Mhs
          cmp   #$02       ; And slice is in 2
-         bne   Sprinkle
+         bne   CheckDoorLeft
          rep   #$31       ; map loc in X...
          lda   Mhb
          asl
          adc   Mhb
-         ASLS  2
-         adc   #$0017     ; 1 extra line right
+         ASLS  2          ; x12
+         adc   #$0017     ; +23 (1 extra line right, plus 1 extra line to subtract vertical offset from)
          sec
          sbc   Mvb
          tax
-         sta   Corpse+1   ; (Save that map location)
+         sta   MapLocWrite+1   ; (Save that map location)
          lda   MapBl,x
          and   #$00FF
          cmp   #Gppr      ; And there is a pipe right of Merry-Man,
-         bne   Sprinkle
+         bne   CheckDoorLeft
          lda   MapBl-1,x
          and   #$00FF
          cmp   #Gppr
-         bne   Sprinkle   ; AND there is a pipe up&right of Mr.Man,
-         jsr   DoorComp   ; Shove his heine in.
-         jsr   RSideOut
-         jmp   DoorFade
+         bne   CheckDoorLeft   ; AND there is a pipe up&right of Mr.Man,
 
-Sprinkle sep   #$20
+         jsr   DoorCompute   ; Shove his heine in.
+         jsr   RSideOut
+         jmp   DoorGo
+
+CheckDoorLeft sep   #$20
          lda   Xaxs       ; If joystick is left,
          cmp   #$80
-         bcc   DoughBoy
+         bcc   CheckDoorUp
          lda   Mvv        ; And vertical velocity is still,
          cmp   #$80
-         bne   DoughBoy
+         bne   CheckDoorUp
          lda   Mhs        ; And slice is in 0
          cmp   #$00
-         bne   DoughBoy
+         bne   CheckDoorUp
          rep   #$31       ; map loc in X...
          lda   Mhb
          asl
@@ -1306,20 +1307,20 @@ Sprinkle sep   #$20
          ASLS  2          ; One extra line left (no sec)
          sbc   Mvb
          tax
-         sta   Corpse+1   ; (Save that map location)
+         sta   MapLocWrite+1   ; (Save that map location)
          lda   MapBl,x
          and   #$00FF
          cmp   #Gppl      ; And there is a pipe left of Guido,
-         bne   DoughBoy
+         bne   CheckDoorUp
          lda   MapBl-1,x
          and   #$00FF
          cmp   #Gppl
-         bne   DoughBoy   ; AND there is a pipe up&left of Mr.Man,
-         jsr   DoorComp   ; Shove his ass out
+         bne   CheckDoorUp   ; AND there is a pipe up&left of Mr.Man,
+         jsr   DoorCompute   ; Shove his ass out
          jsr   LSideOut
-         jmp   DoorFade
+         jmp   DoorGo
 
-DoughBoy sep   #$20
+CheckDoorUp sep   #$20
          lda   VARY       ; If joystick is up,
          cmp   #23
          bcs   Wralf
@@ -1341,7 +1342,7 @@ DoughBoy sep   #$20
          sec
          sbc   Mvb
          tax
-         sta   Corpse+1   ; (Save location for later)
+         sta   MapLocWrite+1   ; (Save location for later)
          lda   MapBl,x
          and   #$00FF
          cmp   #Gdor      ; And there is a door behind Merry-Man,
@@ -1350,9 +1351,9 @@ Wralf    jmp   Worf
          lda   Mvb        ; VANISH HIS ASS!! 8)
          cmp   #$000c
          bcs   *+8        ; If vertical is off map, no vanish :(
-         jsr   DoorComp
+         jsr   DoorCompute
          jsr   DownOut
-         jmp   DoorFade
+         jmp   DoorGo
 
          MX    %11
 ]lp      lsr
@@ -2683,7 +2684,15 @@ Chompem  sta   DWNt       ; Store the blox down for safekeeping
          sep   #$20       ; Back the way you found it!
          rts
 
-DoorComp REP   #$30
+* Calculate a location in the screen memory (and place in y)
+* Calculate a location in the PEA field (and place in x)
+* These locations correspond to a corner of where Guido is standing,
+* and can be used to perform animations in a contained space,
+* e.g. moving Guido vertically down in the space until he's outside
+* it, which will naturally clip Guido off at the edge of the
+* space, so it appears he's going down a pipe that's already present
+* on the screen below the space.
+DoorCompute REP   #$30
          lda   Mvb        ; Vertical block comp. with reversal
          Xba
          and   #$0F00
@@ -2784,9 +2793,9 @@ DownOut  txa              ; Frame in PEA field
          pea   #>SHR
          plb
          plb
-         ldal  ForeFld+1,x ; Erase Guido's feet
-         sta   $009F,y
-         ldal  ForeFld+4,x
+         ldal  ForeFld+1,x ; Erase Guido's feet, which would otherwise remain outside the window,
+         sta   $009F,y     ; because when Guido is standing on a block, he is drawn with his feet
+         ldal  ForeFld+4,x ; overlapping the block below by 1 pixel.
          sta   $009D,y
          ldal  ForeFld+7,x
          sta   $009B,y
@@ -2816,9 +2825,9 @@ CutPaste sep   #$30
          stal  PeaJumpPtr
          tax
          ldy   #$0021
-]lp      lda   #$a0e9
-         stal  ForeFld+$F,x
-         lda   #$1b00
+]lp      lda   #$a0e9       ; Replace PEA instructions
+         stal  ForeFld+$F,x ; with some stack pointer math (SBC #$00A0, TCS)
+         lda   #$1b00       ; and a BRL to the next line
          stal  ForeFld+$11,x
          lda   #BF_SizLine-$16*$100+$82
          stal  ForeFld+$13,x ; Establish frame
@@ -2855,29 +2864,41 @@ HalfDo   sta   DaSpot+2
          inc
          jmp   Ren
 
-DoorFade =     *
+DoorGo =     *
          DO    BF_DeRezz
          jsr   RezzOut
          ELSE
+* If we're not doing the de-rezz, fade the screen out.
          rep   #$30
          ldx   #$01FE     ; Fader data to 0's
          lda   #$0        ; (as long as FadeDat is in prog bank)
 ]lp      stal  FadeDat,x
          dex
-         dex              ; Connect for doorway (pipe, etc):
-         bpl   ]lp        ; 0-1: Compiled location of door
+         dex
+         bpl   ]lp
          stz   FadeRate
-         jsr   FadeLoop   ; 2:   Horz destination location
+         jsr   FadeLoop
          FIN
+* Connect for doorway (pipe, etc):
+* 0-1: Compiled location of door
+* 2:   Horz destination location
+* 3: Vert destination location
+* 4: Horz window destination location
+* 5: Horz strip on block (Mhs)
+* 6:
+* 7: 0 Internal   + letter
+*    1 New area   + 0-3
+*    2 New packet + 0-15
+*    3 New world  + 1-9
          rep   #$30
-         ldx   #$0        ; 3: Vert destination location
-]lp      lda   Connects,x ; 4: Horz window destination location
-Corpse   cmp   #$0        ; 5: Horz strip on block (Mhs)
-         beq   :Br1       ; 6:
-         txa              ; 7: 0 Internal   + letter
-         clc              ;    1 New area   + 0-3
-         adc   #$0008     ;    2 New packet + 0-15
-         tax              ;    3 New world  + 1-9
+         ldx   #$0
+]lp      lda   Connects,x
+MapLocWrite cmp   #$0   ; Map location we're comparing against is written into here earlier.
+         beq   :Br1
+         txa
+         clc
+         adc   #$0008
+         tax
          cmp   #$0100
          bne   ]lp
          ldx   #$0        ; Not found?  Use start of level connect.

@@ -14,7 +14,7 @@ FlagPole lda   ExStats
          pha
          lda   SizStack
          pha
-         jsr   DoorComp
+         jsr   DoorCompute
          lda   #27
          sta   Artm       ; "Carry" arm for grabbing flag
          txa
