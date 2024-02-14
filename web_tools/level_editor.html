@@ -159,7 +159,8 @@
 		justify-content: start;
 		align-items: baseline;
 		align-content: center;
-        background-color: rgba(100, 100, 100, 0.8);
+        padding: 0.2em;
+        background-color: rgba(60, 60, 60, 0.6);
 		justify-content: space-between;
         border-radius: 7px;
     }
@@ -189,7 +190,7 @@
         padding: 0.2em 0.4em;
     }
 
-    div.connectsGrid {
+    div.connectsView {
         display: flex;
 		flex-flow: row wrap;
 		justify-content: start;
@@ -200,17 +201,23 @@
     table.connectsTable {
         margin: 0 1.1em 0 0.5em;
         border-spacing: 0;
+        font-family: monospace;
+        font-size: 1rem;
     }
 
     table.connectsTable thead tr th {
-        color: gray;
+        color: rgba(80, 80, 80, 1);
         font-size: 0.9em;
         text-align: right;
         padding: 0 0 0.3em 0.3em;
     }
 
-    table.connectsTable tbody tr:nth-child(even) {
-        background-color: rgba(60,60,60,0.5);
+    table.connectsTable tbody tr:hover {
+        background-color: rgba(160,160,160,0.5);
+    }
+
+    table.connectsTable tbody tr:nth-child(even) td {
+        background-color: rgba(60,60,60,0.4);
     }
 
     table.connectsTable tbody tr td {
@@ -228,6 +235,29 @@
     table.connectsTable tbody tr td:last-child {
         padding-right: 0.6em;
         border-radius: 0 6px 6px 0;
+    }
+
+    table.connectsTable tbody tr.selected {
+        background-color: rgba(0, 0, 255, 0.5);
+    }
+
+    table.connectsTable tbody tr.blank td {
+        color: gray;
+    }
+
+    table.connectsTable tbody tr.selected td {
+        border-width: 0.1em 0 0.1em 0;
+        padding: 0 0.2em 0 0.4em;
+        border-color: blue;
+        border-style: solid;
+    }
+
+    table.connectsTable tbody tr.selected td:first-child {
+        border-left-width: 0.1em;
+    }
+
+   table.connectsTable tbody tr.selected td:last-child {
+        border-right-width: 0.1em;
     }
 
     div.pictureBlockSelectionContainer {
@@ -306,6 +336,7 @@ async function startEditor() {
     document.levelNumber = 0;
     document.blockPictureSelection = 0;
     document.blockTypeSelection = 0;
+    document.selectedConnect = 0;
 
     document.pendingLevelChanges = null;    // LevelUndoHistoryEntry
     document.levelHistory = new LevelHistory();
@@ -431,11 +462,26 @@ function selectConnectsPanel() {
 
 
 function redrawConnectsPanel() {
+    const connects = document.levelData.getDoorConnects(document.levelNumber);
+
+    // Populate the edit area
+
+    const selectedConnectData = connects[document.selectedConnect];
+
+    const dt = document.getElementById("connectDestinationType");
+    dt.value = selectedConnectData.destinationType;
+    const ci = document.getElementById("connectIdentifierPulldown");
+    ci.value = selectedConnectData.destinationId;
+    const fo = document.getElementById("connectFifthOffset");
+    fo.value = selectedConnectData.destinationXFifthOffset;
+
+    // Populate the table
+
     const ft = document.getElementById("connectsFirstTableBody");
     const st = document.getElementById("connectsSecondTableBody");
-
     const bodies = [ft, st];
-    const connects = document.levelData.getDoorConnects(document.levelNumber);
+
+    const destinationTypes = ['In', 'Other', 'Set', 'World'];
 
 	bodies.forEach(function(tableBody, tableIndex) {
         while (tableBody.firstChild) { tableBody.removeChild(tableBody.lastChild); }
@@ -448,7 +494,7 @@ function redrawConnectsPanel() {
                 (connectIndex+1) + ".",
                 c.x.toString(16).toUpperCase(),
                 c.y.toString(16).toUpperCase(),
-                c.destinationType,
+                destinationTypes[c.destinationType],
                 c.destinationId,
                 c.destinationX.toString(16).toUpperCase(),
                 c.destinationY.toString(16).toUpperCase(),
@@ -465,8 +511,29 @@ function redrawConnectsPanel() {
             });
 
             tableBody.appendChild(tr);
+
+            if ((c.x == 0) && (c.y == 11) && (c.destinationX == 0) && (c.destinationY == 0)) { tr.className = "blank"; }
+            if (document.selectedConnect == connectIndex) { tr.className = "selected"; }
+            tr.addEventListener("click", function (e) { selectConnectForEditing(connectIndex); });
         }
     });
+}
+
+
+function selectConnectForEditing(connectIndex) {
+    document.selectedConnect = connectIndex;
+    redrawConnectsPanel();
+}
+
+
+function connectIdentifierChanged() {
+    const connects = document.levelData.getDoorConnects(document.levelNumber);
+    const selectedConnectData = connects[document.selectedConnect];
+
+    const ci = document.getElementById("connectIdentifierPulldown");
+    selectedConnectData.destinationId = ci.value;
+    document.levelData.writeDoorConnect(document.levelNumber, document.selectedConnect, selectedConnectData);
+    redrawConnectsPanel();
 }
 
 
@@ -1319,10 +1386,10 @@ function encodeImageFileAsURL(element) {
                         <div>
                             <select class="destinationTypePulldown" id="connectDestinationType"
                                 onchange="connectDestinationTypeChanged(event, 1);">
-                                <option value="0">This Level</option>
+                                <option value="0">In This Level</option>
                                 <option value="1">Other Level</option>
-                                <option value="2">Other Level Set</option>
-                                <option value="3">Other World</option>
+                                <option value="2">A Level Set</option>
+                                <option value="3">A World</option>
                             </select>
                         </div>
                         <div>Identifier: 
@@ -1336,6 +1403,14 @@ function encodeImageFileAsURL(element) {
                                 <option value="5">6 / f</option>
                                 <option value="6">7 / g</option>
                                 <option value="7">8 / h</option>
+                                <option value="8">9 / i</option>
+                                <option value="9">10 / j</option>
+                                <option value="10">11 / k</option>
+                                <option value="11">12 / l</option>
+                                <option value="12">13 / m</option>
+                                <option value="13">14 / n</option>
+                                <option value="14">15 / o</option>
+                                <option value="15">16 / p</option>
                             </select>
                         </div>
                         <div>Extra data: <input type="text" id="connectExtraData" size="4" /></div>
@@ -1358,7 +1433,7 @@ function encodeImageFileAsURL(element) {
             </div>
         </div>
 
-        <div id="connectsGrid" class="connectsGrid">
+        <div id="connectsView" class="connectsView">
             <table class="connectsTable">
                 <thead>
                     <tr>
@@ -1369,7 +1444,7 @@ function encodeImageFileAsURL(element) {
                         <th>id</th>
                         <th>dx</th>
                         <th>dy</th>
-                        <th>wx</th>
+                        <th>sx</th>
                         <th>fifth</th>
                         <th>extra</th>
                     </tr>
@@ -1387,7 +1462,7 @@ function encodeImageFileAsURL(element) {
                         <th>id</th>
                         <th>dx</th>
                         <th>dy</th>
-                        <th>wx</th>
+                        <th>sx</th>
                         <th>fifth</th>
                         <th>extra</th>
                     </tr>

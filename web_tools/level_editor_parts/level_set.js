@@ -38,7 +38,8 @@ class LevelSet {
 	}
 
 
-	// An inline cheat-sheet on the "destinationType" and "destinationNumber" values:
+	// An inline cheat-sheet on the "destinationType" and "destinationNumber" values, taken
+	// from the Super Merryo Trolls writeup:
 	// 0: Door opens to another location on the same level.
 	//    The second half of the byte (destinationNumber) is the letter to use as a subscript.
 	//	  (0 for 'a', 1 for 'b', et cetera.)  For example, the fourth pipe on World 1-Aa
@@ -59,6 +60,7 @@ class LevelSet {
 	getDoorConnects(levelNumber) {
 		var connects = [];
 		for (var c = 0; c < 32; c++) {
+			// Offset to this connect in given level
 			const cOffset = (c*8) + (levelNumber * 0x4000) + 0x2800;
 			const sourceLocationWord = this.levelData[cOffset] + (this.levelData[cOffset+1] * 0x100);
 			// This was not stored in a straightforward way.  See MapLocWrite in MAIN.S code.
@@ -73,11 +75,29 @@ class LevelSet {
 				destinationWindowX: this.levelData[cOffset+4],
 				destinationXFifthOffset: this.levelData[cOffset+5],
 				extraData: this.levelData[cOffset+6],
-				destinationType: this.levelData[cOffset+7] & 0x0F,
+				destinationType: this.levelData[cOffset+7] & 0x03,
 				destinationId: (this.levelData[cOffset+7] & 0xF0) / 16
 			};
 			connects.push(connect);
 		}
 		return connects;
+	}
+
+	writeDoorConnect(levelNumber, connectNumber, connectData) {
+		// Offset to this connect in given level
+		const cOffset = (connectNumber*8) + (levelNumber * 0x4000) + 0x2800;
+
+		// This was not stored in a straightforward way.  See MapLocWrite in MAIN.S code.
+		const sourceLocationWord = (connectData.x*this.mapRows)+(this.mapRows-1) - connectData.y;
+		this.levelData[cOffset] = sourceLocationWord & 0xFF;
+		this.levelData[cOffset+1] = Math.floor(sourceLocationWord / 0x100);
+		
+		this.levelData[cOffset+2] = connectData.destinationX;
+		this.levelData[cOffset+3] = connectData.destinationY;
+		this.levelData[cOffset+4] = connectData.destinationWindowX;
+		this.levelData[cOffset+5] = connectData.destinationXFifthOffset;
+
+		this.levelData[cOffset+6] = connectData.extraData;
+		this.levelData[cOffset+7] = connectData.destinationType + (connectData.destinationId * 0x10);
 	}
 }
