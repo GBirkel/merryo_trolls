@@ -397,8 +397,7 @@ async function startEditor() {
     document.levelData = new LevelSet(mapColumns, mapRows);
     await document.levelData.load(levelEncoded);
 
-    //selectMapPanel();
-    selectConnectsPanel();
+    selectMapPanel();
     redrawConnectsPanel();
     redrawMapColumnIndexes();
     populateTypeBlockSelector();
@@ -409,12 +408,15 @@ async function startEditor() {
 
     changeMapPicsLayerOpacity();
 
+    // Mnaually adding these to the whole document because Safari
+    // ignores them in their more sensible positions.
     document.addEventListener("copy", onLevelMapCopy);
     document.addEventListener("cut", onLevelMapCut);
     document.addEventListener("paste", onLevelMapPaste);
 }
 
 
+// Recreate the hex-based column labels along the bottom of the map view
 function redrawMapColumnIndexes() {
     const c = document.getElementById("mapColumnIndexes");
 
@@ -439,23 +441,25 @@ function redrawMapColumnIndexes() {
 }
 
 
-async function levelPulldownChanged() {
+function levelPulldownChanged() {
     const s = document.getElementById("levelPulldown");
-    document.levelNumber = s.value;
-    redrawConnectsPanel();
-    redrawSpriteCanvas();
-    drawLevel();
+    selectLevel(s.value);
 }
 
 
 function forceLevelSelect(newLevel) {
-    if (document.levelNumber == newLevel) { return; }
     const s = document.getElementById("levelPulldown");
     s.value = newLevel;
+    selectLevel(newLevel);
+}
+
+
+function selectLevel(newLevel) {
+    if (document.levelNumber == newLevel) { return; }
     document.levelNumber = newLevel;
+    drawLevel();
     redrawConnectsPanel();
     redrawSpriteCanvas();
-    drawLevel();
 }
 
 
@@ -573,7 +577,8 @@ function redrawConnectsPanel() {
 function showConnectOrigin(index) {
     const connects = document.levelData.getDoorConnects(document.levelNumber);
     const selectedConnectData = connects[index];
-    scrollToBlock(selectedConnectData.x);
+    const newSelection = [{ x: selectedConnectData.x, y: (mapRows-1) - selectedConnectData.y }];
+    changeRedrawAndShowSelection(newSelection, true);
     // We don't .preventDefault so the event bubbles up to the selectConnectForEditing handler.
 }
 
@@ -581,15 +586,35 @@ function showConnectOrigin(index) {
 function showConnectDestination(index) {
     const connects = document.levelData.getDoorConnects(document.levelNumber);
     const selectedConnectData = connects[index];
-    scrollToBlock(selectedConnectData.destinationX);
+    const newSelection = [{ x: selectedConnectData.destinationX, y: (mapRows-1) - selectedConnectData.destinationY }];
+    changeRedrawAndShowSelection(newSelection, true);
     // We don't .preventDefault so the event bubbles up to the selectConnectForEditing handler.
 }
 
 
-function scrollToBlock(x) {
+function changeRedrawAndShowSelection(newSelection, dontScrollIfAlreadyInView) {
+    document.mapSelection.clear();
+    eraseInteractionRectangle({x: 0, y: 0}, {x: mapColumns-1, y: mapRows-1});
+    document.mapSelection.select(newSelection);
+    drawSelectionIndicators(newSelection);
+    const upperLeft = document.mapSelection.getUpperLeftCorner();
+    scrollToBlock(upperLeft.x, dontScrollIfAlreadyInView);
+    // The reticle may have been erased by the previous steps, so we need to redraw it.
+    drawTypeTile(document.blockUnderPointer.x, document.blockUnderPointer.y, 64, true);
+}
+
+
+function scrollToBlock(x, dontScrollIfAlreadyInView) {
     const levelView = document.getElementById("levelContainer");
-    const maxScroll = levelView.scrollWidth - levelView.clientWidth;
     const blockSize = levelView.scrollWidth / 256;
+    const columnsVisible = Math.floor(levelView.clientWidth / blockSize);
+    const currentBlockAtLeftEdge = Math.ceil(levelView.scrollLeft / blockSize);
+    const maxScroll = levelView.scrollWidth - levelView.clientWidth;
+    if (dontScrollIfAlreadyInView) {
+        if ((x >= currentBlockAtLeftEdge) && (x < (currentBlockAtLeftEdge + columnsVisible) - 1)) {
+            return;
+        }
+    }
     levelView.scrollLeft = Math.min(x * blockSize, maxScroll);
 }
 
@@ -715,6 +740,42 @@ function connectIdentifierChanged() {
     selectedConnectData.destinationId = parseInt(ci.value);
     document.levelData.writeDoorConnect(document.levelNumber, document.selectedConnect, selectedConnectData);
     redrawConnectsPanel();
+}
+
+
+function connectSetOriginXY() {
+
+    if (document.mapSelection.isEmpty()) {
+        return;
+    }
+    const upperLeft = document.mapSelection.getUpperLeftCorner();
+
+    const connects = document.levelData.getDoorConnects(document.levelNumber);
+    const selectedConnectData = connects[document.selectedConnect];
+
+    selectedConnectData.x = upperLeft.x;
+    selectedConnectData.y = (mapRows-1)-upperLeft.y;
+    document.levelData.writeDoorConnect(document.levelNumber, document.selectedConnect, selectedConnectData);
+    redrawConnectsPanel();
+    redrawSpriteCanvas();
+}
+
+
+function connectSetDestinationXY() {
+
+    if (document.mapSelection.isEmpty()) {
+        return;
+    }
+    const upperLeft = document.mapSelection.getUpperLeftCorner();
+
+    const connects = document.levelData.getDoorConnects(document.levelNumber);
+    const selectedConnectData = connects[document.selectedConnect];
+
+    selectedConnectData.destinationX = upperLeft.x;
+    selectedConnectData.destinationY = (mapRows-1)-upperLeft.y;
+    document.levelData.writeDoorConnect(document.levelNumber, document.selectedConnect, selectedConnectData);
+    redrawConnectsPanel();
+    redrawSpriteCanvas();
 }
 
 
@@ -1616,7 +1677,7 @@ function encodeImageFileAsURL(element) {
             <div id="connectsEditingForm" class="connectsEditingForm">
                 <div class="connectsEditingSubForm">
                     <div class="oneItem">Origin:</div>
-                    <div class="oneItem"><input type="button" value="Set Origin" /></div>
+                    <div class="oneItem"><input type="button" value="Set Origin" onclick="connectSetOriginXY(event);" /></div>
                 </div>
                 <div class="connectsEditingSubForm">
                     <div class="oneItem">Destination:</div>
@@ -1652,11 +1713,11 @@ function encodeImageFileAsURL(element) {
                                     <option value="15">16 / p</option>
                                 </select>
                             </div>
-                            <div>Extra data: <input type="text" id="connectExtraData" size="4" /></div>
+                            <div><input type="button" value="Set X Of Screen Left Edge" /></div>
                         </div>
                         <div class="connectsEditingRow">
-                            <div><input type="button" value="Set X/Y" /></div>
-                            <div><input type="button" value="Set X Of Screen Left Edge" /></div>
+                            <div><input type="button" value="Set X/Y" onclick="connectSetDestinationXY(event);" /></div>
+                            <div>Extra data: <input type="text" id="connectExtraData" size="4" /></div>
                             <div>Block Offset: 
                                 <select class="connectFifthOffsetPulldown" id="connectFifthOffsetPulldown"
                                     onchange="connectFifthOffsetChanged(event);">
