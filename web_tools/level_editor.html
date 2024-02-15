@@ -629,22 +629,8 @@ function redrawSpriteCanvas() {
     canvasContext.clearRect(0, 0, tileWidth*mapColumns, tileHeight*mapRows);
 
     if (document.editingMode == "connects") {
-        const connects = document.levelData.getDoorConnects(document.levelNumber);
-
-        for (var index=0; index < 32; index++) {
-            const c = connects[index];
-            if (c.destinationType == 0) {
-                if ((c.x != 0) || (c.y != 11) || (c.destinationX != 0) || (c.destinationY != 0)) {
-                    const isSelected = document.selectedConnect == index;
-                    document.connectsEditing.drawOneGuidoConnect(
-                        c, isSelected, document.levelData, document.levelNumber);
-                }
-            }
-        }
-        // Redraw the selected connect, even though we're doing it twice,
-        // to make sure it appears on top of all the others 
-        document.connectsEditing.drawOneGuidoConnect(
-            connects[document.selectedConnect], true, document.levelData, document.levelNumber);
+        document.connectsEditing.drawAllGuidoConnects(
+            document.levelData, document.levelNumber, document.selectedConnect);
     }
 }
 

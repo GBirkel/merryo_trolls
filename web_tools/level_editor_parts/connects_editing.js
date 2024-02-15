@@ -7,6 +7,26 @@ class ConnectsEditing {
 	}
 
 
+	drawAllGuidoConnects(levelData, levelNumber, selectedConnect) {
+        const connects = levelData.getDoorConnects(levelNumber);
+
+        for (var index=0; index < 32; index++) {
+            const c = connects[index];
+            if (c.destinationType == 0) {
+                if ((c.x != 0) || (c.y != 11) || (c.destinationX != 0) || (c.destinationY != 0)) {
+                    const isSelected = selectedConnect == index;
+                    this.drawOneGuidoConnect(
+                        c, isSelected, levelData, levelNumber);
+                }
+            }
+        }
+        // Redraw the selected connect, even though we're doing it twice,
+        // to make sure it appears on top of all the others 
+        this.drawOneGuidoConnect(
+            connects[selectedConnect], true, levelData, levelNumber);
+	}
+
+
 	drawOneGuidoConnect(c, isSelected, levelData, levelNumber) {
 
 		var canvasContext = this.spriteCanvas.getContext("2d");
