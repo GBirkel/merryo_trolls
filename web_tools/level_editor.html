@@ -219,11 +219,24 @@
     }
 
     table.connectsTable tbody tr:hover {
-        background-color: rgba(160,160,160,0.5);
+        background-color: rgba(110,110,110,0.5);
     }
 
     table.connectsTable tbody tr:nth-child(even) td {
         background-color: rgba(60,60,60,0.4);
+    }
+
+    table.connectsTable tbody tr td.connectCoordinates.start {
+        border-radius: 6px 0 0 6px;
+    }
+
+    table.connectsTable tbody tr td.connectCoordinates.end {
+        border-radius: 0 6px 6px 0;
+    }
+
+    table.connectsTable tbody tr:hover td.connectCoordinates {
+        background-color: rgba(130,130,130,0.8);
+        cursor: pointer;
     }
 
     table.connectsTable tbody tr td {
@@ -245,6 +258,11 @@
 
     table.connectsTable tbody tr.selected {
         background-color: rgba(0, 0, 255, 0.5);
+    }
+
+    table.connectsTable tbody tr.selected:hover td.connectCoordinates {
+        background-color: rgba(80,80,255,0.8);
+        cursor: pointer;
     }
 
     table.connectsTable tbody tr.blank td {
@@ -451,7 +469,7 @@ function selectMapPanel() {
     const mp = document.getElementById("mapEditingPanel");
     const cp = document.getElementById("connectsPanel");
 
-    mp.style.display = "flex";
+    mp.style.display = "block";
     cp.style.display = "none";
 
     document.editingMode = "map";
@@ -470,7 +488,7 @@ function selectConnectsPanel() {
     const cp = document.getElementById("connectsPanel");
 
     mp.style.display = "none";
-    cp.style.display = "flex";
+    cp.style.display = "block";
 
     document.editingMode = "connects";
     redrawSpriteCanvas();
@@ -519,12 +537,28 @@ function redrawConnectsPanel() {
                 c.extraData
             ];
 
-            textNodes.forEach(function(v) {
+            const cells = textNodes.map(function(v) {
                 const td = document.createElement("td");
                 const t = document.createTextNode(v);
                 td.appendChild(t);
                 tr.appendChild(td);
+                return td;
             });
+
+            // Add a specific click handler for the origin coordinates
+            [cells[1], cells[2]].forEach(function (td) {
+                td.addEventListener("click", function (e) { showConnectOrigin(connectIndex); });
+            });
+            cells[1].className = "connectCoordinates start";
+            cells[2].className = "connectCoordinates end";
+
+            // Specific click handler for the destination coordinates
+            [cells[5], cells[6], cells[7]].forEach(function (td) {
+                td.addEventListener("click", function (e) { showConnectDestination(connectIndex); });
+            });
+            cells[5].className = "connectCoordinates start";
+            cells[6].className = "connectCoordinates";
+            cells[7].className = "connectCoordinates end";
 
             tableBody.appendChild(tr);
 
@@ -533,6 +567,30 @@ function redrawConnectsPanel() {
             tr.addEventListener("click", function (e) { selectConnectForEditing(connectIndex); });
         }
     });
+}
+
+
+function showConnectOrigin(index) {
+    const connects = document.levelData.getDoorConnects(document.levelNumber);
+    const selectedConnectData = connects[index];
+    scrollToBlock(selectedConnectData.x);
+    // We don't .preventDefault so the event bubbles up to the selectConnectForEditing handler.
+}
+
+
+function showConnectDestination(index) {
+    const connects = document.levelData.getDoorConnects(document.levelNumber);
+    const selectedConnectData = connects[index];
+    scrollToBlock(selectedConnectData.destinationX);
+    // We don't .preventDefault so the event bubbles up to the selectConnectForEditing handler.
+}
+
+
+function scrollToBlock(x) {
+    const levelView = document.getElementById("levelContainer");
+    const maxScroll = levelView.scrollWidth - levelView.clientWidth;
+    const blockSize = levelView.scrollWidth / 256;
+    levelView.scrollLeft = Math.min(x * blockSize, maxScroll);
 }
 
 
@@ -642,7 +700,7 @@ function connectDestinationTypeChanged() {
     const selectedConnectData = connects[document.selectedConnect];
 
     const ci = document.getElementById("destinationTypePulldown");
-    selectedConnectData.destinationType = ci.value;
+    selectedConnectData.destinationType = parseInt(ci.value);
     document.levelData.writeDoorConnect(document.levelNumber, document.selectedConnect, selectedConnectData);
     redrawConnectsPanel();
     redrawSpriteCanvas();
@@ -654,7 +712,7 @@ function connectIdentifierChanged() {
     const selectedConnectData = connects[document.selectedConnect];
 
     const ci = document.getElementById("connectIdentifierPulldown");
-    selectedConnectData.destinationId = ci.value;
+    selectedConnectData.destinationId = parseInt(ci.value);
     document.levelData.writeDoorConnect(document.levelNumber, document.selectedConnect, selectedConnectData);
     redrawConnectsPanel();
 }
@@ -665,7 +723,7 @@ function connectFifthOffsetChanged() {
     const selectedConnectData = connects[document.selectedConnect];
 
     const ci = document.getElementById("connectFifthOffsetPulldown");
-    selectedConnectData.destinationXFifthOffset = ci.value;
+    selectedConnectData.destinationXFifthOffset = parseInt(ci.value);
     document.levelData.writeDoorConnect(document.levelNumber, document.selectedConnect, selectedConnectData);
     redrawConnectsPanel();
     redrawSpriteCanvas();
@@ -1501,155 +1559,185 @@ function encodeImageFileAsURL(element) {
         <div class="mapColumnIndexes" id="mapColumnIndexes"></div>
     </div>
 
-    <div id="mapEditingPanel" class="bottomPanel">
+    <div id="mapEditingPanel">
+        <div class="bottomPanel">
 
-        <div id="pictureBlockSelectionContainer" class="pictureBlockSelectionContainer">
-            <canvas id="pictureBlockSelectionInteractionCanvas" class="pictureBlockSelectionInteractionCanvas" width=640 height=512 onclick="clickOnPictureBlockSelector(event);"></canvas>
-            <canvas id="pictureBlockSelectionCanvas" class="pictureBlockSelectionCanvas" width=640 height=512></canvas>
+            <div id="pictureBlockSelectionContainer" class="pictureBlockSelectionContainer">
+                <canvas id="pictureBlockSelectionInteractionCanvas" class="pictureBlockSelectionInteractionCanvas" width=640 height=512 onclick="clickOnPictureBlockSelector(event);"></canvas>
+                <canvas id="pictureBlockSelectionCanvas" class="pictureBlockSelectionCanvas" width=640 height=512></canvas>
+            </div>
+
+            <div id="typeBlockSelectionContainer" class="typeBlockSelectionContainer">
+                <canvas id="typeBlockSelectionInteractionCanvas" class="typeBlockSelectionInteractionCanvas" width=160 height=512 onclick="clickOnTypeBlockSelector(event);"></canvas>
+                <canvas id="typeBlockSelectionCanvas" class="typeBlockSelectionCanvas" width=160 height=512></canvas>
+            </div>
         </div>
 
-        <div id="typeBlockSelectionContainer" class="typeBlockSelectionContainer">
-            <canvas id="typeBlockSelectionInteractionCanvas" class="typeBlockSelectionInteractionCanvas" width=160 height=512 onclick="clickOnTypeBlockSelector(event);"></canvas>
-            <canvas id="typeBlockSelectionCanvas" class="typeBlockSelectionCanvas" width=160 height=512></canvas>
-        </div>
+        <h3>How To Use</h3>
+
+        <p>
+            To switch between the block pictures and block types layers, drag the slider, or click directly on "Pic" or "Type".
+        </p>
+        <p>
+            Click in the block pictures gallery (below the map) to select a block picture to draw with.
+            The standard block type that goes with that picture will be auto-selected in the type gallery to the right.
+        </p>
+        <p>
+            Command-click on a block in the map to place the selected block.  The picture and the type layer will both be affected.
+            Drag while the mouse is down to draw more blocks.
+        </p>
+        <p>
+            Use Command-Z (or Control-Z) to undo changes, and Command-Shift-Z (Control-Shift-Z) to redo them.
+        </p>
+        <p>
+            Click to make a selection.  A rectangle will appear.  Drag to make the selection larger.
+            Shift-click or drag to add to the current selection.  With a selection you can:
+        </p>
+        <p>
+            <ul>
+                <li>Press "Delete" to fill the selection with the currently selected block.</li>
+                <li>Perform "Cut", "Copy", and "Paste" operations with the usual keyboard shortcuts.</li>
+                <li>Hold down Command and press an arrow key to move the selection <i>and its contents</i> around on the map.</li>
+                <li>Press "Escape" to de-select.</li>
+            </ul>
+        </p>
+        <p>
+            You can also use the arrow keys to move the hover indicator.
+            Press Space to write the currently selected block, and Option-Space to read the hovered block into the selection.
+        </p>
+        <p>
+            Option-click on a block in the map to select that type in the blockset.
+        </p>
 
     </div>
 
-    <div id="connectsPanel" class="bottomPanel">
-        <div id="connectsEditingForm" class="connectsEditingForm">
-            <div class="connectsEditingSubForm">
-                <div class="oneItem">Origin:</div>
-                <div class="oneItem"><input type="button" value="Set Origin" /></div>
-            </div>
-            <div class="connectsEditingSubForm">
-                <div class="oneItem">Destination:</div>
+    <div id="connectsPanel">
+        <div class="bottomPanel">
+            <div id="connectsEditingForm" class="connectsEditingForm">
                 <div class="connectsEditingSubForm">
-                    <div class="connectsEditingRow">
-                        <div>
-                            <select class="destinationTypePulldown" id="destinationTypePulldown"
-                                onchange="connectDestinationTypeChanged(event, 1);">
-                                <option value="0">In This Level</option>
-                                <option value="1">Other Level</option>
-                                <option value="2">A Level Set</option>
-                                <option value="3">A World</option>
-                            </select>
+                    <div class="oneItem">Origin:</div>
+                    <div class="oneItem"><input type="button" value="Set Origin" /></div>
+                </div>
+                <div class="connectsEditingSubForm">
+                    <div class="oneItem">Destination:</div>
+                    <div class="connectsEditingSubForm">
+                        <div class="connectsEditingRow">
+                            <div>
+                                <select class="destinationTypePulldown" id="destinationTypePulldown"
+                                    onchange="connectDestinationTypeChanged(event);">
+                                    <option value="0">In This Level</option>
+                                    <option value="1">Other Level</option>
+                                    <option value="2">A Level Set</option>
+                                    <option value="3">A World</option>
+                                </select>
+                            </div>
+                            <div>Identifier: 
+                                <select class="connectIdentifierPulldown" id="connectIdentifierPulldown"
+                                    onchange="connectIdentifierChanged(event);">
+                                    <option value="0">1 / a</option>
+                                    <option value="1">2 / b</option>
+                                    <option value="2">3 / c</option>
+                                    <option value="3">4 / d</option>
+                                    <option value="4">5 / e</option>
+                                    <option value="5">6 / f</option>
+                                    <option value="6">7 / g</option>
+                                    <option value="7">8 / h</option>
+                                    <option value="8">9 / i</option>
+                                    <option value="9">10 / j</option>
+                                    <option value="10">11 / k</option>
+                                    <option value="11">12 / l</option>
+                                    <option value="12">13 / m</option>
+                                    <option value="13">14 / n</option>
+                                    <option value="14">15 / o</option>
+                                    <option value="15">16 / p</option>
+                                </select>
+                            </div>
+                            <div>Extra data: <input type="text" id="connectExtraData" size="4" /></div>
                         </div>
-                        <div>Identifier: 
-                            <select class="connectIdentifierPulldown" id="connectIdentifierPulldown"
-                                onchange="connectIdentifierChanged(event);">
-                                <option value="0">1 / a</option>
-                                <option value="1">2 / b</option>
-                                <option value="2">3 / c</option>
-                                <option value="3">4 / d</option>
-                                <option value="4">5 / e</option>
-                                <option value="5">6 / f</option>
-                                <option value="6">7 / g</option>
-                                <option value="7">8 / h</option>
-                                <option value="8">9 / i</option>
-                                <option value="9">10 / j</option>
-                                <option value="10">11 / k</option>
-                                <option value="11">12 / l</option>
-                                <option value="12">13 / m</option>
-                                <option value="13">14 / n</option>
-                                <option value="14">15 / o</option>
-                                <option value="15">16 / p</option>
-                            </select>
-                        </div>
-                        <div>Extra data: <input type="text" id="connectExtraData" size="4" /></div>
-                    </div>
-                    <div class="connectsEditingRow">
-                        <div><input type="button" value="Set X/Y" /></div>
-                        <div><input type="button" value="Set X Of Screen Left Edge" /></div>
-                        <div>Block Offset: 
-                            <select class="connectFifthOffsetPulldown" id="connectFifthOffsetPulldown"
-                                onchange="connectFifthOffsetChanged(event);">
-                                <option value="0">None</option>
-                                <option value="1">1/5 Right</option>
-                                <option value="2">2/5 Right</option>
-                                <option value="3">3/5 Right</option>
-                                <option value="4">4/5 Right</option>
-                            </select>
+                        <div class="connectsEditingRow">
+                            <div><input type="button" value="Set X/Y" /></div>
+                            <div><input type="button" value="Set X Of Screen Left Edge" /></div>
+                            <div>Block Offset: 
+                                <select class="connectFifthOffsetPulldown" id="connectFifthOffsetPulldown"
+                                    onchange="connectFifthOffsetChanged(event);">
+                                    <option value="0">None</option>
+                                    <option value="1">1/5 Right</option>
+                                    <option value="2">2/5 Right</option>
+                                    <option value="3">3/5 Right</option>
+                                    <option value="4">4/5 Right</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <div id="connectsView" class="connectsView">
+                <table class="connectsTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>x</th>
+                            <th>y</th>
+                            <th>type</th>
+                            <th>id</th>
+                            <th>dx</th>
+                            <th>dy</th>
+                            <th>sx</th>
+                            <th>fifth</th>
+                            <th>extra</th>
+                        </tr>
+                    </thead>
+                    <tbody id="connectsFirstTableBody" >
+                    </tbody>
+                </table>
+                <table class="connectsTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>x</th>
+                            <th>y</th>
+                            <th>type</th>
+                            <th>id</th>
+                            <th>dx</th>
+                            <th>dy</th>
+                            <th>sx</th>
+                            <th>fifth</th>
+                            <th>extra</th>
+                        </tr>
+                    </thead>
+                    <tbody id="connectsSecondTableBody" >
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <div id="connectsView" class="connectsView">
-            <table class="connectsTable">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>x</th>
-                        <th>y</th>
-                        <th>type</th>
-                        <th>id</th>
-                        <th>dx</th>
-                        <th>dy</th>
-                        <th>sx</th>
-                        <th>fifth</th>
-                        <th>extra</th>
-                    </tr>
-                </thead>
-                <tbody id="connectsFirstTableBody" >
-                </tbody>
-            </table>
-            <table class="connectsTable">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>x</th>
-                        <th>y</th>
-                        <th>type</th>
-                        <th>id</th>
-                        <th>dx</th>
-                        <th>dy</th>
-                        <th>sx</th>
-                        <th>fifth</th>
-                        <th>extra</th>
-                    </tr>
-                </thead>
-                <tbody id="connectsSecondTableBody" >
-                </tbody>
-            </table>
-        </div>
+        <h3>How To Use</h3>
+
+        <p>
+            You have 16 numbered slots for connecting doors to their destinations.  Click one to edit it.
+        </p>
+        <p>
+            The "x y" hex coordinates point to a door block.
+            Door blocks always come in pairs, and these coordinates must always point to the lower, or leftmost block in the pair.
+            For reference, an image of Guido labeled "IN" is placed on the map in the area Guido must stand in order to use the door.
+            For example, if the door block is of the "pipe down" type, the "IN" Guido will be above it, standing on the right edge.
+            If the coordinates don't point to a door block, the connection won't work.
+            If the door block isn't next to a second (making a pair), it won't work.
+        </p>
+        <p>
+            To set the origin for a door connection, select a slot, then select a door block on the map, then click "Set Origin".
+            To set the destination, select an empty block on the map and click "Set X/Y" in the Destination section.
+        </p>
+        <p>
+            Clicking on the "x y" values in the table will scroll the map so that entrance is visible.
+            Clicking on the "dx dy sx" values will make that destination visible.
+        </p>
+        <p>
+            For more detailed information, go ask somebody!
+        </p>
+
     </div>
-
-    <h3>How To Use</h3>
-
-    <p>
-        To switch between the block pictures and block types layers, drag the slider, or click directly on "Pic" or "Type".
-    </p>
-    <p>
-        Click in the block pictures gallery (below the map) to select a block picture to draw with.
-        The standard block type that goes with that picture will be auto-selected in the type gallery to the right.
-    </p>
-    <p>
-        Command-click on a block in the map to place the selected block.  The picture and the type layer will both be affected.
-        Drag while the mouse is down to draw more blocks.
-    </p>
-    <p>
-        Use Command-Z (or Control-Z) to undo changes, and Command-Shift-Z (Control-Shift-Z) to redo them.
-    </p>
-    <p>
-        Click to make a selection.  A rectangle will appear.  Drag to make the selection larger.
-        Shift-click or drag to add to the current selection.  With a selection you can:
-    </p>
-    <p>
-        <ul>
-            <li>Press "Delete" to fill the selection with the currently selected block.</li>
-            <li>Perform "Cut", "Copy", and "Paste" operations with the usual keyboard shortcuts.</li>
-            <li>Hold down Command and press an arrow key to move the selection <i>and its contents</i> around on the map.</li>
-            <li>Press "Escape" to de-select.</li>
-        </ul>
-    </p>
-    <p>
-        You can also use the arrow keys to move the hover indicator.
-        Press Space to write the currently selected block, and Option-Space to read the hovered block into the selection.
-    </p>
-    <p>
-        Option-click on a block in the map to select that type in the blockset.
-    </p>
 
 <input type="file" onchange="encodeImageFileAsURL(this)" />
 
