@@ -1,0 +1,14 @@
+version: '3'
+services:
+   apache:
+     image: httpd:2.4
+     container_name: merryo_trolls_dev
+#     environment:
+     ports:
+#       - "8000:80"
+       - "80:80"
+     volumes:
+       - .:/usr/local/apache2/htdocs/
+     restart: always
+#     depends_on:
+#       - "db"

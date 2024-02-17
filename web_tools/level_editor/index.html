@@ -1,12 +1,13 @@
 <!doctype html>
 <html>
 <head>
-<script src="level_editor_parts/mouse_utils.js"></script>
-<script src="level_editor_parts/selection.js"></script>
-<script src="level_editor_parts/edit_history.js"></script>
-<script src="level_editor_parts/tile_sets.js"></script>
-<script src="level_editor_parts/level_set.js"></script>
-<script src="level_editor_parts/connects_editing.js"></script>
+
+<script src="mouse_utils.js"></script>
+<script src="selection.js"></script>
+<script src="edit_history.js"></script>
+<script src="tile_sets.js"></script>
+<script src="level_set.js"></script>
+<script src="connects_editing.js"></script>
 
 <style>
 
@@ -382,13 +383,13 @@ async function startEditor() {
 	var spriteCanvas = document.getElementById("levelSpriteCanvas");
 
     document.editorTiles = new EditorTileset(tempCanvas);
-    await document.editorTiles.load("level_editor_parts/editor_tiles.png", 16, 8, tileWidth, tileHeight);
+    await document.editorTiles.load("editor_tiles.png", 16, 8, tileWidth, tileHeight);
 
     document.pictureTiles = new WorldTileset(tempCanvas, secondCanvas, singleBlockCanvas);
-    await document.pictureTiles.load("block_sets/world_1-blocks.png", "block_sets/world_1-block_pointers.bin", 16, 12, tileWidth, tileHeight);
+    await document.pictureTiles.load("/block_sets/world_1-blocks.png", "/block_sets/world_1-block_pointers.bin", 16, 12, tileWidth, tileHeight);
 
     document.levelData = new LevelSet(mapColumns, mapRows);
-    await document.levelData.load("level_maps/world_1-level_1_to_4.bin");
+    await document.levelData.load("/level_maps/world_1-level_1_to_4.bin");
 
     document.connectsEditing = new ConnectsEditing(mapColumns, mapRows, spriteCanvas, document.editorTiles);
 
