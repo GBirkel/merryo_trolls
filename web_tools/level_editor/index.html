@@ -953,85 +953,88 @@ function onLevelMapMouseOver(mouseEvent) {
         return;
     }
 
-    // Situation where the user has command-clicked in some other tile
-    // and dragged the mouse into this one.
-    // Action: Continue painting the currently selected block into this map location,
-    // and move the reticle under the new mouse location.
-    if (!document.optionKeyOnMouseDown &&
-        document.commandKeyOnMouseDown &&
-        !document.shiftKeyOnMouseDown &&
-        (document.blockLastMouseDown != null) &&
-        (currentBlock.x >= 0) &&
-        (currentBlock.y >= 0)
-    ) {
-        console.log("Add drag write to pending history.");
-        if (document.pendingLevelChanges == null) {
-            console.log("Error: Pending changes not allocated?");
+    // If the mouse is currently down
+    if (document.blockLastMouseDown != null) {
+
+        // Mouse down, command key down
+        if (document.commandKeyOnMouseDown) {
+
+            // Situation where the user has command-clicked in some other tile
+            // and dragged the mouse into this one.
+            // Action: Continue painting the currently selected block into this map location,
+            // and move the reticle under the new mouse location.
+            if (!document.optionKeyOnMouseDown &&
+                !document.shiftKeyOnMouseDown &&
+                (currentBlock.x >= 0) &&
+                (currentBlock.y >= 0)
+            ) {
+                console.log("Add drag write to pending history.");
+                if (document.pendingLevelChanges == null) {
+                    console.log("Error: Pending changes not allocated?");
+                    return;
+                }
+                if ((currentBlock.y >= 0) && (currentBlock.y >= 0)) {
+                    const h = document.pendingLevelChanges;
+                    // Basic container for this change, so we don't have to re-apply the whole pending set
+                    const oldBlockType = document.levelData.getTypeBlock(currentBlock.x, currentBlock.y, document.levelNumber);
+                    const oldBlockPic = document.levelData.getPictureBlock(currentBlock.x, currentBlock.y, document.levelNumber);
+                    const oldBlockTypeChange = {x: currentBlock.x, y: currentBlock.y, value: oldBlockType};
+                    const oldBlockPicChange = {x: currentBlock.x, y: currentBlock.y, value: oldBlockPic};
+                    h.oldChanges.add([oldBlockTypeChange], [oldBlockPicChange]);
+                    const newBlockTypeChange = {x: currentBlock.x, y: currentBlock.y, value: document.blockTypeSelection};
+                    const newBlockPicChange = {x: currentBlock.x, y: currentBlock.y, value: document.blockPictureSelection};
+                    h.newChanges.add([newBlockTypeChange], [newBlockPicChange]);
+                    const c = new LevelChanges(document.levelNumber);
+                    c.add([newBlockTypeChange], [newBlockPicChange]);
+                    applyMapChanges(c);
+                    drawMapChanges(c);
+                }
+
+                eraseInteractionTile(document.blockUnderPointer.x, document.blockUnderPointer.y);
+                // If the tile the reticle was over previously was also selected, re-draw the selection
+                // indicator after erasing the reticle.
+                if (document.mapSelection.isSelected(document.blockUnderPointer.x, document.blockUnderPointer.y)) {
+                    drawTypeTile(document.blockUnderPointer.x, document.blockUnderPointer.y, 65, true);
+                }
+                document.blockUnderPointer = currentBlock;
+                drawTypeTile(currentBlock.x, currentBlock.y, 64, true);
+            }
+        } else {
+
+            // Situation where the user has clicked in some other tile
+            // and dragged the mouse into this one, with no modifier keys except possibly shift.
+            // Action: Show a "new selection" rectangle between the other tile and this one.
+            if (!document.optionKeyOnMouseDown &&
+                !document.commandKeyOnMouseDown &&
+                (currentBlock.x >= 0) &&
+                (currentBlock.y >= 0)
+            ) {
+                // Remove evidence of old selection indicator and restore any selection visible below it
+                eraseInteractionRectangle(document.blockLastMouseDown, document.blockUnderPointer);
+                drawSelectionIndicatorsWithinRectangle(document.blockLastMouseDown, document.blockUnderPointer);
+                document.blockUnderPointer = currentBlock;
+                drawPendingSelectionRectangle(document.blockLastMouseDown, currentBlock);
+                return;
+            }
+        }
+    } else {
+
+        // Situation where the user has NOT previously clicked down in some other tile,
+        // but has moved the mouse into this one.
+        // Action: Move the reticle here.
+        if ((currentBlock.x >= 0) &&
+            (currentBlock.y >= 0)
+        ) {
+            eraseInteractionTile(document.blockUnderPointer.x, document.blockUnderPointer.y);
+            // If the tile the reticle was over previously was also selected, re-draw the selection
+            // indicator after erasing the reticle.
+            if (document.mapSelection.isSelected(document.blockUnderPointer.x, document.blockUnderPointer.y)) {
+                drawTypeTile(document.blockUnderPointer.x, document.blockUnderPointer.y, 65, true);
+            }
+            document.blockUnderPointer = currentBlock;
+            drawTypeTile(currentBlock.x, currentBlock.y, 64, true);
             return;
         }
-        if ((currentBlock.y >= 0) && (currentBlock.y >= 0)) {
-            const h = document.pendingLevelChanges;
-            // Basic container for this change, so we don't have to re-apply the whole pending set
-            const oldBlockType = document.levelData.getTypeBlock(currentBlock.x, currentBlock.y, document.levelNumber);
-            const oldBlockPic = document.levelData.getPictureBlock(currentBlock.x, currentBlock.y, document.levelNumber);
-            const oldBlockTypeChange = {x: currentBlock.x, y: currentBlock.y, value: oldBlockType};
-            const oldBlockPicChange = {x: currentBlock.x, y: currentBlock.y, value: oldBlockPic};
-            h.oldChanges.add([oldBlockTypeChange], [oldBlockPicChange]);
-            const newBlockTypeChange = {x: currentBlock.x, y: currentBlock.y, value: document.blockTypeSelection};
-            const newBlockPicChange = {x: currentBlock.x, y: currentBlock.y, value: document.blockPictureSelection};
-            h.newChanges.add([newBlockTypeChange], [newBlockPicChange]);
-            const c = new LevelChanges(document.levelNumber);
-            c.add([newBlockTypeChange], [newBlockPicChange]);
-            applyMapChanges(c);
-            drawMapChanges(c);
-        }
-
-        eraseInteractionTile(document.blockUnderPointer.x, document.blockUnderPointer.y);
-        // If the tile the reticle was over previously was also selected, re-draw the selection
-        // indicator after erasing the reticle.
-        if (document.mapSelection.isSelected(document.blockUnderPointer.x, document.blockUnderPointer.y)) {
-            drawTypeTile(document.blockUnderPointer.x, document.blockUnderPointer.y, 65, true);
-        }
-        document.blockUnderPointer = currentBlock;
-        drawTypeTile(currentBlock.x, currentBlock.y, 64, true);
-        return;
-    }
-
-    // Situation where the user has clicked in some other tile
-    // and dragged the mouse into this one, with no modifier keys except possibly shift.
-    // Action: Show a "new selection" rectangle between the other tile and this one.
-    if (!document.optionKeyOnMouseDown &&
-        !document.commandKeyOnMouseDown &&
-        (document.blockLastMouseDown != null) &&
-        (currentBlock.x >= 0) &&
-        (currentBlock.y >= 0)
-    ) {
-        // Remove evidence of old selection indicator and restore any selection visible below it
-        eraseInteractionRectangle(document.blockLastMouseDown, document.blockUnderPointer);
-        drawSelectionIndicatorsWithinRectangle(document.blockLastMouseDown, document.blockUnderPointer);
-        document.blockUnderPointer = currentBlock;
-        drawPendingSelectionRectangle(document.blockLastMouseDown, currentBlock);
-        return;
-    }
-
-    // Situation where the user has NOT previously clicked down in some other tile,
-    // but has moved the mouse into this one.
-    // Action: Move the reticle here.
-    if (!document.optionKeyOnMouseDown &&
-        !document.commandKeyOnMouseDown &&
-        (document.blockLastMouseDown == null) &&
-        (currentBlock.x >= 0) &&
-        (currentBlock.y >= 0)
-    ) {
-        eraseInteractionTile(document.blockUnderPointer.x, document.blockUnderPointer.y);
-        // If the tile the reticle was over previously was also selected, re-draw the selection
-        // indicator after erasing the reticle.
-        if (document.mapSelection.isSelected(document.blockUnderPointer.x, document.blockUnderPointer.y)) {
-            drawTypeTile(document.blockUnderPointer.x, document.blockUnderPointer.y, 65, true);
-        }
-        document.blockUnderPointer = currentBlock;
-        drawTypeTile(currentBlock.x, currentBlock.y, 64, true);
-        return;
     }
 }
 
@@ -1046,68 +1049,73 @@ function onLevelMapTriggeredMouseUp(mouseEvent) {
         return;
     }
 
-    // Apply accumulated changes from a command-click draw (and drag)
-    if (!document.optionKeyOnMouseDown &&
-        document.commandKeyOnMouseDown &&
-        !document.shiftKeyOnMouseDown
-    ) {
-        console.log("Confirm drag writes history.");
-        if (document.pendingLevelChanges == null) {
-            console.log("Error: No pending level changes allocated.");
+    // Command key
+    if (document.commandKeyOnMouseDown) {
+        // Apply accumulated changes from a command-click draw (and drag)
+        if (!document.optionKeyOnMouseDown &&
+            !document.shiftKeyOnMouseDown
+        ) {
+            console.log("Confirm drag writes history.");
+            if (document.pendingLevelChanges == null) {
+                console.log("Error: No pending level changes allocated.");
+            }
+            if (document.pendingLevelChanges.isEmpty()) {
+                console.log("Pending level changes are empty; discarding.");
+            } else {
+                document.levelHistory.addEvent(document.pendingLevelChanges);
+            }
+            document.pendingLevelChanges = null;
         }
-        if (document.pendingLevelChanges.isEmpty()) {
-            console.log("Pending level changes are empty; discarding.");
-        } else {
-            document.levelHistory.addEvent(document.pendingLevelChanges);
+
+    // Option key
+    } else if (document.optionKeyOnMouseDown) {
+        // Eyedropper the current hovered block into the selections
+        if (!document.commandKeyOnMouseDown &&
+            !document.shiftKeyOnMouseDown &&
+            document.levelMapContainsMouse &&
+            (lastMouseDown.x == document.blockUnderPointer.x) &&
+            (lastMouseDown.y == document.blockUnderPointer.y) &&
+            (lastMouseDown.x >= 0) &&
+            (lastMouseDown.y >= 0)
+        ) {
+            console.log("Eyedropper last clicked location.");
+            const blockType = document.levelData.getTypeBlock(lastMouseDown.x, lastMouseDown.y, document.levelNumber);
+            const blockPic = document.levelData.getPictureBlock(lastMouseDown.x, lastMouseDown.y, document.levelNumber);
+            selectTypeBlock(blockType);
+            selectPictureBlock(blockPic);
         }
-        document.pendingLevelChanges = null;
-        return;
+
+    // Neither command key nor option key
+    } else {
+
+        // Situation where the user has clicked with no modifier keys except possibly shift,
+        // and the reticle is not in the gutter.
+        // Action: Accept current region between mouse down and mouse up as a new selection.
+        // If shift was down, add to the current selection, otherwise replace.
+        if ((lastMouseDown != null) &&
+            (document.blockUnderPointer.x >= 0) &&
+            (document.blockUnderPointer.y >= 0)
+        ) {
+            console.log("Selecting rectangle.");
+            if (!document.shiftKeyOnMouseDown) {
+                // If we're not adding to the selection, clear the whole interaction layer
+                // and reset the existing selection before remaking it.
+                eraseInteractionRectangle({x: 0, y: 0}, {x: mapColumns-1, y: mapRows-1});
+                document.mapSelection.clear();
+            }
+            document.mapSelection.selectRectangle(lastMouseDown, document.blockUnderPointer);
+            // Remove evidence of pending selection indicator and restore any selection visible below it.
+            // we don't need to worry about drawing or redrawing the region outside this area,
+            // since it will either be deselected and erased already, or unchanged.
+            drawSelectionIndicatorsWithinRectangle(lastMouseDown, document.blockUnderPointer);
+            // The reticle was erased by the previous steps, so we need to redraw it.
+            drawTypeTile(document.blockUnderPointer.x, document.blockUnderPointer.y, 64, true);
+        }
     }
 
-    // Situation where the user has clicked with no modifier keys except possibly shift,
-    // and the reticle is not in the gutter.
-    // Action: Accept current region between mouse down and mouse up as a new selection.
-    // If shift was down, add to the current selection, otherwise replace.
-    if (!document.optionKeyOnMouseDown &&
-        !document.commandKeyOnMouseDown &&
-        (lastMouseDown != null) &&
-        (document.blockUnderPointer.x >= 0) &&
-        (document.blockUnderPointer.y >= 0)
-    ) {
-        console.log("Selecting rectangle.");
-        if (!document.shiftKeyOnMouseDown) {
-            // If we're not adding to the selection, clear the whole interaction layer
-            // and reset the existing selection before remaking it.
-            eraseInteractionRectangle({x: 0, y: 0}, {x: mapColumns-1, y: mapRows-1});
-            document.mapSelection.clear();
-        }
-        document.mapSelection.selectRectangle(lastMouseDown, document.blockUnderPointer);
-        // Remove evidence of pending selection indicator and restore any selection visible below it.
-        // we don't need to worry about drawing or redrawing the region outside this area,
-        // since it will either be deselected and erased already, or unchanged.
-        drawSelectionIndicatorsWithinRectangle(lastMouseDown, document.blockUnderPointer);
-        // The reticle was erased by the previous steps, so we need to redraw it.
-        drawTypeTile(document.blockUnderPointer.x, document.blockUnderPointer.y, 64, true);
-        return;
-    }
-
-    // Eyedropper the current hovered block into the selections
-    if (document.optionKeyOnMouseDown &&
-        !document.commandKeyOnMouseDown &&
-        !document.shiftKeyOnMouseDown &&
-        document.levelMapContainsMouse &&
-        (lastMouseDown.x == document.blockUnderPointer.x) &&
-        (lastMouseDown.y == document.blockUnderPointer.y) &&
-        (lastMouseDown.x >= 0) &&
-        (lastMouseDown.y >= 0)
-    ) {
-        console.log("Eyedropper last clicked location.");
-        const blockType = document.levelData.getTypeBlock(lastMouseDown.x, lastMouseDown.y, document.levelNumber);
-        const blockPic = document.levelData.getPictureBlock(lastMouseDown.x, lastMouseDown.y, document.levelNumber);
-        selectTypeBlock(blockType);
-        selectPictureBlock(blockPic);
-        return;
-    }
+    document.optionKeyOnMouseDown = false;
+    document.commandKeyOnMouseDown = false;
+    document.shiftKeyOnMouseDown = false;
 }
 
 
