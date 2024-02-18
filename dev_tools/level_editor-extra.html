@@ -1,0 +1,1220 @@
+<html> 
+<head> 
+<title>Flicker Gallery Construction Kit</title>
+<link rel="stylesheet" href="/wp-content/themes/enterprise/style.css" type="text/css" media="screen">
+<link rel="stylesheet" href="css/ptws.css" type="text/css" media="screen">
+<script src="https://code.jquery.com/jquery-latest.js"></script> 
+<script>
+
+// GetPhotos: https://www.flickr.com/services/api/flickr.photosets.getPhotos.html
+// API explorer: https://www.flickr.com/services/api/explore/flickr.photosets.getPhotos
+
+var userID = '57897385@N07';	// Note: Using "%40" instead of "@" breaks Flickr's inline video embed script
+var perPage = 55;
+var apiKey = '26655b63fe03290b3f64bad5a5646e1b';
+var setID = null;
+
+var baseFlickrURL = 'https://api.flickr.com/services/rest/?api_key=' + apiKey;
+
+var setCollection = {};
+// {(setId): {
+//		pageCount: number
+//		pages: {
+//			(#): [
+//				{	( extended item fetched from Flickr )
+//					ourGalleryElement: img
+//					ourGalleryElementFrame: div
+//					ourShortcodeOrganizerElement: div
+//					currentSelectionPosition: [int, int]
+//					fetchedInfo: boolean
+//					markedUsed: boolean
+//					selected: boolean
+//					setID: string(setId)
+//					yearMonthDay: string ("2022-01-23")
+//				}
+//			]
+//			loadedAll: boolean
+//		}
+//		thumbnailsElement: div
+//		splitByDays: [ {
+//			sectionElement: div
+//			thumbnailsElement: div
+//			photos: [ (same extended item as above) ]
+//		} ]
+//	}
+
+var selectedItems = [];	// Globals eew!
+var selectedSegment = 0;
+var selectedIndex = 0;
+
+const shortcodeModeRowLength = 6;
+
+var getPhotoSetsListPending = false;
+
+var loadMorePending = false;
+
+var showingOnlyVideos = false;
+var sectionByDay = true;
+var comments = true;
+// s = PTWS shortcode 1 = HTML
+var codeMode = "s";
+// 0 = HTML with PTWS CSS 1 = HTML with inline styles
+var htmlMode = 0
+
+var loadingMoreSpan = null;
+
+
+$(document).ready(function() {
+
+	// Wire up the buttons
+	$('#clearButton').click(function () {
+		clearTemplate();
+	});
+	$('#useButton').click(function () {
+		markUsed();
+		clearTemplate();
+	});
+	$('#addPageButton').click(function () {
+		addPage();
+	});
+	$('#showOnlyVideosCheckbox').click(function () {
+		showOnlyVideos();
+	});
+	$('#sectionByDayCheckbox').click(function () {
+		sectionByDayFn();
+	});
+	$('#commentsCheckbox').click(function () {
+		commentsFn();
+	});
+
+	$('select#buildModeSelection').on('change', function (e) {
+	    codeMode = $('select#buildModeSelection').val() || "s";	// Global
+		var shortcodeModePanel = document.getElementById("shortcodeModePanel");
+		var htmlModePanel = document.getElementById("htmlModePanel");
+		shortcodeModePanel.style.display = (codeMode == "s") ? "block" : "none";
+		htmlModePanel.style.display = (codeMode  == "h") ? "block" : "none";		
+		rebuildModePanel();
+	});
+
+	$('select#html_mode_selection').on('change', function (e) {
+	    htmlMode = $('select#html_mode_selection').val();	// Global
+		rebuildModePanel();
+	});
+
+	$(document).on('keydown', keyHandler);
+
+	loadingMoreSpan = $("<span/>").attr("id", "loadingMore").attr("class", "loadingMore").text('Loading More...');
+
+	var scrollContainer = $("#flickrThumbnailScrollContainer");
+	var container = $("#flickrThumbnailContainer");
+	// Each time the user scrolls
+	scrollContainer.scroll(function() {
+		// End of the document reached?
+		if (!setCollection[setID]['pages']['loadedAll']) {
+			if (container[0].scrollHeight < scrollContainer.height() + scrollContainer.scrollTop() + 1) {
+				addPage();
+			}
+		}
+	});
+	getPhotosetList();
+});
+
+
+function keyHandler(e) {
+	var key = e.which;
+	// Convert to uppercase
+    if (e.which >= 97 && e.which <= 122) {
+        key = e.which - 32;
+    }
+    else if (key == 27) {		// 'ESC'
+    	if (!e.shiftKey) {
+			markUsed();
+		}
+		clearTemplate();
+	}
+	// Shortcode-mode only keys
+	if (codeMode == "s") {
+		// If this is 'null' the current selection is invalid (doesn't resolve to an item)
+		const currentSelection = getItemByIndex(selectedSegment, selectedIndex);
+		// Any arrow key
+		if (((key == 37) || (key == 38) || (key == 39) || (key == 40)) && currentSelection) {
+			deselectCurrentShortcodeItem();
+			let newSegment = selectedSegment;
+			let newIndex = selectedIndex;
+
+			if (key == 37) { // Left arrow
+				if (selectedIndex > 0) {
+					newIndex--;
+				} else if (selectedSegment > 0) {
+					newSegment--;
+					newIndex = selectedItems[newSegment].length-1;
+				}
+			} else if (key == 38) { // Up arrow
+				if (selectedIndex >= shortcodeModeRowLength) {
+					newIndex -= shortcodeModeRowLength;
+				} else if (selectedSegment > 0) {
+					newSegment--;
+					// If we're going up a segment, but the current column is farther along
+					// than the length of the last row in the new segment,
+					// go up an additonal row so we can remain in the same column (of that higher row).
+					const newTotalLength = selectedItems[newSegment].length-1;
+					const newSegmentRows = Math.floor(newTotalLength/shortcodeModeRowLength);
+					const newRowRemainder = newTotalLength % shortcodeModeRowLength;
+					const oldRowRemainder = selectedIndex % shortcodeModeRowLength;
+					if ((newSegmentRows > 0) && (oldRowRemainder > newRowRemainder)) {
+						newIndex = ((newSegmentRows-1) * shortcodeModeRowLength) + oldRowRemainder; 
+					} else {
+						newIndex = Math.min(newTotalLength, (newSegmentRows * shortcodeModeRowLength) + oldRowRemainder);
+					}
+				}
+			} else if (key == 39) { // Right arrow
+				if (selectedIndex < (selectedItems[selectedSegment].length-1)) {
+					newIndex++;
+				} else if (selectedSegment < (selectedItems.length-1)) {
+					newSegment++;
+					newIndex = 0;
+				}
+			} else if (key == 40) { // Down arrow
+				if (selectedIndex + shortcodeModeRowLength < selectedItems[selectedSegment].length) {
+					newIndex += shortcodeModeRowLength;
+				} else if (selectedSegment < (selectedItems.length-1)) {
+					newSegment++;
+					newIndex = Math.min(Math.floor(newIndex % shortcodeModeRowLength), selectedItems[newSegment].length-1);
+				}
+			}
+			selectNewShortcodeItem(newSegment, newIndex);
+		} else if ((key == 13) && currentSelection) {	// Enter
+			// Need more than one item to split off an array
+			if (selectedIndex > 0) {
+				deselectCurrentShortcodeItem();
+				let segmentToEdit = selectedItems[selectedSegment];
+				let firstHalf = segmentToEdit.slice(0, selectedIndex);
+				let secondHalf = segmentToEdit.slice(selectedIndex, segmentToEdit.length);
+				// Remove the segmentToEdit, replace it with secondHalf
+				selectedItems.splice(selectedSegment, 1, secondHalf);
+				// Insert firstHalf before secondHalf (removing nothing)
+				selectedItems.splice(selectedSegment, 0, firstHalf);
+				rebuildModePanel();
+				// Move to the beginning of the next segment (the new one)
+				selectNewShortcodeItem(selectedSegment+1, 0);
+			}
+		} else if ((key == 8) && currentSelection) {	// Delete
+			if (e.shiftKey) {	// Shift removes the item from the selection
+				deselectCurrentShortcodeItem();
+				currentSelection.selected = false;
+				redrawOneGalleryItem(currentSelection);
+				selectedItems[selectedSegment].splice(selectedIndex, 1);
+				rebuildModePanel();
+				// If we deleted the last in the segment, select the preceding rather than the following.
+				selectNewShortcodeItem(selectedSegment, Math.min(selectedIndex, selectedItems[selectedSegment].length-1));
+			} else {	// Delete without shift joins the segment with the previous
+				if ((selectedIndex == 0) && (selectedSegment > 0)) {
+					deselectCurrentShortcodeItem();
+					let firstHalf = selectedItems[selectedSegment-1];
+					let joined = firstHalf.concat(selectedItems[selectedSegment]);
+					// Splice the replacement segment in, removing the two that were joined
+					selectedItems.splice(selectedSegment-1, 2, joined);
+					rebuildModePanel();
+					// Move to the end of this new segment
+					selectNewShortcodeItem(selectedSegment-1, firstHalf.length);
+				}
+			}
+		}
+	}
+}
+
+
+function getPhotosetList() {
+
+	var setURL = baseFlickrURL + '&method=flickr.photosets.getList&user_id=' + userID + '&per_page=200&format=json&nojsoncallback=1';
+
+	if (getPhotoSetsListPending) { return; } // Avoid triggering two at once.
+	getPhotoSetsListPending = true;
+
+	// Flickr Photostream feed link.
+	$.getJSON(setURL, function(data) {
+		console.log(data);
+		var menu = $('select#photoSetSelection');
+		menu.empty();
+		if (data.photosets) {
+			var setElementsByID = {};
+			var setIDs = [];
+			data.photosets.photoset.forEach(function(item, index, array) {
+				var id = item.id;
+				setElementsByID[id] = {
+					modified: parseInt(item.date_update, 10),
+					element: $('<option>').text(item.title['_content']).val(item.id)
+				};
+				setIDs.push(id);
+			});
+			setIDs.sort(function(a, b) { return setElementsByID[b]['modified'] - setElementsByID[a]['modified']; });
+			setIDs.forEach(function(i) {
+				setElementsByID[i]['element'].appendTo(menu);
+			});
+
+			$('select#photoSetSelection').on('change', function (e) {
+	            madePhotoSetSelection();
+	    	});
+		}
+		getPhotoSetsListPending = false;
+
+		// Automatically add one page
+		madePhotoSetSelection();
+	}); 
+};
+
+
+function madePhotoSetSelection() {
+	clearGallery();
+    setID = $('select#photoSetSelection').val();	// Global
+    if (!setCollection[setID]) {
+		setCollection[setID] = {
+			pageCount: 0,
+			pages: {},
+			thumbnailsElement: null,
+			splitByDays: []
+		};
+	}
+	redrawGallery();
+	if (setCollection[setID]['pageCount'] == 0) {
+		addPage();
+	}
+}
+
+
+function addPage() {
+
+	var setURL = baseFlickrURL + '&method=flickr.photosets.getPhotos&photoset_id=' + setID + '&extras=date_taken%2Cmedia%2Curl_t%2Curl_m%2Curl_s%2Co_dims&per_page=' + perPage + '&page=' + (setCollection[setID]['pageCount']+1) + '&format=json&nojsoncallback=1';
+
+	if (loadMorePending) {	// If we've already made a call to load more, avoid triggering another.
+		return;
+	}
+	loadMorePending = true;
+
+	if (loadingMoreSpan) { loadingMoreSpan.appendTo("#flickrThumbnailContainer"); }
+
+	// Flickr Photostream feed link.
+	$.getJSON(setURL, function(data) {
+		if (loadingMoreSpan) {
+			loadingMoreSpan.detach();
+		}
+		if (data.photoset) {
+			data.photoset.photo.every(function(item, index, array) {
+
+				// Create images and append to div id flickr and wrap link around the image.
+				var newDiv = document.createElement("div");	
+
+				// Create images and append to div id flickr and wrap link around the image.
+				var newImg = document.createElement("img");
+				$(newImg).attr("src", item.url_t);
+				$(newImg).click(function () {
+					clickOnGalleryItem(item);
+				});
+
+				// Extract a datestamp for organizing the photos by day, or make a fake one if there's no date.
+				var dateTaken = item.datetaken || "0-0-0";
+				var dateParts = dateTaken.split(/[\- ]/);
+				item.yearMonthDay = dateParts[0] + '-' + dateParts[1] + '-' + dateParts[2];
+
+				$(newImg).appendTo($(newDiv));
+
+				item.ourGalleryElement = newImg;
+				item.ourGalleryElementFrame = newDiv;
+				item.fetchedInfo = false;
+				item.markedUsed = false;
+				item.selected = false;
+				item.setID = setID;
+	
+				return true;
+			});
+			setCollection[setID]['pageCount'] += 1;
+			setCollection[setID]['pages'][setCollection[setID]['pageCount']] = data.photoset.photo;
+
+			var daySplits = [];
+
+			if (setCollection[setID]['pageCount'] > 0) {
+				var firstItem = setCollection[setID]['pages'][1][0];
+				var lastYMD = firstItem.yearMonthDay;
+				var loop = 1;
+				var oneDay = {
+					sectionElement: null,
+					thumbnailsElement: null,
+					photos: []
+				};
+				while (loop <= setCollection[setID]['pageCount']) {
+					setCollection[setID]['pages'][loop].every(function(item, index, array) {
+						if (item.yearMonthDay != lastYMD) {
+							lastYMD = item.yearMonthDay;
+							daySplits.push(oneDay);
+							oneDay = {
+								sectionElement: null,
+								thumbnailsElement: null,
+								photos: []
+							};
+						}
+						oneDay.photos.push(item);
+						return true;
+					});
+					loop++;
+				}
+				daySplits.push(oneDay);
+				setCollection[setID]['splitByDays'] = daySplits;
+			}
+			clearGallery();
+			redrawGallery();
+		} else {
+			setCollection[setID]['pages']['loadedAll'] = true;
+		}
+		loadMorePending = false;
+	}); 
+};
+
+
+function clearGallery() {
+	// No set exists yet or none selected? Nothing to clear.
+	if (setCollection[setID]) {
+		// Instead of re-populating, we detach the ones that aren't relevant.
+		// This way javascript onclick handlers aren't trashed.
+		setCollection[setID]['splitByDays'].every(function(day, dayIndex, dayArray) {
+			if (day.sectionElement) {
+				$(day.sectionElement).detach();
+			}
+			day.photos.every(function(item, index, array) {
+				$(item.ourGalleryElementFrame).detach();
+				return true;
+			});
+			return true;
+		});
+	}
+	$("#flickrThumbnailContainer").children().detach();
+};
+
+
+function redrawGallery() {
+	if (!sectionByDay) {
+		var thumbs = setCollection[setID]['thumbnailsElement'];
+		if (!thumbs) {
+			thumbs = document.createElement("div");
+			$(thumbs).attr("class", "thumbnailSet");
+			setCollection[setID]['thumbnailsElement'] = thumbs;
+		}
+		$(thumbs).appendTo("#flickrThumbnailContainer");
+		// Change the background coloring with each day transition
+		setCollection[setID]['splitByDays'].every(function(day, dayIndex, dayArray) {
+			day.photos.every(function(item, index, array) {
+				// if (item.setID != setID) { return; }
+				$(item.ourGalleryElementFrame).appendTo($(thumbs));
+				// If this day isn't the same as the last, flip the coloring
+				if (dayIndex % 2) {
+					item.ourGalleryElementFrame.className = '';
+				} else {
+					item.ourGalleryElementFrame.className = 'oddday';
+				}	
+				redrawOneGalleryItem(item);
+				return true;
+			});
+			return true;
+		});
+	} else {
+		// Change the background coloring with each day transition
+		setCollection[setID]['splitByDays'].every(function(day, dayIndex, dayArray) {
+			var section = day.sectionElement;
+			if (!section) {
+				// The container for a run of photos that were taken on the same day.
+				section = document.createElement("div");
+				var sectionJ = $(section).attr("class", "daySection");
+				var sectionHeader = $('<div class="dayHeader"/>').appendTo(sectionJ);
+				var sectionTitle = $('<div class="dayTitle"/>').append(day.photos[0].yearMonthDay).appendTo(sectionHeader);
+				var addDayButton = $('<input type=button value="Add All" />').appendTo(sectionHeader);
+				addDayButton.click(function () {
+			    	addToSelection(day.photos);
+				});
+				var thumbs = document.createElement("div");
+				$(thumbs).attr("class", "thumbnailSet").appendTo(sectionJ);
+				day.sectionElement = section;
+				day.thumbnailsElement = thumbs;
+			}
+			$(section).appendTo("#flickrThumbnailContainer")
+			day.photos.every(function(item, index, array) {
+				// if (item.setID != setID) { return; }
+				$(item.ourGalleryElementFrame).appendTo($(day.thumbnailsElement));
+				redrawOneGalleryItem(item);
+				return true;
+			});
+			return true;
+		});
+	}
+};
+
+
+function redrawOneGalleryItem(item) {
+	var style = [];
+	if (item.selected) {
+		style.push('selected');
+	}
+	if (item.markedUsed) {
+		style.push('markedUsed');
+	}
+	if (item.hasDescription) {
+		style.push('hasDescription');
+	}
+	if (showingOnlyVideos) {
+		if (item.media != "video") {
+			style.push('hidden');
+		}
+	}
+	item.ourGalleryElement.className = style.join(' ') || '';
+}
+
+
+function clickOnGalleryItem(item) {
+    if (!item.fetchedInfo) {    
+	    var getInfo = baseFlickrURL + '&method=flickr.photos.getInfo&photo_id=' + item.id + '&format=json&nojsoncallback=1';
+	    $.getJSON(getInfo, function(data) {
+	    	item.fullInfo = data.photo;
+    		item.hasDescription = false;
+	    	if (item.fullInfo.description._content != "") {
+	    		item.hasDescription = true;
+	    	}
+	    	// Call to get size info immediately after calling to get general info
+		    var getInfo = baseFlickrURL + '&method=flickr.photos.getSizes&photo_id=' + item.id + '&format=json&nojsoncallback=1';
+		    $.getJSON(getInfo, function(data) {
+		    	item.fetchedInfo = true;
+		    	item.fullSizes = {};
+		    	if (data.sizes) {
+			    	if (data.sizes.size) {
+			    		data.sizes.size.forEach(function(s, index, array) {
+			    			item.fullSizes[s.label] = s;
+			    		});
+			    	}
+			    }
+		    	// Call this after getting a response from this AJAX info request
+		    	addToSelection([item]);
+			});
+		});
+    } else {
+    	// Info already fetched, call this immediately
+    	addToSelection([item]);
+    }
+}
+
+
+function addToSelection(unfilteredItems) {
+	let items = unfilteredItems.filter(function(item) {
+			return !item.selected;
+		});
+	if (items.length < 1) { return; }
+
+	items.forEach( function(item) {
+		item.selected = true;
+		redrawOneGalleryItem(item);
+	});
+
+	if (selectedItems.length < 1) {
+		selectedItems.push(items);
+		rebuildModePanel();
+	} else {
+	// Shortcode-mode only keys
+		if (codeMode == "s") {
+			const lastSelection = getItemByIndex(selectedSegment, selectedIndex);
+			if (lastSelection) {
+				deselectCurrentShortcodeItem();
+				let firstHalf = selectedItems[selectedSegment].slice(0, selectedIndex+1);
+				let secondHalf = selectedItems[selectedSegment].slice(selectedIndex+1);
+				let joined = firstHalf.concat(items);
+				let newSegment = joined.concat(secondHalf);
+				selectedItems.splice(selectedSegment, 1, newSegment);
+				rebuildModePanel();
+				// Have to do this after the rebuild or there may not yet be an element whose class we can change to "selected".
+				selectNewShortcodeItem(selectedSegment, joined.length-1);
+			} else {
+				let newSegment = selectedItems[selectedItems.length-1].concat(items);
+				selectedItems.splice(selectedItems.length-1, 1, newSegment);
+				rebuildModePanel();
+				// Have to do this after the rebuild or there may not yet be an element whose class we can change to "selected".
+				selectNewShortcodeItem(selectedItems.length-1, selectedItems[selectedItems.length-1].length - 1);
+			}
+		} else {
+			let firstHalf = selectedItems[selectedItems.length-1];
+			let joined = firstHalf.concat(items);
+			selectedItems.splice(selectedItems.length-1, 1, joined);
+			rebuildModePanel();
+		}
+	}
+}
+
+
+function rebuildModePanel() {
+	if (codeMode == "h") {
+		rebuildHtmlModePanel();
+	} else {
+		rebuildShortcodeModePanel();
+	}
+}
+
+
+function rebuildShortcodeModePanel() {
+	var astext = document.getElementById("shortcodetext");
+	astext.value = generateShortCodesFromSelection();
+
+	$("#shortcode_edit_area").children().detach();
+
+	selectedItems.forEach( function(segment, segmentIndex) {
+
+		var s = segment.length;
+		if (!s) { return; }
+
+		var newStrip = $("<div/>").attr("class", "shortcode_image_segment");
+
+		var rowsNeeded = Math.floor(s/shortcodeModeRowLength)+1;
+		var newRows = [];
+		for (var rowIndex = 0; rowIndex < rowsNeeded; rowIndex++) {
+			let newRow = $("<div/>").appendTo(newStrip);
+			newRows.push(newRow);
+		}
+
+	    segment.every(function(item, itemIndex, array) {
+
+			var ourShortcodeOrganizerElement = item.ourShortcodeOrganizerElement;
+			// Needs to be re-set every time we redraw the selection
+			item.currentSelectionPosition = [segmentIndex, itemIndex];
+			if (!ourShortcodeOrganizerElement) {
+				var ourShortcodeOrganizerElement = document.createElement("div");
+				var e = $(ourShortcodeOrganizerElement).attr("draggable", "true");
+		        var newImg = $("<img/>").attr("src", item.url_t).appendTo(e);
+				$(e).click(function () {
+					deselectCurrentShortcodeItem();
+					selectNewShortcodeItem(item.currentSelectionPosition[0], item.currentSelectionPosition[1]);
+				});
+				ourShortcodeOrganizerElement.addEventListener("dragstart", function (event) {
+					event.dataTransfer.setData("text/plain", item.currentSelectionPosition[0]+'-'+item.currentSelectionPosition[1]);
+				});
+				ourShortcodeOrganizerElement.addEventListener("dragover", function (event) {
+					event.preventDefault();
+				});
+				ourShortcodeOrganizerElement.addEventListener("drop", function (event) {
+					event.preventDefault();
+					var data = event.dataTransfer.getData("text/plain");
+					let position = data.split("-");
+					let sourceSegment = parseInt(position[0]);
+					let sourceIndex = parseInt(position[1]);
+					let targetSegment = item.currentSelectionPosition[0];
+					let targetIndex = item.currentSelectionPosition[1]+1;
+
+					console.log(sourceSegment, sourceIndex, targetSegment, targetIndex);
+
+					deselectCurrentShortcodeItem();
+					let sourceSegmentArray = selectedItems[sourceSegment];
+					let targetSegmentArray = selectedItems[targetSegment];
+					let itemToMove = selectedItems[sourceSegment][sourceIndex];
+
+					// If we're moving between segments, or dropping into the same segment after dragged item, we can insert and then remove
+					if ((sourceSegment == targetSegment) && (sourceIndex < targetIndex)) {
+						targetSegmentArray.splice(targetIndex, 0, itemToMove);
+						sourceSegmentArray.splice(sourceIndex, 1);
+						targetIndex--;
+					} else {
+						sourceSegmentArray.splice(sourceIndex, 1);
+						targetSegmentArray.splice(targetIndex, 0, itemToMove);
+						if (sourceSegmentArray.length < 1) {
+							selectedItems.splice(sourceSegment, 1);
+							if (sourceSegment < targetSegment) {
+								targetSegment--;
+							}
+						}
+					}
+					rebuildModePanel();
+					// Move to the end of this new segment
+					selectNewShortcodeItem(targetSegment, targetIndex);
+				});
+
+				item.ourShortcodeOrganizerElement = ourShortcodeOrganizerElement;
+			}
+			$(ourShortcodeOrganizerElement).appendTo(newRows[Math.floor(itemIndex/shortcodeModeRowLength)]);
+ 	        return true;
+		});
+		newStrip.appendTo("#shortcode_edit_area");
+	});
+
+	return;	
+}
+
+
+function getItemByIndex(givenSegment, givenIndex) {
+	if (selectedItems.length <= givenSegment) { return null; }
+	if (selectedItems[givenSegment].length <= givenIndex) { return null; }
+	return selectedItems[givenSegment][givenIndex];
+}
+
+function deselectCurrentShortcodeItem() {
+	const lastSelection = getItemByIndex(selectedSegment, selectedIndex);
+	if (lastSelection) {
+		lastSelection.ourShortcodeOrganizerElement.className = 'item';
+	}
+}
+
+
+function selectNewShortcodeItem(givenSegmnet, givenIndex) {
+	const thisSelection = getItemByIndex(givenSegmnet, givenIndex);
+	if (thisSelection) {
+		selectedSegment = givenSegmnet;
+		selectedIndex = givenIndex;
+		thisSelection.ourShortcodeOrganizerElement.className = 'item selected';
+	}
+}
+
+
+function generateShortCodesFromSelection() {
+	if (!selectedItems.length) { return ""; }
+	// Each segment gets its own shortcode
+	var allSegments = selectedItems.map( function(segment) {
+		// Filter out any videos - shortcodes can't handle them
+		var ids = segment.filter(function(item) {
+			return item.media != 'video'
+		}).map(function(item) { return item.id });
+
+		if (!ids.length) { return ""; }
+		var sgt = '[ptwsgallery ';
+		if (ids.length < 5) { sgt += 'fixed="' + ids.join(',') + '"'; }
+		else { sgt += 'swipe="' + ids.join(',') + '"'; }
+		sgt += ']';
+		return sgt
+	});
+	return allSegments.join("\n\n");
+}
+
+
+function rebuildHtmlModePanel() {
+
+	$("#html_mode_entry").empty();
+
+	var astext = document.getElementById("html_as_text");
+	astext.value = '';
+
+	var i = selectedItems.length;
+	if (!i) { return; }
+
+	selectedItems.forEach( function(segment) {
+		rebuildHtmlForSegment(segment);
+	});
+}
+
+function rebuildHtmlForSegment(segment) {
+
+	var s = segment.length;
+	if (!s) { return; }
+
+	if ((s == 1) && (segment[0].media == 'video')) {
+
+		var item = segment[0];
+		var imgFlickrURL = getImgFlickrURL(item);
+		var centerDiv = $("<center/>").appendTo("#html_mode_entry");
+
+        var href = $("<a data-flickr-embed='true' href='" + imgFlickrURL + "' title='" +  item.title + "'></a>").appendTo(centerDiv);
+		// Breaking up 'script' so this isn't immediately loaded and inlined!
+    	$('<scr'+'ipt async="async" src="//embedr.flickr.com/assets/client-code.js" charset="utf-8"></sc'+'ript>').appendTo(centerDiv);
+		var newImg = document.createElement("img");
+       	$(newImg).attr("src", item.url_m).attr("style", "width:800px;height:450px;").attr("width", "800").attr("height", "450").appendTo(href);
+		if (item.hasDescription && comments) {
+			var commentContainer = $('<div class="imgComment"/>').appendTo("#html_mode_entry");
+			commentContainer.append(splitPeaSoup(item.fullInfo.description._content));
+		}
+
+	} else if (s < 5) {
+
+		var centerDiv = $("<div class='images'/>").appendTo("#html_mode_entry");
+	    var atLeastOneComment = false;
+	    if (comments) {
+		    segment.every(function(item, index, array) {
+				if (item.hasDescription) { atLeastOneComment = true; }
+				return !atLeastOneComment;
+			});
+		}
+
+		var itemsInPortrait = [];
+		var itemsNotInPortrait = [];
+	    segment.every(function(item, index, array) {
+			var t = getThumbnail(item);
+			if (t.w/t.h < 0.8) {
+				itemsInPortrait.push(item);
+			} else {
+				itemsNotInPortrait.push(item);
+			}
+			return true;
+		});
+
+	    if ((s == 3) && (itemsInPortrait.length == 1)) {
+			// Append both items that are not in portrait mode to the same first div
+			var picContainer = $('<div/>').appendTo(centerDiv);
+		    itemsNotInPortrait.every(function(item, index, array) {
+				appendImageHREFAndComments(item, picContainer, atLeastOneComment);
+		       	return true;
+			});
+			// Then append the one item that is in portrait mode to the second div by itself
+		    itemsInPortrait.every(function(item, index, array) {
+				picContainer = $('<div/>').appendTo(centerDiv);
+				appendImageHREFAndComments(item, picContainer, atLeastOneComment);
+		       	return true;
+			});
+	    } else {
+		    segment.every(function(item, index, array) {
+				var picContainer = $('<div/>').appendTo(centerDiv);
+				appendImageHREFAndComments(item, picContainer, atLeastOneComment);
+		       	return true;
+			});
+		}
+
+	} else {
+
+		var newGrid = $("<div/>").attr("class", "imageStrip");
+		var newRow = $("<div/>").appendTo(newGrid);
+		var divideIndex = 0;
+		if (s > 5) {
+			if (s % 5 == 0) {
+				divideIndex = 5;
+			} else if (s % 4 == 0) {
+				divideIndex = 4;
+			} else if (s % 3 == 0) {
+				divideIndex = 3;
+			}
+		}
+		var divideStep = 0;
+
+	    segment.every(function(item, index, array) {
+
+	    	if (divideIndex) {
+	    		if (divideStep == divideIndex) {
+	    			divideStep = 1;
+					newRow = $("<div/>").appendTo(newGrid);
+	    		} else {
+		    		divideStep += 1;
+		    	}
+	    	}
+
+			var imgFlickrURL = getImgFlickrURL(item);
+			var wrapper = $("<div/>").appendTo(newRow);
+	        var href = $("<a href='" + imgFlickrURL + "' title='" +  item.title + "'></a>").appendTo(wrapper);
+	        var newImg = $("<img/>").attr("src", item.url_t).appendTo(href);
+
+	        return true;
+	    });
+		newGrid.appendTo("#html_mode_entry");
+	}
+
+	$("#html_mode_entry_inlined_styles").empty();
+	$("#html_mode_entry").clone().children().appendTo("#html_mode_entry_inlined_styles");
+
+	var entry = document.getElementById("html_mode_entry");
+	var inlineStyledEntry = document.getElementById("html_mode_entry_inlined_styles");
+
+	// Filter out these styles when transferring to individual elements.
+	let ignoredPropList = [
+			"block-size",
+			"margin-block-start",
+			"margin-inline-end",
+			"margin-inline-start",
+			"border-block-end-color",
+			"border-block-start-color",
+			"border-bottom-color",
+			"border-inline-end-color",
+			"border-inline-start-color",
+			"border-left-color",
+			"border-right-color",
+			"border-top-color",
+			"border-block-color",
+			"border-color",
+			"text-decoration-line",
+			"border-inline-color",
+			"caret-color",
+			"column-rule-color",
+			"font-family",
+			"inline-size",
+			"line-height",
+			"margin-block-end",
+			"margin-inline",
+			"outline-color",
+			"padding-block",
+			"padding-inline",
+			"perspective-origin",
+			"text-decoration",
+			"text-decoration-color",
+			"text-emphasis-color",
+			"transform-origin",
+			"-webkit-text-fill-color",
+			"-webkit-box-shadow",
+			"-webkit-text-stroke-color",
+		];
+	var ignoredProps = {};
+	ignoredPropList.forEach(function(item, index, array) { ignoredProps[item] = true; } );
+
+	// https://stackoverflow.com/questions/2712136/how-do-i-make-this-loop-all-children-recursively
+	var all = inlineStyledEntry.getElementsByTagName('*');
+	for (var i = -1, l = all.length; ++i < l;) {
+		var el = all[i];
+		// https://stackoverflow.com/questions/25097566/css-style-to-inline-style-via-javascript
+		// https://stackoverflow.com/questions/22907735/get-the-computed-style-and-omit-defaults
+		var s = StyleInliner.getUserStyles(el)
+		for (let key in s) {
+			if (!ignoredProps[key]) {
+				console.log("Found style tag '" + key + "'");
+				let prop = key.replace(/\-([a-z])/g, v => v[1].toUpperCase());
+				el.style[prop] = s[key];
+			}
+		}
+	}
+
+	var astext = document.getElementById("html_as_text");
+	if (htmlMode == 1) {
+		astext.value = inlineStyledEntry.innerHTML;
+	} else {
+		astext.value = entry.innerHTML;
+	}
+
+  	astext.select();
+	document.execCommand('copy');
+}
+
+
+function getImgFlickrURL(item) {
+	return "https://www.flickr.com/photos/" + userID + "/" + item.id + "/in/album-" + setID + "/";
+}
+
+function getThumbnail(item) {
+	// By default, use the medium photo supplied by getInfo:
+	var t = {
+		'h': parseInt(item.height_m, 10),
+		'w': parseInt(item.width_m, 10),
+		'url': item.url_m
+	}
+	// If available, use the 'large' size:
+	if (item.fullSizes['Large']) {
+		var f = item.fullSizes['Large'];
+		t = {
+			'h': parseInt(f.height, 10),
+			'w': parseInt(f.width, 10),
+			'url': f.source
+		}
+	}
+	return t;
+}
+
+
+function appendImageHREFAndComments(item, picContainer, withComment) {
+	var imgFlickrURL = getImgFlickrURL(item);
+	var t = getThumbnail(item);
+    var href = $("<a href='" + imgFlickrURL + "' title='" +  item.title + "'></a>").appendTo(picContainer);
+	var newImg = document.createElement("img");
+    $(newImg).attr("src", t.url).attr("style", "max-width:800px;").appendTo(href);
+	if (withComment) {
+		var commentSubContainer = $('<div class="imgComment"/>').appendTo(picContainer);
+		if (item.hasDescription) {
+			commentSubContainer.append(splitPeaSoup(item.fullInfo.description._content));
+		}
+	}
+}
+
+
+function splitPeaSoup(soup) {
+	var re = /\n+/;
+	var bits = soup.split(re);
+	var joint = '';
+	bits.forEach(function(item, index, array) {
+		joint += '<p>' + item + '</p>';
+	});
+	return joint;
+}
+
+
+function markUsed() {
+	selectedItems.every(function(segment) {
+		segment.every(function(item) {
+			item.markedUsed = true;
+			return true;
+		});
+		return true;
+	});
+	var astext = document.getElementById("html_as_text");
+	var history = document.getElementById("html_as_text_history");
+	history.value = history.value + '\n\n' + astext.value;
+}
+
+
+function showOnlyVideos() {
+	var cb = document.getElementById("showOnlyVideosCheckbox");
+	showingOnlyVideos = cb.checked;
+	clearGallery();
+	redrawGallery();
+}
+
+
+function sectionByDayFn() {
+	var cb = document.getElementById("sectionByDayCheckbox");
+	sectionByDay = cb.checked;
+	clearGallery();
+	redrawGallery();
+}
+
+
+function commentsFn() {
+	var cb = document.getElementById("commentsCheckbox");
+	comments = cb.checked;
+	rebuildModePanel();
+}
+
+
+function clearTemplate() {
+	selectedItems.every(function(segment) {
+		segment.every(function(item) {
+			item.selected = false;
+			return true;
+		});
+		return true;
+	});
+	selectedItems = [];
+	deselectCurrentShortcodeItem();
+	clearGallery();
+	redrawGallery();
+	rebuildModePanel();
+}
+
+
+// https://stackoverflow.com/questions/22907735/get-the-computed-style-and-omit-defaults
+class StyleInliner {
+    // Returns a dummy iframe with no styles or content
+    // This allows us to get default styles from the browser for an element
+    static getStylesIframe() {
+        if (typeof window.blankIframe != 'undefined') {
+            return window.blankIframe;
+        }
+
+        window.blankIframe = document.createElement('iframe');
+        document.body.appendChild(window.blankIframe);
+
+        return window.blankIframe;
+    }
+
+    // Turns a CSSStyleDeclaration into a regular object, as all values become "" after a node is removed
+    static getStylesObject(node, parentWindow) {
+        const styles = parentWindow.getComputedStyle(node);
+        let stylesObject = {};
+
+        for (let i = 0; i < styles.length; i++) {
+            const property = styles[i];
+            stylesObject[property] = styles[property];
+        }
+
+        return stylesObject;
+    }
+
+    // Returns a styles object with the browser's default styles for the provided node
+    static getDefaultStyles(node) {
+        const iframe = StyleInliner.getStylesIframe();
+        const iframeDocument = iframe.contentDocument;
+        const targetElement = iframeDocument.createElement(node.tagName);
+
+        iframeDocument.body.appendChild(targetElement);
+        const defaultStyles = StyleInliner.getStylesObject(targetElement, iframe.contentWindow);
+
+        targetElement.remove();
+
+        return defaultStyles;
+    }
+
+    // Returns a styles object with only the styles applied by the user's CSS that differ from the browser's default styles
+    static getUserStyles(node) {
+        const defaultStyles = StyleInliner.getDefaultStyles(node);
+        const styles = StyleInliner.getStylesObject(node, window);
+        let userStyles = {};
+
+        for (let property in defaultStyles) {
+            if (styles[property] != defaultStyles[property]) {
+                userStyles[property] = styles[property];
+            }
+        }
+
+        return userStyles;
+    }
+};
+
+
+</script>
+<style type="text/css">
+
+/******** Styling for the construction kit *******/
+
+
+#flickrThumbnailScrollContainer {
+	resize: vertical;
+	height: 400px;
+	overflow-y: scroll;
+	padding: 0;
+	margin: 6px 0 6px 0;
+}
+
+div.thumbnailSet {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: stretch;
+	margin: 0;
+	padding: 0;
+}
+
+div.thumbnailSet div {
+    margin: 2px 0px;
+	border-radius: 5px;
+	display: flex;
+	align-items: center;
+    padding: 0px;
+}
+div.thumbnailSet div.oddday {
+	background-color: rgba(255, 190, 0, 0.37);
+}
+
+div.thumbnailSet div img {
+    margin: 3px;
+    padding: 1px;
+}
+
+div.thumbnailSet img.selected {
+	opacity: 0.3;
+}
+
+div.thumbnailSet img.hasDescription {
+	border-style: solid;
+	border-width: 2px;
+	border-color: green;
+}
+
+div.thumbnailSet img.markedUsed {
+	opacity:0.3;
+}
+
+div.thumbnailSet img.hidden {
+	display: none;
+	visibility: hidden;
+}
+
+span.loadingMore {
+	padding:20px 20px;
+	font-size:15px;
+	color:gray;
+	border:1px solid gray;
+	border-radius:5px;
+}
+
+div.shortcode_image_segment {
+	border: none;
+	display: table;
+	padding: 2px;
+	margin-left: 1em;
+	margin-bottom: 15px;
+	box-shadow: 1px 1px 13px -1px rgba(81, 81, 81, 0.51);
+}
+
+div.shortcode_image_segment > div {
+	display: table-row;
+}
+
+div.shortcode_image_segment > div > div {
+	display: table-cell;
+	margin: 0px;
+	padding: 0px 6px 4px 0px;
+	-webkit-box-shadow: none;
+	-moz-box-shadow: none;
+	box-shadow: none;
+}
+
+div.shortcode_image_segment > div:first-child > div {
+	padding-top: 4px;
+}
+
+div.shortcode_image_segment > div > div:first-child {
+	padding-left: 6px;
+}
+
+div.shortcode_image_segment > div > div > img {
+	padding: 2px;
+	border-style: solid;
+	border-width: 3px;
+}
+
+div.shortcode_image_segment > div > div:not(.selected) > img {
+	border-color: rgba(255, 255, 255, 0);
+}
+
+div.shortcode_image_segment > div > div.selected > img {
+	border-color: blue;
+}
+
+</style>
+
+</head> 
+<body style="padding:0 1em;"> 
+<form>
+
+<select id="photoSetSelection"></select>
+
+<input type=button value="Add Page" name="addPage" id="addPageButton" />
+
+Mode: <select id="buildModeSelection">
+	<option value="s">Shortcode</option>
+	<option value="h">HTML</option>
+</select>
+
+<input type=checkbox value="1" name="showOnlyVideos" id="showOnlyVideosCheckbox" /> <label for="showOnlyVideosCheckbox">Videos Only</label>
+
+<input type=checkbox value="1" name="sectionByDay" id="sectionByDayCheckbox" checked="checked" /> <label for="sectionByDayCheckbox">Section By Day</label>
+
+<div id="flickrThumbnailScrollContainer"><div id="flickrThumbnailContainer"></div>
+</div>
+
+<hr>
+
+<div id="shortcodeModePanel" style="display:block;padding:0 1em;">
+
+	<div class="content">
+		<div class="post">
+			<div class="entry shortcode_edit_area" id="shortcode_edit_area">
+			</div>
+		</div>
+	</div>
+
+	<div>Drag to rearrange, Enter to split on selection, Delete (on first in row) to join rows, Shift-Delete to remove selected item.</div>
+
+	<div style="padding:10px;"><textarea rows="6" style="width:100%;" id="shortcodetext">
+	</textarea></div>
+
+</div>
+<div id="htmlModePanel" style="display:none;">
+
+	<input type=checkbox value="1" name="comments" id="commentsCheckbox" checked="checked" /> <label for="commentsCheckbox">Comments</label>
+
+	Styling: <select id="html_mode_selection">
+		<option value=0>Classes</option>
+		<option value=1>Inline Styles</option>
+	</select>
+
+	<div class="content">
+		<div class="post">
+			<div class="entry" id="html_mode_entry">
+			</div>
+			<div class="entry" style="display:none;" id="html_mode_entry_inlined_styles">
+			</div>
+		</div>
+	</div>
+
+	<div style="padding:10px;"><textarea rows="6" style="width:100%;" id="html_as_text">
+	</textarea></div>
+
+	<div style="padding:10px;"><textarea rows="6" style="width:100%;" id="html_as_text_history">
+	</textarea></div>
+
+</div>
+
+<input type=button value="Mark As Used, Then Log (ESC)" name="markUsed" id="useButton" />
+<input type=button value="Clear (Shift-ESC)" name="clearTemplate" id="clearButton" />
+
+<form>
+
+</body> 
+</html>
