@@ -25,7 +25,7 @@
 		align-content: center;
     }
 
-    select.levelPulldown {
+    select.worldPulldown, select.levelPulldown {
         font-size: 1.2rem;
     }
 
@@ -352,6 +352,7 @@ async function startEditor() {
 
     document.editingMode = "map";
 
+    document.worldNumber = 1;
     document.levelNumber = 0;
     document.blockPictureSelection = 0;
     document.blockTypeSelection = 0;
@@ -378,31 +379,21 @@ async function startEditor() {
     document.levelMapHasFocus = false;
 
     var tempCanvas = document.getElementById("tempCanvas");
-    var secondCanvas = document.getElementById("tempBlockSetCanvas");
-    var singleBlockCanvas = document.getElementById("tempBlockCanvas");
 	var spriteCanvas = document.getElementById("levelSpriteCanvas");
 
     document.editorTiles = new EditorTileset(tempCanvas);
     await document.editorTiles.load("editor_tiles.png", 16, 8, tileWidth, tileHeight);
 
-    document.pictureTiles = new WorldTileset(tempCanvas, secondCanvas, singleBlockCanvas);
-    await document.pictureTiles.load("/block_sets/world_1-blocks.png", "/block_sets/world_1-block_pointers.bin", 16, 12, tileWidth, tileHeight);
-
-    document.levelData = new LevelSet(mapColumns, mapRows);
-    await document.levelData.load("/level_maps/world_1-level_1_to_4.bin");
-
     document.connectsEditing = new ConnectsEditing(mapColumns, mapRows, spriteCanvas, document.editorTiles);
 
-    selectMapPanel();
-    redrawConnectsPanel();
     redrawMapColumnIndexes();
     populateTypeBlockSelector();
-    populatePictureBlockSelector();
     selectTypeBlock(0);
-    selectPictureBlock(0);
-    drawLevel();
-
     changeMapPicsLayerOpacity();
+
+    await selectWorld(1);
+    selectMapPanel();
+    selectPictureBlock(0);
 
     // Mnaually adding these to the whole document because Safari
     // ignores them in their more sensible positions.
@@ -437,6 +428,34 @@ function redrawMapColumnIndexes() {
 }
 
 
+async function worldPulldownChanged() {
+    const s = document.getElementById("worldPulldown");
+    selectWorld(s.value);
+}
+
+
+async function selectWorld(newWorld) {
+    document.worldNumber = newWorld;
+
+    var tempCanvas = document.getElementById("tempCanvas");
+    var secondCanvas = document.getElementById("tempBlockSetCanvas");
+    var singleBlockCanvas = document.getElementById("tempBlockCanvas");
+
+    document.pictureTiles = new WorldTileset(tempCanvas, secondCanvas, singleBlockCanvas);
+    await document.pictureTiles.load(
+        "/block_sets/world_" + newWorld + "-blocks.png",
+        "/block_sets/world_" + newWorld + "-block_pointers.bin",
+        16, 12, tileWidth, tileHeight);
+
+    document.levelData = new LevelSet(mapColumns, mapRows);
+    await document.levelData.load("/level_maps/world_" + newWorld + "-level_1_to_4.bin");
+
+    populatePictureBlockSelector();
+
+    selectLevel(document.levelNumber);
+}
+
+
 function levelPulldownChanged() {
     const s = document.getElementById("levelPulldown");
     selectLevel(s.value);
@@ -451,7 +470,6 @@ function forceLevelSelect(newLevel) {
 
 
 function selectLevel(newLevel) {
-    if (document.levelNumber == newLevel) { return; }
     document.levelNumber = newLevel;
     drawLevel();
     redrawConnectsPanel();
@@ -1485,7 +1503,7 @@ function pressedSaveButton(event) {
     const downloadLink = document.getElementById("levelDownloadLink");
     downloadLink.href = linkSource;
     downloadLink.target = '_self';
-    downloadLink.download = "world_1-level_1_to_4.bin";
+    downloadLink.download = "world_" + worldNumber + "-level_1_to_4.bin";
 }
 
 
@@ -1497,6 +1515,18 @@ function pressedSaveButton(event) {
 
     <div class="topBar">
         <h3>SMT Map Editor</h3>
+        <div>
+            <select class="worldPulldown" id="worldPulldown" onchange="worldPulldownChanged();">
+                <option value="1">World 1</option>
+                <option value="2">World 2</option>
+                <option value="3">World 3</option>
+                <option value="4">World 4</option>
+                <option value="5">World 5</option>
+                <option value="6">World 6</option>
+                <option value="7">World 7</option>
+            </select>
+        </div>
+
         <div>
             <select class="levelPulldown" id="levelPulldown" onchange="levelPulldownChanged();">
                 <option value="0">Level 1</option>
