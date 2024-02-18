@@ -21,6 +21,16 @@ class LevelSet {
 		this.levelData = byteData;
 	}
 
+	asHrefData() {
+		const d = this.levelData;
+		const binstr = Array.prototype.map.call(d, function (ch) {
+			return String.fromCharCode(ch);
+		}).join('');
+	    const b64encoded = btoa(binstr);
+    	const linkSource = 'data:application/octet-stream;base64,' + b64encoded;
+		return linkSource;
+	}
+
 	getTypeBlock(x, y, levelNumber) {
     	return this.levelData[y+(x*this.mapRows) + (levelNumber * 0x4000)] & 0x3F;
 	}

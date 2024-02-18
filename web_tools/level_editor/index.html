@@ -1471,13 +1471,13 @@ function selectPictureBlock(newSelection) {
 }
 
 
-function encodeImageFileAsURL(element) {
-    var file = element.files[0];
-    var reader = new FileReader();
-    reader.onloadend = function() {
-        console.log('RESULT', reader.result)
-    }
-    reader.readAsDataURL(file);
+function pressedSaveButton(event) {
+    const linkSource = document.levelData.asHrefData();
+
+    const downloadLink = document.getElementById("levelDownloadLink");
+    downloadLink.href = linkSource;
+    downloadLink.target = '_self';
+    downloadLink.download = "world_1-level_1_to_4.bin";
 }
 
 
@@ -1712,7 +1712,17 @@ function encodeImageFileAsURL(element) {
 
     </div>
 
-<input type="file" onchange="encodeImageFileAsURL(this)" />
-
+    <h4>
+        How to save your work:
+    </h4>
+    <p>
+        Press this
+        <input type="button" value="save" onclick="pressedSaveButton(event);" />
+        button, then <a id="levelDownloadLink" href="">click here</a>
+        to get the currently selected level set as file.
+    </p>
+    <p>
+        Note that Safari has an extremely pernicious caching system, and you may have to click Develop -> Empty Caches to get your file changes to appear.
+    <p>
 </body>
 </html>
