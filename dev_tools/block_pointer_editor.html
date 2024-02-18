@@ -1,0 +1,466 @@
+<!doctype html>
+<html>
+<head>
+
+<script src="/lib/mouse_utils.js"></script>
+<script src="/lib/selection.js"></script>
+<script src="/lib/tile_sets.js"></script>
+
+<style>
+
+    body {
+        background-color: black;
+        font-family: sans-serif;
+        color: white;
+    }
+
+    div.topBar {
+        display: flex;
+		flex-flow: row wrap;
+		justify-content: space-between;
+		align-items: center;
+		align-content: center;
+    }
+
+    select.worldPulldown {
+        font-size: 1.2rem;
+    }
+
+    canvas {
+        border: 2px solid gray;
+	}
+
+    canvas.editorCanvas {
+        height: 400px;
+        aspect-ratio: 1.36; /* (640 / 400) * (34 / 40) */
+    }
+
+    canvas.editorInteractionCanvas {
+        position: absolute;
+        height: 400px;
+        aspect-ratio: 1.36; /* (640 / 400) * (34 / 40) */
+    }
+
+    div.blocksetContainer {
+        position: relative;
+        margin: 0 1%;
+    }
+
+    div.blocksetContainer:focus-within > canvas {
+        border:2px solid #4848FF;
+    }
+
+    div.bottomPanel {
+        display: flex;
+		flex-flow: row wrap;
+		justify-content: start;
+		align-items: baseline;
+		align-content: start;
+    }
+
+    div.pictureBlockSelectionContainer {
+        position: relative;
+        margin: 0.5em 1%;
+    }
+
+    canvas.pictureBlockSelectionCanvas {
+        height: 512px;
+        aspect-ratio: 1.0625; /* (640 / 512) * (34 / 40) */
+    }
+
+    canvas.pictureBlockSelectionInteractionCanvas {
+        height: 512px;
+        position: absolute;
+        aspect-ratio: 1.0625; /* (640 / 512) * (34 / 40) */
+    }
+
+    div.typeBlockSelectionContainer {
+        position: relative;
+        margin: 0.5em 1%;
+    }
+
+    canvas.typeBlockSelectionCanvas {
+        height: 512px;
+        aspect-ratio: 0.265625; /* (160 / 512) * (34 / 40) */
+    }
+
+    canvas.typeBlockSelectionInteractionCanvas {
+        height: 512px;
+        position: absolute;
+        aspect-ratio: 0.265625; /* (160 / 512) * (34 / 40) */
+    }
+
+</style>
+
+<script>
+
+// Used for auto-selecting a block type when a block picture is selected
+var firstBlocksetTypeEquivalents = [
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,20,20,20,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,20,20,20,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,2,3,1,0,0,48,48,48,
+        49,49,49,49,20,20,20,20,48,48,48,48,0,0,0,0,
+        48,48,48,48,0,0,0,0,56,56,56,56,20,20,20,0,
+        56,56,56,56,20,0,20,0,0,0,0,0,0,0,0,0,
+        48,48,48,0,0,0,0,0,48,48,48,20,0,0,0,0,
+        28,29,29,29,29,29,29,26,30,31,31,31,31,31,31,27,
+        46,48,47,44,44,20,20,20,46,48,47,48,48,0,0,0,
+        46,48,47,45,45,0,0,0,46,48,47,44,44,20,20,20,
+        46,48,47,48,48,20,20,20,46,48,47,45,45,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,17,8,0,0,0,0,0,0,17,8,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+
+const tileWidth = 40;
+const tileHeight = 32;
+
+const editorColumns = 16;
+const editorRows = 12;
+
+
+async function startEditor() {
+
+    document.worldNumber = 1;
+    document.blockPictureSelection = 0;
+    document.blockTypeSelection = 0;
+    document.editorSelection = {x: 0, y: 0, xOffset: 0, yOffset: 0};
+
+    // First task: Load the tiles for the editor.
+
+    document.blockUnderPointer = {x: 0, y: 0};
+
+    document.blocksetHasFocus = false;
+
+    var tempCanvas = document.getElementById("tempCanvas");
+
+    document.editorTiles = new EditorTileset(tempCanvas);
+    await document.editorTiles.load("/lib/editor_tiles.png", 16, 8, tileWidth, tileHeight);
+
+    populateTypeBlockSelector();
+
+    await selectWorld(1);
+}
+
+
+async function worldPulldownChanged() {
+    const s = document.getElementById("worldPulldown");
+    selectWorld(s.value);
+}
+
+
+async function selectWorld(newWorld) {
+    document.worldNumber = newWorld;
+
+    var editorCanvas = document.getElementById("editorCanvas");
+    var secondCanvas = document.getElementById("tempBlockSetCanvas");
+    var singleBlockCanvas = document.getElementById("tempBlockCanvas");
+
+    document.pictureTiles = new WorldTileset(editorCanvas, secondCanvas, singleBlockCanvas);
+    await document.pictureTiles.load(
+        "/block_sets/world_" + newWorld + "-blocks.png",
+        "/block_sets/world_" + newWorld + "-block_pointers.bin",
+        16, 12, tileWidth, tileHeight);
+
+    populatePictureBlockSelector();
+    selectPictureBlock(0);
+}
+
+
+function changeRedrawAndShowSelection(newSelection, dontScrollIfAlreadyInView) {
+    document.editorSelection = newSelection;
+    clearInteractionCanvas();
+    drawSelectionIndicator();
+    // The reticle may have been erased by the previous steps, so we need to redraw it.
+    drawTypeTile(document.blockUnderPointer.x, document.blockUnderPointer.y, 64, 0, 0);
+}
+
+
+function clearInteractionCanvas() {
+    var c = document.getElementById("editorInteractionCanvas");
+    var canvasContext = c.getContext("2d");
+    canvasContext.clearRect(0,0,640,400);
+}
+
+
+// Draw selection indicators for the given array of coordinate pairs {x:int,y:int}
+function drawSelectionIndicator() {
+    const s = document.editorSelection;
+    drawTypeTile(s.x, s.y, 65, s.xOffset, s.yOffset);
+}
+
+
+// Draw the tile with the given Id at the given x and y on the levelIds canvas.
+function drawTypeTile(x, y, tileId, offsetX, offsetY) {
+    var canvasToDrawOn = document.getElementById("editorInteractionCanvas");
+    var canvasContext = canvasToDrawOn.getContext("2d");
+    canvasContext.putImageData(
+        document.editorTiles.tiles[tileId],
+        (tileWidth*x)+offsetX,
+        (tileHeight*y)+offsetY);
+}
+
+
+function editorFocused(event) {
+    document.blocksetHasFocus = true;
+    console.log("editorFocused");
+}
+
+
+function editorBlurred(event) {
+    document.blocksetHasFocus = false;
+    console.log("editorBlurred");
+}
+
+
+function onLevelMapClick(mouseEvent) {
+    var c = document.getElementById("editorInteractionCanvas");
+    const currentBlock = mousey.mouseEventToBlockLocation(c, mouseEvent, 0, 15, 11, 40/34);
+
+    console.log("editorCanvas click", currentBlock);
+
+    var newSelection = {
+        x: currentBlock.x,
+        y: currentBlock.y,
+        xOffset: 0,
+        yOffset: 0
+    };
+
+    clearInteractionCanvas();
+    document.editorSelection = newSelection;
+    drawTypeTile(newSelection.x, newSelection.y, 64, newSelection.xOffset, newSelection.yOffset);
+    setNewBlockPointer(newSelection);
+}
+
+
+function onLevelMapMouseOver(mouseEvent) {
+    var c = document.getElementById("editorInteractionCanvas");
+    const currentBlock = mousey.mouseEventToBlockLocation(c, mouseEvent, 0, 15, 11, 40/34);
+    if ((currentBlock.x == document.blockUnderPointer.x) && (currentBlock.y == document.blockUnderPointer.y)) {
+        return;
+    }
+
+    // Situation where the user has NOT previously clicked down in some other tile,
+    // but has moved the mouse into this one.
+    // Action: Move the reticle here.
+    if ((currentBlock.x >= 0) &&
+        (currentBlock.y >= 0)
+    ) {
+        clearInteractionCanvas();
+        drawSelectionIndicator();
+        document.blockUnderPointer = currentBlock;
+        drawTypeTile(currentBlock.x, currentBlock.y, 64, 0, 0);
+        return;
+    }
+}
+
+
+function onEditorKeyDown(keyEvent) {
+    if (!document.blocksetHasFocus) { return; }
+    console.log("editor keydown");
+
+    // Arrow keys = adjust block pointer offset
+    if ((keyEvent.keyCode == 38) || (keyEvent.keyCode == 40) ||
+        (keyEvent.keyCode == 37) || (keyEvent.keyCode == 39))   {
+
+        var newSelection = {
+            x: document.editorSelection.x,
+            y: document.editorSelection.y,
+            xOffset: document.editorSelection.xOffset,
+            yOffset: document.editorSelection.yOffset
+        };
+        if (keyEvent.keyCode == 38) {   // Up arrow
+            newSelection.yOffset = Math.max(newSelection.yOffset-2, 0);
+        } else if (keyEvent.keyCode == 40) {    // Down arrow
+            newSelection.yOffset = Math.min(newSelection.yOffset+2, tileHeight-2);
+        } else if (keyEvent.keyCode == 37) {    // Left arrow
+            newSelection.xOffset = Math.max(newSelection.xOffset-4, 0);
+        } else if (keyEvent.keyCode == 39) {    // Right arrow
+            newSelection.xOffset = Math.min(newSelection.xOffset+4, tileWidth-4);
+        }
+
+        clearInteractionCanvas();
+        document.editorSelection = newSelection;
+        drawTypeTile(newSelection.x, newSelection.y, 65, newSelection.xOffset, newSelection.yOffset);
+        setNewBlockPointer(newSelection);
+
+        keyEvent.preventDefault()
+    }
+}
+
+
+function setNewBlockPointer(selection) {
+    document.pictureTiles.changeBlockPointer(document.blockPictureSelection, selection.x, selection.y, selection.xOffset, selection.yOffset);
+    // This is inefficient but computers are so fast, man, like, what the hell, why even bother?
+    document.pictureTiles.resolvePointers();
+    populatePictureBlockSelector();    
+}
+
+
+function populateTypeBlockSelector() {
+    var c = document.getElementById("typeBlockSelectionCanvas");
+    var canvasContext = c.getContext("2d");
+
+    for (var x=0; x < 4; x++) {
+        for (var y=0; y < 16; y++) {
+            var tileId = (y * 4) + x;
+            canvasContext.putImageData(document.editorTiles.tiles[tileId],tileWidth*x,tileHeight*y);
+        }
+    }
+};
+
+
+function populatePictureBlockSelector() {
+    var c = document.getElementById("pictureBlockSelectionCanvas");
+    var canvasContext = c.getContext("2d");
+
+    for (var x=0; x < 16; x++) {
+        for (var y=0; y < 16; y++) {
+            var tileId = (y * 16) + x;
+            canvasContext.putImageData(document.pictureTiles.tiles[tileId],tileWidth*x,tileHeight*y);
+        }
+    }
+};
+
+
+function clickOnTypeBlockSelector(event) {
+    var c = document.getElementById("typeBlockSelectionInteractionCanvas");
+    const coordinates = mousey.mouseEventToBlockLocation(c, event, 0.0, 3, 15, 40/34);
+    const type = Math.max(0, coordinates.x) + (Math.max(0, coordinates.y)*4);
+    selectTypeBlock(type);
+};
+
+
+function clickOnPictureBlockSelector(event) {
+    var c = document.getElementById("pictureBlockSelectionInteractionCanvas");
+    const coordinates = mousey.mouseEventToBlockLocation(c, event, 0.0, 15, 15, 40/34);
+    const type = Math.max(0, coordinates.x) + (Math.max(0, coordinates.y)*16);
+    selectPictureBlock(type);
+    selectTypeBlock(firstBlocksetTypeEquivalents[type]);
+};
+
+
+function selectTypeBlock(newSelection) {
+    var c = document.getElementById("typeBlockSelectionInteractionCanvas");
+    var canvasContext = c.getContext("2d");
+
+    const xPrevious = document.blockTypeSelection % 4;
+    const yPrevious = Math.floor(document.blockTypeSelection / 4);
+    canvasContext.clearRect(tileWidth*xPrevious, tileHeight*yPrevious, tileWidth, tileHeight);
+
+    const x = newSelection % 4;
+    const y = Math.floor(newSelection / 4);
+    canvasContext.putImageData(document.editorTiles.tiles[65], tileWidth*x, tileHeight*y);
+
+    document.blockTypeSelection = newSelection;
+}
+
+
+function selectPictureBlock(newSelection) {
+    var c = document.getElementById("pictureBlockSelectionInteractionCanvas");
+    var canvasContext = c.getContext("2d");
+
+    const xPrevious = document.blockPictureSelection % 16;
+    const yPrevious = Math.floor(document.blockPictureSelection / 16);
+    canvasContext.clearRect(tileWidth*xPrevious, tileHeight*yPrevious, tileWidth, tileHeight);
+
+    const x = newSelection % 16;
+    const y = Math.floor(newSelection / 16);
+    canvasContext.putImageData(document.editorTiles.tiles[65], tileWidth*x, tileHeight*y);
+
+    document.blockPictureSelection = newSelection;
+}
+
+
+function pressedSaveButton(event) {
+    const linkSource = document.pictureTiles.pointersAsHrefData();
+
+    const downloadLink = document.getElementById("downloadLink");
+    downloadLink.href = linkSource;
+    downloadLink.target = '_self';
+    downloadLink.download = "world_" + document.worldNumber + "-block_pointers.bin";
+}
+
+
+</script>
+
+</head>
+
+<body id="bodyId" onLoad="startEditor();">
+
+    <div class="topBar">
+        <h3>SMT Blockset Pointer Editor</h3>
+        <div>
+            <select class="worldPulldown" id="worldPulldown" onchange="worldPulldownChanged();">
+                <option value="1">World 1</option>
+                <option value="2">World 2</option>
+                <option value="3">World 3</option>
+                <option value="4">World 4</option>
+                <option value="5">World 5</option>
+                <option value="6">World 6</option>
+                <option value="7">World 7</option>
+            </select>
+        </div>
+    </div>
+
+    <canvas style="display:none;" id="tempCanvas" width=640 height=384></canvas>
+    <canvas style="display:none;" id="tempBlockSetCanvas" width=40 height=6144></canvas>
+    <canvas style="display:none;" id="tempBlockCanvas" width=40 height=32></canvas>
+
+    <div id="blocksetContainer" class="blocksetContainer"
+            tabindex="0"
+            onfocus="editorFocused(event);"
+            onblur="editorBlurred(event);"
+            onkeydown="onEditorKeyDown(event);">
+        <canvas id="editorInteractionCanvas" class="editorInteractionCanvas" width=640 height=400
+            onclick="onLevelMapClick(event);"
+            onmousemove="onLevelMapMouseOver(event);"></canvas>
+        <canvas id="editorCanvas" class="editorCanvas" width=640 height=400></canvas>
+    </div>
+
+    <div>
+        <div class="bottomPanel">
+
+            <div id="pictureBlockSelectionContainer" class="pictureBlockSelectionContainer">
+                <canvas id="pictureBlockSelectionInteractionCanvas" class="pictureBlockSelectionInteractionCanvas" width=640 height=512 onclick="clickOnPictureBlockSelector(event);"></canvas>
+                <canvas id="pictureBlockSelectionCanvas" class="pictureBlockSelectionCanvas" width=640 height=512></canvas>
+            </div>
+
+            <div id="typeBlockSelectionContainer" class="typeBlockSelectionContainer">
+                <canvas id="typeBlockSelectionInteractionCanvas" class="typeBlockSelectionInteractionCanvas" width=160 height=512 onclick="clickOnTypeBlockSelector(event);"></canvas>
+                <canvas id="typeBlockSelectionCanvas" class="typeBlockSelectionCanvas" width=160 height=512></canvas>
+            </div>
+        </div>
+
+        <h3>How To Use</h3>
+
+        <p>
+            Click in the block pictures gallery (below the raw blockset image) to select a block picture.
+        </p>
+        <p>
+            Click on a block in the raw blockset image (top of the window) to set the pointer for that block image.
+            Fine tune the selection using the arrow keys.
+        </p>
+        <p>
+            Click on a block type on the right to associate that image with a block type.
+            The resulting type array will be logged in the console for incorporation into the block editor.
+        </p>
+
+        <h4>
+            How to save your work:
+        </h4>
+
+        <p>
+            Press this
+            <input type="button" value="save" onclick="pressedSaveButton(event);" />
+            button, then <a id="downloadLink" href="">click here</a>
+            to get the set of block pointers as file.
+        </p>
+        <p>
+            Note that Safari has an extremely pernicious caching system, and you may have to click Develop -> Empty Caches to get your file changes to appear.
+        <p>
+
+    </div>
+</body>
+</html>
