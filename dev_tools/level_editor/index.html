@@ -2,10 +2,10 @@
 <html>
 <head>
 
-<script src="mouse_utils.js"></script>
-<script src="selection.js"></script>
+<script src="/lib/mouse_utils.js"></script>
+<script src="/lib/selection.js"></script>
 <script src="edit_history.js"></script>
-<script src="tile_sets.js"></script>
+<script src="/lib/tile_sets.js"></script>
 <script src="level_set.js"></script>
 <script src="connects_editing.js"></script>
 
@@ -382,7 +382,7 @@ async function startEditor() {
 	var spriteCanvas = document.getElementById("levelSpriteCanvas");
 
     document.editorTiles = new EditorTileset(tempCanvas);
-    await document.editorTiles.load("editor_tiles.png", 16, 8, tileWidth, tileHeight);
+    await document.editorTiles.load("/lib/editor_tiles.png", 16, 8, tileWidth, tileHeight);
 
     document.connectsEditing = new ConnectsEditing(mapColumns, mapRows, spriteCanvas, document.editorTiles);
 
@@ -1503,7 +1503,7 @@ function pressedSaveButton(event) {
     const downloadLink = document.getElementById("levelDownloadLink");
     downloadLink.href = linkSource;
     downloadLink.target = '_self';
-    downloadLink.download = "world_" + worldNumber + "-level_1_to_4.bin";
+    downloadLink.download = "world_" + document.worldNumber + "-level_1_to_4.bin";
 }
 
 

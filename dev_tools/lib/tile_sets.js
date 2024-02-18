@@ -46,11 +46,14 @@ class WorldTileset {
 		this.tempCanvas = tempCanvas;
 		this.tempBlocksetCanvas = tempBlocksetCanvas;
 		this.tempBlockCanvas = tempBlockCanvas;
-		this.tiles = [];
+
 		this.tilesColumns = 0;
 		this.tilesRows = 0;
 		this.tileWidth = 0;
 		this.tileHeight = 0;
+
+		this.tiles = [];
+		this.tilePointers = [];
 	}
 
 	async load(sourceImage, blocksetPointers, tilesColumns, tilesRows, tileWidth, tileHeight) {
@@ -102,29 +105,48 @@ class WorldTileset {
 			tilePointers[j] = data.getUint8(j * Uint8Array.BYTES_PER_ELEMENT, true);
 		}
 
+		this.tilePointers = tilePointers;
+		this.resolvePointers();
+	}
+
+
+	changeBlockPointer(block, x, y, xOffset, yOffset) {
+		const oneBlockInBytes = (this.tileWidth / 2) * (this.tileHeight / 2) / 2;
+		const blockOffset = oneBlockInBytes * (x + (y * this.tilesColumns));
+		const hOffset = xOffset / 4;
+		const vOffset = (yOffset / 2) * (this.tileWidth / 4);
+		const offset = blockOffset + vOffset + hOffset;
+		this.tilePointers[block*2] = offset % 0x100;
+		this.tilePointers[(block*2)+1] = Math.floor(offset / 0x100);
+	}
+
+
+	resolvePointers() {
 		var mapTiles = [];
+
+		var secondContext = this.tempBlocksetCanvas.getContext("2d");
 
 		// Prepare our single-block canvas where we assemble completed blocks from pieces.
 		var singleBlockContext = this.tempBlockCanvas.getContext("2d");
-		singleBlockContext.width = tileWidth;
-		singleBlockContext.height = tileHeight;
+		singleBlockContext.width = this.tileWidth;
+		singleBlockContext.height = this.tileHeight;
 
 		for (var j = 0; j < 256; ++j) {
 			// We combine byte pairs to make 16-bit pointers into the image data.
 			// Note that these pointers refer to bytes, and in Super Hi Res, each byte contains two
 			// pixels.  So these values need to be doubled to reach the correct pixel values in our canvas.
-			const tilePointer = (tilePointers[j*2] + (256 * tilePointers[(j*2)+1])) * 2;
+			const tilePointer = (this.tilePointers[j*2] + (256 * this.tilePointers[(j*2)+1])) * 2;
 			const blockFraction = tilePointer % 20;
 			const blockIndex = Math.floor(tilePointer / 20);
 			// The canvas is using blocks drawn at 2x scale, e.g. 40x32 instead of 20x16.
 			// So we need to double our values again.
-			const blockLeftPart = secondContext.getImageData(
+			const blockRightPart = secondContext.getImageData(
 					blockFraction * 2,
 					blockIndex * 2,
-					tileWidth - (blockFraction*2),
-					tileHeight
+					this.tileWidth - (blockFraction*2),
+					this.tileHeight
 			);
-			singleBlockContext.putImageData(blockLeftPart,0,0);
+			singleBlockContext.putImageData(blockRightPart,0,0);
 
 			// If the pointer has a fractional remainder, the block wraps partially around
 			// to the next "row" in the stipe data, so we need to do a second copy to catch
@@ -136,17 +158,28 @@ class WorldTileset {
 						0,
 						(blockIndex * 2) + 2,
 						blockFraction * 2,
-						tileHeight
+						this.tileHeight
 				);
-				singleBlockContext.putImageData(blockRightPart,blockFraction * 2,0);
+				singleBlockContext.putImageData(blockRightPart,this.tileWidth - (blockFraction * 2),0);
 			}
 
 			const blockComplete = singleBlockContext.getImageData(
-					0, 0, tileWidth, tileHeight
+					0, 0, this.tileWidth, this.tileHeight
 			);
 			mapTiles.push(blockComplete);
 		}
 
 		this.tiles = mapTiles;
+	}
+
+
+	pointersAsHrefData() {
+		const d = this.tilePointers;
+		const binstr = Array.prototype.map.call(d, function (ch) {
+			return String.fromCharCode(ch);
+		}).join('');
+	    const b64encoded = btoa(binstr);
+    	const linkSource = 'data:application/octet-stream;base64,' + b64encoded;
+		return linkSource;
 	}
 }
