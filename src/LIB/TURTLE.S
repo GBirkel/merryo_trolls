@@ -68,7 +68,7 @@ TurtleE  jmp   Turtle2
 TurtleA  ldx   Tmp3
          lda   MapBl+$C,x
          ldx   Tmp
-         cmp   #Gppd      ; Horiz obst check 1
+         cmp   #BlkId_PipeDown ; Horiz obst check 1
          bcs   Turtle7    ; Clear if before
          lda   #$02
          bra   Turtle2
@@ -91,7 +91,7 @@ Turtle1  lda   SprI+1,x
          ldx   Tmp3
          lda   MapBl-$C,x
          ldx   Tmp
-         cmp   #Gppd      ; horiz. check 2
+         cmp   #BlkId_PipeDown ; horiz. check 2
          bcc   Turtle8
 Turtle7  lda   SprI+1,x
          eor   #$80
@@ -113,7 +113,7 @@ TurtleT  inc   SprI+3,x
          ldx   Tmp3       ; if it IS 0, we check for the block under
          lda   MapBl+1,x
          ldx   Tmp
-         cmp   #Gplt
+         cmp   #BlkId_Pltfm
          bcc   :Br1       ; If it's not solid, don't reset the Vv
          lda   #$80
          sta   SprI+3,x
@@ -128,7 +128,7 @@ TurtleT  inc   SprI+3,x
          sep   #$20
          lda   MapBl,x
          ldx   Tmp
-         cmp   #Gplt
+         cmp   #BlkId_Pltfm
          Bcc   TurtleQ
          lda   #$80       ; Okay, now we've checked for a drop
          sta   SprI+3,x   ; and incremented the Vv.
@@ -161,7 +161,7 @@ TurtleX  dec   Tmp2       ; REM: Tmp = Sprite loc  Tmp3 = Map loc
          ldx   Tmp3
          lda   MapBl+1,x
          ldx   Tmp
-         cmp   #Gplt
+         cmp   #BlkId_Pltfm
          bcc   TurtleJ    ; If it's not solid, don't reset the Vv
          lda   #$80
          sta   SprI+3,x
@@ -177,7 +177,7 @@ TurtleJ  lda   SprI+7,x
          sep   #$20
          lda   MapBl,x
          ldx   Tmp
-         cmp   #Gplt
+         cmp   #BlkId_Pltfm
          Bcc   TurtleK
          lda   #$80       ; Okay, now we've checked for a drop
          sta   SprI+3,x   ; and incremented the Vv.
@@ -402,7 +402,7 @@ Shell19  lda   SprI+1,x
 :Br1     ldx   Tmp3
          lda   MapBl+$C,x
          ldx   Tmp
-         cmp   #Gppd      ; Horiz obst check 1
+         cmp   #BlkId_PipeDown ; Horiz obst check 1
          bcc   Shell5     ; Clear if before
          lda   SprI+1,x
          ora   #$80       ; Reverse direction
@@ -417,7 +417,7 @@ Shell6   lda   SprI+7,x
          ldx   Tmp3
          lda   MapBl-$C,x
          ldx   Tmp
-         cmp   #Gppd      ; horiz. check 2
+         cmp   #BlkId_PipeDown ; horiz. check 2
          bcc   Shell7
          lda   SprI+1,x
          and   #$7F
@@ -443,14 +443,14 @@ Shell77  inc   SprI+3,x   ; stop updating H no matter what it was.
          ldx   Tmp3       ; if it IS 0, we check for the block under
          lda   MapBl+1,x
          ldx   Tmp
-         cmp   #Gplt
+         cmp   #BlkId_Pltfm
          bcs   Shell9     ; If it's not solid, don't reset the Vv
          lda   SprI+7,x   ; If shell is not on a
          beq   Shell10    ; single block, check the block "in front"
          ldx   Tmp3
          lda   MapBl+$D,x
          ldx   Tmp
-         cmp   #Gplt
+         cmp   #BlkId_Pltfm
          Bcc   Shell10
 Shell9   lda   #$80       ; Okay, now we've checked for a drop
          sta   SprI+3,x   ; and incremented the Vv.
@@ -480,7 +480,7 @@ Shell12  dec
          ldx   Tmp3
          lda   MapBl+1,x
          ldx   Tmp
-         cmp   #Gplt
+         cmp   #BlkId_Pltfm
          bcs   Shell13    ; If it's not solid, don't reset the Vv
          lda   SprI+7,x
          cmp   #$00       ; If not on a
@@ -488,7 +488,7 @@ Shell12  dec
          ldx   Tmp3
          lda   MapBl+$D,x
          ldx   Tmp
-         cmp   #Gplt
+         cmp   #BlkId_Pltfm
          Bcc   Shell14
 Shell13  lda   #$80       ; Okay, now we've checked for a drop
          sta   SprI+3,x   ; and incremented the Vv.

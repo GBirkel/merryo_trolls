@@ -4,20 +4,20 @@
          lst   off
 
          MX    %10
-ChSolid  cmp   #Gbi10+1
+ChSolid  cmp   #BlkId_SolidActn10+1
          bcs   OutAHere
-         cmp   #Gbi1
+         cmp   #BlkId_SolidActn1
          bcs   ChSolid2   ; If it doesn't match the first time,
-         adc   #Gbi1-Gbh1 ; Add to it- in case it's invisible
-         cmp   #Gbi10+1   ; and check again
+         adc   #BlkId_SolidActn1-BlkId_HiddenSld1 ; Add to it- in case it's invisible
+         cmp   #BlkId_SolidActn10+1   ; and check again
          bcs   OutAHere
-         cmp   #Gbi1
+         cmp   #BlkId_SolidActn1
          bcc   OutAHere
 ChSolid2 sta   Itm2
          rep   #$20
          and   #$00FF
          sec
-         sbc   #Gbi1
+         sbc   #BlkId_SolidActn1
          asl
          tax
          sep   #$20
@@ -38,11 +38,11 @@ Bl_Ladder jmp OutAHere
 
          mx    %10
 Bl_Coin  ldx   Itm
-         lda   #Gsld
+         lda   #BlkId_Solid
          sta   MapBl,x    ; Coin block is solid now
          lda   MapVl,x    ; Get the current coin pic value
          and   #$03       ; $01E0
-         ora   #Gloc      ; add Gloc to make it into
+         ora   #BlkPic_SolidEmpty      ; add standard offset to make it into
          sta   MapVl,x
          sta   Tmp3       ; it's respective empty box.
          stz   Tmp3+1
@@ -133,9 +133,9 @@ Friction lda   Connects+4,y
          and   #$0001       ; If the connects say so,
          bne   Splergh
 MesagEr  sep   #$20         ; remove this message from the map
-         lda   #Gsld
+         lda   #BlkId_Solid
          sta   MapBl,x
-         lda   #Gloc+3
+         lda   #BlkPic_SolidEmpty+3
          sta   MapVl,x
          sta   Tmp3
          stz   Tmp3+1
@@ -238,7 +238,7 @@ Bl_Breakable  ldx   Itm
          ldx   Itm        ; --Check for coin above--
          lda   MapBl-1,x
          and   #$FD
-         cmp   #Git1
+         cmp   #BlkId_CoinA
          beq   *+3
          rts
          lda   MapBl-1,x
@@ -292,14 +292,14 @@ Bl_Breakable  ldx   Itm
 
          MX    %10
 Bl_Mushroom sec
-         sbc   #Gbi1+1
+         sbc   #BlkId_SolidActn1+1
          sta   Parakeet+1
-         lda   #Gsld
+         lda   #BlkId_Solid
          ldx   Itm
          sta   MapBl,x    ; Coin block is solid now
          lda   MapVl,x    ; Get the current coin pic value
          and   #$03
-         ora   #Gloc      ; add Gloc to make it into
+         ora   #BlkPic_SolidEmpty      ; add standard offset to make it into
          sta   MapVl,x
          sta   Tmp3       ; its respective empty box.
          stz   Tmp3+1

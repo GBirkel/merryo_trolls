@@ -13,7 +13,7 @@ Flower10 sep   #$20
          and   #$01       ; no valid contact.
          beq   :Continue
          rts
-:Continue lda   #Gclr
+:Continue lda   #BlkId_Empty
          ldx   Itm
          sta   MapBl,x    ; Non-activating now
          lda   #$01
@@ -42,7 +42,7 @@ Flower01 sep   #$20
          and   #$01       ; no valid contact.
          bne   :Continue
          rts
-:Continue lda   #Gclr
+:Continue lda   #BlkId_Empty
          ldx   Itm
          sta   MapBl,x    ; Non-activating now
          lda   #$01
@@ -70,7 +70,7 @@ Flower11 sep   #$20
          lda   Mdir       ; If not facing forward,
          and   #$01       ; no valid contact.
          bne   Flowr11c
-         lda   #Gsp1+1
+         lda   #BlkId_Sprt1+1
          ldx   Itm
          sta   MapBl,x    ; Different code now
          lda   #$38       ; L-flower block
@@ -90,7 +90,7 @@ Flower11 sep   #$20
          bra   FlFinish   ; Code is identical from here on
 
          MX    %10
-Flowr11c lda   #Gsp1
+Flowr11c lda   #BlkId_Sprt1
          ldx   Itm
          sta   MapBl,x    ; Different code now
          lda   #$3A       ; R-flower block

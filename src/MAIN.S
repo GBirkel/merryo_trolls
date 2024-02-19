@@ -172,47 +172,50 @@ AcidIndx DS    2
          PUT   LIB/TVSCRNS
          FIN
 
+*
+* Various constants
+*
 
 EsqA            = $01C03E  ; Ensoniq Address reg
 EsqC            = $01C03C  ; Ensoniq Control reg
 EsqD            = $01C03D  ; Ensoniq Data reg
 
 PalNum          = $10  ; Standard number of palletes to fade.
-MhMsv           = $82  ; Horizontal movement lower level (walking)
-MhMfv           = $86  ; Horizontal movement upper level (running)
+GVelocityHWalking  = $82  ; Horizontal movement lower level (walking)
+GVelocityHRunning  = $86  ; Horizontal movement upper level (running)
 
 * A key for interpreting the block IDs in the level map
 
-Gclr            = $00  ; Clear invisible space i.d
-Gsp1            = $01  ; 1st clear sprite-activatior i.d
-Gsp8            = $08  ; 8th clear sprite-activatior i.d
-Gcdi            = $10  ; Clear deady block i.d
-Gdor            = $11  ; Clear door space i.d
-Gplt            = $14  ; Straight platform i.d
-Gpl2            = $15  ; Straight reverse platform i.d
+BlkId_Empty       = $00  ; Clear invisible space i.d
+BlkId_Sprt1       = $01  ; 1st clear sprite-activatior i.d
+BlkId_Sprt8       = $08  ; 8th clear sprite-activatior i.d
+BlkId_EmptyDeadly = $10  ; Clear deady block i.d
+BlkId_Door        = $11  ; Clear door space i.d
+BlkId_Pltfm       = $14  ; Straight platform i.d
+BlkId_RevPltfm    = $15  ; Straight reverse platform i.d
          DO    BF_Slopes
-GplL            = $16  ; Left sloped platform i.d
-GplR            = $17  ; Right sloped platform i.d
+BlkId_SlopeLeft   = $16  ; Left sloped platform i.d
+BlkId_SlopeRight  = $17  ; Right sloped platform i.d
          FIN
-Git1            = $1C  ; Coin with block $00 under
-Git2            = $1D  ; Food with block $00 under
-Git3            = $1E  ; Coin with block $A0 under
-Git4            = $1F  ; Food with block $A0 under
-Gbh1            = $21  ; 1st hidden action solid i.d
-Gbh10           = $2A  ; 10th hidden action solid i.d
-Gppd            = $2C  ; Entry down i.d (all solids past here)(usually)
-Gppu            = $2D  ; Entry up i.d
-Gppr            = $2E  ; Entry right i.d
-Gppl            = $2F  ; Entry left i.d
-Gsld            = $30  ; Solid i.d
-Gbi1            = $31  ; 1st action solid i.d
-Gbi10           = $3A  ; 10th action solid i.d
+BlkId_CoinA       = $1C  ; Coin with block $00 under
+BlkId_FoodA       = $1D  ; Food with block $00 under
+BlkId_CoinB       = $1E  ; Coin with block $A0 under
+BlkId_FoodB       = $1F  ; Food with block $A0 under
+BlkId_HiddenSld1  = $21  ; 1st hidden action solid i.d
+BlkId_HiddenSld10 = $2A  ; 10th hidden action solid i.d
+BlkId_PipeDown    = $2C  ; Entry down i.d (all solids past here)(usually)
+BlkId_PipeUp      = $2D  ; Entry up i.d
+BlkId_PipeRight   = $2E  ; Entry right i.d
+BlkId_PipeLeft    = $2F  ; Entry left i.d
+BlkId_Solid       = $30  ; Solid i.d
+BlkId_SolidActn1  = $31  ; 1st action solid i.d
+BlkId_SolidActn10 = $3A  ; 10th action solid i.d
          DO    BF_Buttons
-MapTypeButton   = $3B  ; Half-height button i.d , only useful if BF_Buttons = 1
+BlkId_ButtonHalf  = $3B  ; Half-height button i.d , only useful if BF_Buttons = 1
          FIN
-Gsdi            = $3F  ; Solid deadly block i.d
+BlkId_SolidDeadly = $3F  ; Solid deadly block i.d
 
-Gloc            = $48  ; Standard location of blank solids in blox MOD
+BlkPic_SolidEmpty = $48  ; Standard starting location of blank solids in blox MOD
 
 
 ProgBegn SEC
@@ -957,12 +960,9 @@ NotPlaybackStart = *
          stal  $e1c010
 
 NoKeyIsDown = *
-         lda   GameFlags    ; Skip new reads if autopilot is running
-         bmi   AutoSkip
-
          PUT   LIB/JOYSTICK
 
-EndStick rep   #$30       ; all this does
+         rep   #$30       ; all this does
          JSR   PalUpdate      ; is update the palette.
          DO    BF_TVScrns
          jsr   DrawScrn   ; Temporary check to see if it works
@@ -1046,7 +1046,7 @@ Junky    rep   #$10       ; Set the anal Xaxs value
          cmp   #$08       ; Step 8 half-height button check
          bne   Burger
          lda   MapBl,x
-         cmp   #MapTypeButton
+         cmp   #BlkId_ButtonHalf
          beq   ScrewMe
          lda   GPositionXFifth ; GPositionXFifth = 0>2?
          cmp   #$03
@@ -1057,23 +1057,23 @@ Junky    rep   #$10       ; Set the anal Xaxs value
          tax
          sep   #$20
          lda   MapBl,x
-         cmp   #MapTypeButton      ; Next block over
+         cmp   #BlkId_ButtonHalf  ; Next block over
          beq   ScrewMe
 Burger   =     *
          FIN
 
          lda   MapBl,x
-         cmp   #GplL      ; Immediate slope check
+         cmp   #BlkId_SlopeLeft   ; Immediate slope check
          beq   Keifer
-         cmp   #GplR
+         cmp   #BlkId_SlopeRight
          beq   Suthrlnd
          lda   GPositionXFifth
          cmp   #$03
          bcc   Buttock
          lda   MapBl+$C,x
-         cmp   #GplL      ; To right slope check
+         cmp   #BlkId_SlopeLeft   ; To right slope check
          beq   Keifer
-         cmp   #GplR
+         cmp   #BlkId_SlopeRight
          bne   Buttock
 Suthrlnd ldy   #$0005
 Keifer   rep   #$21
@@ -1108,13 +1108,13 @@ Barney   inx              ; one extra block down
          tax
          sep   #$20
          lda   MapBl,x
-         cmp   #MapTypeButton
+         cmp   #BlkId_ButtonHalf
          beq   ScrewMe
          lda   GPositionXFifth  ; GPositionXFifth = 0>2?
          cmp   #$03
          bcc   Buttock
          lda   MapBl+$c,x
-         cmp   #MapTypeButton      ; Next block over
+         cmp   #BlkId_ButtonHalf  ; Next block over
          beq   ScrewMe
          bra   Buttock
 
@@ -1145,17 +1145,17 @@ PayUp    =     *          ; normal 'below' check
          lda   MapBl,x
 
          DO    BF_Buttons
-         cmp   #MapTypeButton
+         cmp   #BlkId_ButtonHalf
          beq   :Br1
-         cmp   #Gppd
+         cmp   #BlkId_PipeDown
          bcs   ScrewMe
-         cmp   #Gplt
+         cmp   #BlkId_Pltfm
          beq   ScrewMe
 :Br1     lda   GPositionXFifth
          ELSE
-         cmp   #Gppd
+         cmp   #BlkId_PipeDown
          bcs   ScrewMe
-         cmp   #Gplt
+         cmp   #BlkId_Pltfm
          beq   ScrewMe
          lda   GPositionXFifth
          FIN
@@ -1165,11 +1165,11 @@ PayUp    =     *          ; normal 'below' check
          lda   MapBl+$c,x ; Next row of blocks
 
          DO    BF_Buttons
-         cmp   #MapTypeButton
+         cmp   #BlkId_ButtonHalf
          beq   Buttock
          FIN
 
-         cmp   #Gplt
+         cmp   #BlkId_Pltfm
          bcc   Buttock
 ScrewMe  lda   #$01
          sta   NoFall
@@ -1256,10 +1256,10 @@ CheckDoorDown sep   #$20
          sta   MapLocWrite+1   ; (Save that map location)
          sep   #$20
          lda   MapBl,x
-         cmp   #Gppd      ; And there is a down pipe under Merry-Man,
+         cmp   #BlkId_PipeDown ; And there is a down pipe under Merry-Man,
          bne   CheckDoorRight
          lda   MapBl+$C,x
-         cmp   #Gppd
+         cmp   #BlkId_PipeDown
          bne   CheckDoorRight ; AND there is a down pipe right of Guido,
          lda   GPositionYBlk  ; SHOVE HIS ASS OFF!! 8)
          cmp   #$0c
@@ -1291,11 +1291,11 @@ CheckDoorRight lda   Xaxs       ; If joystick is right,
          sta   MapLocWrite+1   ; (Save that map location)
          lda   MapBl,x
          and   #$00FF
-         cmp   #Gppr      ; And there is a pipe right of Merry-Man,
+         cmp   #BlkId_PipeRight      ; And there is a pipe right of Merry-Man,
          bne   CheckDoorLeft
          lda   MapBl-1,x
          and   #$00FF
-         cmp   #Gppr
+         cmp   #BlkId_PipeRight
          bne   CheckDoorLeft   ; AND there is a pipe up&right of Mr.Man,
 
          jsr   DoorCompute   ; Shove his heine in.
@@ -1322,11 +1322,11 @@ CheckDoorLeft sep   #$20
          sta   MapLocWrite+1   ; (Save that map location)
          lda   MapBl,x
          and   #$00FF
-         cmp   #Gppl      ; And there is a pipe left of Guido,
+         cmp   #BlkId_PipeLeft ; And there is a pipe left of Guido,
          bne   CheckDoorUp
          lda   MapBl-1,x
          and   #$00FF
-         cmp   #Gppl
+         cmp   #BlkId_PipeLeft
          bne   CheckDoorUp   ; AND there is a pipe up&left of Mr.Man,
          jsr   DoorCompute   ; Shove his ass out
          jsr   LSideOut
@@ -1357,7 +1357,7 @@ CheckDoorUp sep   #$20
          sta   MapLocWrite+1   ; (Save location for later)
          lda   MapBl,x
          and   #$00FF
-         cmp   #Gdor      ; And there is a door behind Merry-Man,
+         cmp   #BlkId_Door      ; And there is a door behind Merry-Man,
          beq   *+5
 Wralf    jmp   Worf
          lda   GPositionYBlk ; VANISH HIS ASS!! 8)
@@ -1412,7 +1412,7 @@ HopHop   cmp   #$80
          beq   Smooth
          bra   Flesh
 :Br1     lda   MapBl,x
-         cmp   #Gppd      ; Solid?
+         cmp   #BlkId_PipeDown ; Solid?
          bcs   Flesh
          jsr   ChItem     ; Check the block directly in front.
          lda   GPositionYBlk ; If off screen, branch
@@ -1420,7 +1420,7 @@ HopHop   cmp   #$80
          beq   Smooth
          inx
          lda   MapBl,x
-         cmp   #Gppd      ; If this block is solid, do one more
+         cmp   #BlkId_PipeDown ; If this block is solid, do one more
          bcs   Laffer     ; special check before giving up.
          jsr   ChItem
          lda   GPositionYSlice
@@ -1432,7 +1432,7 @@ HopHop   cmp   #$80
          dex
          dex
          lda   MapBl,x
-         cmp   #Gppd
+         cmp   #BlkId_PipeDown
          bcs   Flesh
          jsr   ChItem
 Smooth   lda   #$04
@@ -1444,7 +1444,7 @@ Laffer   lda   GPositionYSlice
          dex
          dex              ; Move to block 2 above
          lda   MapBl,x
-         cmp   #Gppd
+         cmp   #BlkId_PipeDown
          bcs   Flesh           ; If it's not solid, move Guido up
          stz   GPositionYSlice ; into the space-
          inc   GPositionYBlk   ; result: he can "catch" a block
@@ -1488,7 +1488,7 @@ Poopy    rep   #$31
          beq   Larry
          bra   Drugs
 :Br1     lda   MapBl,x
-         cmp   #Gppd
+         cmp   #BlkId_PipeDown
          bcs   Drugs
          jsr   ChItem     ; Second up block:
          lda   GPositionYBlk ; If off screen, branch
@@ -1496,7 +1496,7 @@ Poopy    rep   #$31
          bcs   Larry
          inx
          lda   MapBl,x
-         cmp   #Gppd
+         cmp   #BlkId_PipeDown
          bcs   Godflesh
          jsr   ChItem
          lda   GPositionYSlice ; If the bloated sack is not near
@@ -1508,7 +1508,7 @@ Poopy    rep   #$31
          dex
          dex
          lda   MapBl,x
-         cmp   #Gppd
+         cmp   #BlkId_PipeDown
          bcs   Drugs
          jsr   ChItem
          bra   Larry
@@ -1518,7 +1518,7 @@ Godflesh lda   GPositionYSlice
          dex
          dex              ; Move to block 2 above
          lda   MapBl,x
-         cmp   #Gppd
+         cmp   #BlkId_PipeDown
          bcs   Drugs           ; If it's not solid, move Guido up
          stz   GPositionYSlice ; into the space-
          inc   GPositionYBlk   ; result: he can "catch" a block
@@ -1565,9 +1565,9 @@ Lips     cmp   #$02       ; MORE space!!
          cmp   #$04       ; If the slice is 4 (was 3 or more),
          bcs   Check2nd   ; check the rightmost block >first< for
          lda   MapBl,x    ; a solid
-         cmp   #Gbh1
+         cmp   #BlkId_HiddenSld1
          bcs   HitSolidAbove
-         cmp   #Gpl2
+         cmp   #BlkId_RevPltfm
          beq   HitSolidAbove ; Or if reverse platform...
          jsr   ChItem
          lda   GPositionXFifth ; Does GPositionXFifth = 0>2?
@@ -1580,9 +1580,9 @@ Check2nd stx   :SavedMapSpot+1  ; Save original so we don't have to subtract
          tax
          sep   #$20
          lda   MapBl,x    ; next column
-         cmp   #Gbh1      ; check the second block
+         cmp   #BlkId_HiddenSld1      ; check the second block
          bcs   HitSolidAbove
-         cmp   #Gpl2
+         cmp   #BlkId_RevPltfm
          beq   HitSolidAbove ; Or if reverse platform...
          jsr   ChItem
          lda   GPositionXFifth
@@ -1590,9 +1590,9 @@ Check2nd stx   :SavedMapSpot+1  ; Save original so we don't have to subtract
          bcc   Round
 :SavedMapSpot ldx   #$0000     ; Restore that val.
          lda   MapBl,x    ; This column
-         cmp   #Gbh1      ; check the second block
+         cmp   #BlkId_HiddenSld1      ; check the second block
          bcs   HitSolidAbove
-         cmp   #Gpl2
+         cmp   #BlkId_RevPltfm
          beq   HitSolidAbove ; Or if reverse platform...
          jsr   ChItem
 Round    jmp   Uranus
@@ -1629,7 +1629,7 @@ Juicy    dec   Yaxs       ; second routine
          tax
          sep   #$20
          lda   MapBl,x
-         cmp   #MapTypeButton
+         cmp   #BlkId_ButtonHalf
          beq   NotElsa
          lda   GPositionXFifth ; GPositionXFifth = 0>2?
          cmp   #$03
@@ -1640,7 +1640,7 @@ Juicy    dec   Yaxs       ; second routine
          tax
          sep   #$20
          lda   MapBl,x
-         cmp   #MapTypeButton      ; Next block over
+         cmp   #BlkId_ButtonHalf   ; Next block over
          bne   Elsa
 NotElsa  inc   GPositionYSlice
          lda   #$01
@@ -1696,18 +1696,18 @@ TopHat   lda   GPositionYBlk ; Bastard-offscreen check
          lda   MapBl,x
 
          DO    BF_Buttons
-         cmp   #MapTypeButton
+         cmp   #BlkId_ButtonHalf
          beq   Br1
-         cmp   #Gppd
+         cmp   #BlkId_PipeDown
          bcs   Kitties
-         cmp   #Gplt
+         cmp   #BlkId_Pltfm
          beq   Kitties
          jsr   ChItem
 Br1      =     *
          ELSE
-         cmp   #Gppd
+         cmp   #BlkId_PipeDown
          bcs   Kitties
-         cmp   #Gplt
+         cmp   #BlkId_Pltfm
          beq   Kitties
          jsr   ChItem
          FIN
@@ -1723,13 +1723,13 @@ Br1      =     *
          lda   MapBl,x
 
          DO    BF_Buttons
-         cmp   #MapTypeButton
+         cmp   #BlkId_ButtonHalf
          beq   Panties
          FIN
 
-         cmp   #Gppd      ; Next block over
+         cmp   #BlkId_PipeDown      ; Next block over
          bcs   Kitties
-         cmp   #Gplt
+         cmp   #BlkId_Pltfm
          beq   Kitties
          jsr   ChItem
 Panties  lda   #$0F
@@ -2534,16 +2534,16 @@ Thwonk   rts              ; sprite drawing
          lst   off
 
          MX    %10
-ChItem   cmp   #Gsp8+1    ; If sprite activating:
+ChItem   cmp   #BlkId_Sprt8+1    ; If sprite activating:
          bcs   ChItem2
-         cmp   #Gsp1
+         cmp   #BlkId_Sprt1
          bcc   ChItem2
          stx   Itm
          sta   Itm2
          rep   #$30
          and   #$00FF
          sec
-         sbc   #Gsp1
+         sbc   #BlkId_Sprt1
          asl
          tax
          jsr   (ActList,x)
@@ -2553,15 +2553,15 @@ NonAct   rep   #$10
          lda   Itm2
          rts
          MX    %10
-ChItem2  cmp   #Gcdi      ; If deadly:
+ChItem2  cmp   #BlkId_EmptyDeadly  ; If deadly:
          beq   ClrHurt
-         cmp   #Git1
+         cmp   #BlkId_CoinA
          bcc   Thwonk     ; If takable:
-         cmp   #Git4+1
+         cmp   #BlkId_FoodB+1
          bcs   Thwonk
          stx   Itm
          sta   Itm2       ; Store the variables
-         cmp   #Git3      ; If it's in group II,
+         cmp   #BlkId_CoinB      ; If it's in group II,
          bcs   *+6        ; replace with and draw block $01
          lda   #$00       ; instead of $00
          bra   *+4
@@ -2577,9 +2577,9 @@ ChItem2  cmp   #Gcdi      ; If deadly:
          jsr   ScoreAdd
          sep   #$20
          lda   Itm2
-         cmp   #Git1
+         cmp   #BlkId_CoinA
          beq   Dimwit     ; If it's a consumable item,
-         cmp   #Git3      ; Add to the timer as well.
+         cmp   #BlkId_CoinB      ; Add to the timer as well.
          beq   Dimwit
          lda   #$01
          sta   Time2+1

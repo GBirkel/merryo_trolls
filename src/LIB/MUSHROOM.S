@@ -58,7 +58,7 @@ Mushey   ldx   Tmp
 Mushey4  ldx   Tmp3
          lda   MapBl+$C,x
          ldx   Tmp
-         cmp   #Gppd      ; Horiz obst check 1
+         cmp   #BlkId_PipeDown ; Horiz obst check 1
          bcc   Mushey5    ; Clear if before
          lda   #$80       ; Reverse direction
          sta   SprI+1,x
@@ -72,7 +72,7 @@ Mushey6  lda   SprI+7,x
          ldx   Tmp3
          lda   MapBl-$C,x
          ldx   Tmp
-         cmp   #Gppd      ; horiz. check 2
+         cmp   #BlkId_PipeDown ; horiz. check 2
          bcc   Mushey7
          lda   #$00
          sta   SprI+1,x
@@ -92,14 +92,14 @@ Mushey8  sta   SprI+7,x   ; underside check:
          ldx   Tmp3       ; if it IS 0, we check for the block under
          lda   MapBl+1,x
          ldx   Tmp
-         cmp   #Gplt
+         cmp   #BlkId_Pltfm
          bcs   Mushey9    ; If it's not solid, don't reset the Vv
          lda   SprI+7,x   ; If mushey is not on a
          beq   Mushey10   ; single block, check the block "in front"
          ldx   Tmp3
          lda   MapBl+$D,x
          ldx   Tmp
-         cmp   #Gplt
+         cmp   #BlkId_Pltfm
          Bcc   Mushey10
 Mushey9  lda   #$80       ; Okay, now we've checked for a drop
          sta   SprI+3,x   ; and incremented the Vv.
@@ -132,7 +132,7 @@ Mushey12 dec
          ldx   Tmp3
          lda   MapBl+1,x
          ldx   Tmp
-         cmp   #Gplt
+         cmp   #BlkId_Pltfm
          bcs   Mushey13   ; If it's not solid, don't reset the Vv
          lda   SprI+7,x
          cmp   #$00       ; If not on a
@@ -140,7 +140,7 @@ Mushey12 dec
          ldx   Tmp3
          lda   MapBl+$D,x
          ldx   Tmp
-         cmp   #Gplt
+         cmp   #BlkId_Pltfm
          Bcc   Mushey14
 Mushey13 lda   #$80       ; Okay, now we've checked for a drop
          sta   SprI+3,x   ; and incremented the Vv.

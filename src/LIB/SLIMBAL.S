@@ -79,7 +79,7 @@ SlimBalO lda   SprI+1,x
 SlimBalA ldx   Tmp3
          lda   MapBl+$C,x
          ldx   Tmp
-         cmp   #Gppd      ; Horiz obst check 1
+         cmp   #BlkId_PipeDown ; Horiz obst check 1
          bcs   SlimBal7   ; Clear if before
          lda   #$02
          bra   SlimBal2
@@ -95,7 +95,7 @@ SlimBal1 lda   SprI+2,x
          ldx   Tmp3
          lda   MapBl-$C,x
          ldx   Tmp
-         cmp   #Gppd      ; horiz. check 2
+         cmp   #BlkId_PipeDown ; horiz. check 2
          bcc   SlimBal8
 SlimBal7 lda   SprI+1,x
          eor   #$80
@@ -116,7 +116,7 @@ SlimBalT inc   SprI+3,x
          ldx   Tmp3       ; if it IS 0, we check for the block under
          lda   MapBl+1,x
          ldx   Tmp
-         cmp   #Gplt
+         cmp   #BlkId_Pltfm
          bcc   :Br1       ; If it's not solid, don't reset the Vv
          lda   #$80
          sta   SprI+3,x
@@ -131,7 +131,7 @@ SlimBalT inc   SprI+3,x
          sep   #$20
          lda   MapBl,x
          ldx   Tmp
-         cmp   #Gplt
+         cmp   #BlkId_Pltfm
          Bcc   SlimBalQ
          lda   #$80       ; Okay, now we've checked for a drop
          sta   SprI+3,x   ; and incremented the Vv.
@@ -166,7 +166,7 @@ SlimBalX dec   Tmp2       ; REM: Tmp = Sprite loc  Tmp3 = Map loc
          ldx   Tmp3
          lda   MapBl+1,x
          ldx   Tmp
-         cmp   #Gplt
+         cmp   #BlkId_Pltfm
          bcc   SlimBalJ   ; If it's not solid, don't reset the Vv
          lda   SprI+3,x
          cmp   #$90
@@ -191,7 +191,7 @@ SlimBalJ lda   SprI+7,x
          sep   #$20
          lda   MapBl,x
          ldx   Tmp
-         cmp   #Gplt
+         cmp   #BlkId_Pltfm
          Bcc   SlimBalK
          lda   SprI+3,x
          cmp   #$90
