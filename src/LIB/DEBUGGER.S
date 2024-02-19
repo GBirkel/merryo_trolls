@@ -112,12 +112,12 @@ DebugDat ASC   " Super? Merryo Trolls Debug Screen v1.0 "
          ASC   "Mhs :0000 Awlb:0000 ExSt:0000           "
          DS    8
          ASC   "                                        "
-         ASC   "Tmp2:0000 VARX:0000 SpCn:0000  000000   "
-         ASC   "MhJ :0000 Artm:0000 Pal :0000           "
+         ASC   "Tmp2:0000 WPEA:0000 SpCn:0000  000000   "
+         ASC   "JHL :0000 Artm:0000 Pal :0000           "
          DS    8
          ASC   "ST  :0000 Mvv :0000 AblC:0000 Score1:   "
-         ASC   "Tmp3:0000 VARY:0000 IMsp:0000 Time2:    "
-         ASC   "MhK :0000 Awlk:0000 Pal2:0000           "
+         ASC   "Tmp3:0000 WING:0000 IMsp:0000 Time2:    "
+         ASC   "JHD :0000 Awlk:0000 Pal2:0000           "
          DS    8
          ASC   "WinX:0000 Mdir:0000 Aeye:0000  00000000 "
          ASC   "Tmp4:0000 Bt01:0000 DMsp:0000  00000000 "

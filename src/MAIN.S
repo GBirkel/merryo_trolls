@@ -92,8 +92,10 @@ DCnt     DS    2          ; Update quantity reg counter
 Mbl      DS    2          ; Main guy screen offset vsl
 Mhb      DS    2          ; Horiz block location, leftmost=0
 Mhs      DS    2          ; Horiz section location, leftmost=0
-MhJ      DS    2          ; Horiz joystick level meter (+) = r (-) = l
-MhK      DS    2          ; Horiz joystick dir (0=LF,1=L,2=M,3=R,4=RF)
+
+JoystkHLev DS    2        ; Horiz joystick level meter (+) = r (-) = l
+JoystkHDir DS    2        ; Horiz joystick dir (0=LF,1=L,2=M,3=R,4=RF)
+
 Mhv      DS    2          ; Horiz velocity (+) = rigt (-) = left
 Mvb      DS    2          ; Vertical block location, bottom=0
 Mvs      DS    2          ; Vertical section location, bottom=0
@@ -102,11 +104,15 @@ Mdir     DS    2          ; Bit 1=Troll dir.flag, Bit 7=Scroll dir.flag
 NoFall   DS    2          ; Block under the moron flag 0=air 1=srfc
 Yaxs     DS    2          ; Y axis (vertical!!!) offset storage
 Xaxs     DS    2          ; X axis (Horizontal!) offset storage
+
 JoyZ     DS    2          ; Joystick hold-down flag
 Jcnt     DS    2          ; Joystick from-jump counter
-VARX     DS    2          ; Joystick X axis read result
-VARY     DS    2          ; Joystick Y axis read result
-But01    DS    2          ; Status of buttons 0 and 1 this cycle (bits7,8)
+JoystkReadX DS 2          ; Joystick X axis read result
+JoystkReadY DS 2          ; Joystick Y axis read result
+WindowedPEA DS 2          ; Windowed blitter routine PEA origin
+WindowedGuido DS 2        ; Windowed blitter routine Guido drawing location
+JoystkBtns01 DS 2         ; Status of buttons 0 and 1 this cycle (bits7,8)
+
 Lupe     DS    2          ; Minor update loop byte(s)
 Acnt     DS    2          ; Animation flags counter
 Ahed     DS    2          ; Sprite for head
@@ -466,7 +472,7 @@ TrolPlay sep   #$20
          stz   Mdir
          stz   JoyZ
          stz   Jcnt
-         stz   But01
+         stz   JoystkBtns01
          stz   Acnt
          stz   Amtf
          stz   Pal
@@ -594,7 +600,7 @@ LivesRef HEX   7474       ; "##"   (2)[9]
          lda   #$0080     ; V and H velocity set to "Still"
          STA   Mvv
          STA   Mhv
-         STA   MhJ
+         STA   JoystkHLev
 
          phd
          lda   #ShelPage  ; Switch back to shelpage quickly
@@ -1163,7 +1169,7 @@ ScrewMe  lda   #$01
          sta   NoFall
          lda   JoyZ       ; If the button has not been "reset", no jump
          bne   Twinkie
-         lda   But01
+         lda   JoystkBtns01
          bpl   Twinkie
          inc   JoyZ
          lda   #$74
@@ -1220,7 +1226,7 @@ Fester   cmp   #$4b
          bne   ]lp
 
 CheckDoorDown sep   #$20
-         lda   VARY       ; If joystick is down,
+         lda   JoystkReadY       ; If joystick is down,
          cmp   #80
          bcc   CheckDoorRight
          lda   Mhv        ; And horiz velocity is still,
@@ -1321,7 +1327,7 @@ CheckDoorLeft sep   #$20
          jmp   DoorGo
 
 CheckDoorUp sep   #$20
-         lda   VARY       ; If joystick is up,
+         lda   JoystkReadY       ; If joystick is up,
          cmp   #23
          bcs   Wralf
          lda   Mhv        ; And horiz velocity is still,
@@ -1442,7 +1448,7 @@ Flesh    inc   Mhb
          stz   Mhs
          lda   #$80
          sta   Mhv
-         sta   MhJ
+         sta   JoystkHLev
          stz   Xaxs
          jmp   Larry
 
@@ -1514,7 +1520,7 @@ Godflesh lda   Mvs
 Drugs    dec   Mbl
          lda   #$80
          sta   Mhv
-         sta   MhJ
+         sta   JoystkHLev
          lda   #$02
          sta   Mhs
          stz   Xaxs
@@ -2469,7 +2475,7 @@ Toad     txa
          inc              ; in one slice for left overlap
          inc
 
-Ren      sec
+DrawGuidoHere sec
          sbc   #BF_SizLine   ; Down 1 line
          sta   Tmp        ; Horitontal computed
          phb              ; (entry point for pipes)
@@ -2732,58 +2738,58 @@ DoorCompute REP   #$30
          rts
 
          MX    %00
-LSideOut stx   VARX       ; Frame in PEA field
+LSideOut stx   WindowedPEA       ; Frame in PEA field
          txa
          clc
          adc   #$000f
-         sta   VARY       ; DraTrol's in PEA field
+         sta   WindowedGuido ; DraTrol's in PEA field
          sty   SizStack   ; Screen location
          lda   #$0006
          sta   Lupe
 ]lp      jsr   WaitSync
          jsr   WaitSync
          jsr   WaitSync
-         jsr   CutPaste
-         lda   VARY
+         jsr   WindowedBlit
+         lda   WindowedGuido
          inc
          inc
          inc
-         sta   VARY
+         sta   WindowedGuido
          dec   Lupe
          bne   ]lp
-         stz   VARX
+         stz   WindowedPEA
          rts
 
-RSideOut stx   VARX       ; Frame in PEA field
+RSideOut stx   WindowedPEA       ; Frame in PEA field
          txa
          clc
          adc   #$000f
-         sta   VARY       ; DraTrol 's in PEA field
+         sta   WindowedGuido       ; DraTrol 's in PEA field
          sty   SizStack   ; Screen location
          lda   #$0006
          sta   Lupe
 ]lp      jsr   WaitSync
          jsr   WaitSync
          jsr   WaitSync
-         jsr   CutPaste
-         lda   VARY
+         jsr   WindowedBlit
+         lda   WindowedGuido
          dec
          dec
          dec
-         sta   VARY
+         sta   WindowedGuido
          dec   Lupe
          bne   ]lp
-         stz   VARX
+         stz   WindowedPEA
          rts
 
 DownOut  txa              ; Frame in PEA field
          clc
          adc   #BF_SizLine
-         sta   VARX
+         sta   WindowedPEA
          txa
          clc
          adc   #$000f
-         sta   VARY       ; DraTrol's in PEA field
+         sta   WindowedGuido       ; DraTrol's in PEA field
          tya
          sec
          sbc   #$00A0
@@ -2807,21 +2813,24 @@ DownOut  txa              ; Frame in PEA field
          lda   #$001f
          sta   Lupe
 ]lp      jsr   WaitSync
-         jsr   CutPaste
-         lda   VARY
+         jsr   WindowedBlit
+         lda   WindowedGuido
          sec
          sbc   #BF_SizLine
-         sta   VARY
+         sta   WindowedGuido
          dec   Lupe
          bne   ]lp
-         stz   VARX
+         stz   WindowedPEA
          rts
 
-CutPaste sep   #$30
-         lda   #>SprGuiTb ; Draw heem
-         jsr   HalfDo
+WindowedBlit sep   #$30
+         lda   #>SprGuiTb
+* JSR ahead to the part of this windowing code that draws/erases, to draw Guido.
+* When it returns, we draw the frame and blit it, then run into the same code
+* to erase Guido, where the RTS will return us to the caller. 
+         jsr   SkipAheadToDraw  ; Jump ahead 
          MX    %00
-         lda   VARX
+         lda   WindowedPEA
          stal  PeaJumpPtr
          tax
          ldy   #$0021
@@ -2848,7 +2857,7 @@ CutPaste sep   #$30
          sep   #$30
          lda   #>ErsGuiTb ; Erase him
 
-HalfDo   sta   DaSpot+2
+SkipAheadToDraw sta   DaSpot+2
          sta   DaSpotB+2
          ldx   #SprGuiTb
          lda   Mdir
@@ -2860,9 +2869,9 @@ HalfDo   sta   DaSpot+2
          inc
          sta   DaSpotB+1
          rep   #$30
-         lda   VARY
+         lda   WindowedGuido
          inc
-         jmp   Ren
+         jmp   DrawGuidoHere
 
 DoorGo =     *
          DO    BF_DeRezz

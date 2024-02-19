@@ -5,20 +5,20 @@
          SEP   $30
          LDAL  $E0C070
          LDY   #$60
-         STZ   VARX
-         STZ   VARY
+         STZ   JoystkReadX
+         STZ   JoystkReadY
 ]lp      LDAL  $E0C064
          BMI   *+6
          NOP              ; FTA's joystick routine
          NOP              ; /:)
          BRA   *+4
-         INC   VARX
+         INC   JoystkReadX
          LDAL  $E0C065
          BMI   *+6
          NOP
          NOP
          BRA   *+4
-         INC   VARY
+         INC   JoystkReadY
          LDAL  $E0C066
          BMI   *+6
          NOP
@@ -40,7 +40,7 @@
          BPL   ]lp
 
          rep   #$30
-         LDA   VARX       ; Set MhK:
+         LDA   JoystkReadX       ; Set JoystkHDir:
          ldx   #$0000
          cmp   #15        ; <-15,30,76,87->
          Bcc   Stork2     ; F Left
@@ -54,26 +54,26 @@
          cmp   #87
          Bcc   Stork2     ; S Right
          inx              ; F Right
-Stork2   stx   MhK
+Stork2   stx   JoystkHDir
 
          sep   #$30
-         stz   But01
+         stz   JoystkBtns01
          ldx   #$40
          ldal  $00c062
          bmi   Turkey
          ldx   #$00
-Turkey   stx   But01
+Turkey   stx   JoystkBtns01
          ldal  $00c061
          and   #$80
-         tsb   But01
+         tsb   JoystkBtns01
 
 AutoSkip sep   #$30
-         lda   But01      ; Reset JoyZ if button 0 is up
+         lda   JoystkBtns01 ; Reset JoyZ if button 0 is up
          bmi   Jiggle
          stz   JoyZ
 
-Jiggle   ldx   MhK
-         lda   MhJ        ; Affect MhJ:
+Jiggle   ldx   JoystkHDir
+         lda   JoystkHLev        ; Affect JoystkHLev:
          cpx   #$04
          beq   Stick1
          cmp   #MhMsv
@@ -99,7 +99,7 @@ Stick6   cpx   #$01
 Stick4   cmp   #$100-MhMfv
          bcc   Stick2     ; Fast left dec
          dec              ; with overflow control
-Stick2   sta   MhJ
+Stick2   sta   JoystkHLev
 
          tay              ; Affect Mhv:
          lda   Mhv

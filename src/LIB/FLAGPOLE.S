@@ -20,10 +20,10 @@ FlagPole lda   ExStats
          txa
          clc
          adc   #BF_SizLine
-         sta   VARX       ; Window's PEA field
+         sta   WindowedPEA ; Window's PEA field
          clc
          adc   #$000f
-         sta   VARY       ; DraTrol's PEA field
+         sta   WindowedGuido ; DraTrol's PEA field
          sty   SizStack   ; Screen location
          lda   Mvb
          dec
@@ -35,8 +35,8 @@ FlagPole lda   ExStats
          inc              ; Just in case we have a zero-high flag slide
          sta   Lupe
 ]lp2     jsr   WaitSync
-         jsr   CutPaste
-         ldx   VARX
+         jsr   WindowedBlit
+         ldx   WindowedPEA
          ldy   #$0021
 ]lp      ldal  BackFld+$F,x
          stal  ForeFld+$F,x
@@ -56,15 +56,15 @@ FlagPole lda   ExStats
          stal  ForeFld+$F,x
          ldal  BackFld+$11,x
          stal  ForeFld+$11,x
-         lda   VARX
+         lda   WindowedPEA
          sec
          sbc   #BF_SizLine   ; Guido position
          sec
-         sbc   #BF_SizLine   ; Guido position
-         sta   VARX
+         sbc   #BF_SizLine
+         sta   WindowedPEA
          clc
          adc   #$000f
-         sta   VARY       ; DraTrol's PEA field
+         sta   WindowedGuido       ; DraTrol's PEA field
          lda   SizStack   ; Screen position
          clc
          adc   #$0140
@@ -79,8 +79,8 @@ FlagPole lda   ExStats
          stz   Xaxs
          stz   Yaxs
          stz   Mvs
-         stz   VARX
-         stz   VARY
+         stz   WindowedPEA
+         stz   WindowedGuido
 
                           ; lda SpAc
                           ; ASLS 3 ; x8

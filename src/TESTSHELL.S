@@ -69,8 +69,10 @@ DCnt     DS    2          ; Update quantity reg counter
 Mbl      DS    2          ; Main guy screen offset vsl
 Mhb      DS    2          ; Horiz block location, leftmost=0
 Mhs      DS    2          ; Horiz section location, leftmost=0
-MhJ      DS    2          ; Horiz joystick level meter (+) = r (-) = l
-MhK      DS    2          ; Horiz joystick dir (0=LF,1=L,2=M,3=R,4=RF)
+
+JoystkHLev DS    2          ; Horiz joystick level meter (+) = r (-) = l
+JoystkHDir DS    2          ; Horiz joystick dir (0=LF,1=L,2=M,3=R,4=RF)
+
 Mhv      DS    2          ; Horiz velocity (+) = rigt (-) = left
 Mvb      DS    2          ; Vertical block location, bottom=0
 Mvs      DS    2          ; Vertical section location, bottom=0
@@ -79,11 +81,15 @@ Mdir     DS    2          ; Bit 1=Troll dir.flag, Bit 7=Scroll dir.flag
 NoFall   DS    2          ; Block under the moron flag 0=air 1=srfc
 Yaxs     DS    2          ; Y axis (vertical!!!) offset storage
 Xaxs     DS    2          ; X axis (Horizontal!) offset storage
+
 JoyZ     DS    2          ; Joystick hold-down flag
 Jcnt     DS    2          ; Joystick from-jump counter
-VARX     DS    2          ; Joystick X axis read result
-VARY     DS    2          ; Joystick Y axis read result
-But01    DS    2          ; Status of buttons 0 and 1 this cycle (bits7,8)
+JoystkReadX DS 2          ; Joystick X axis read result
+JoystkReadY DS 2          ; Joystick Y axis read result
+WindowedPEA DS 2          ; Windowed blitter routine PEA origin
+WindowedGuido DS 2        ; Windowed blitter routine Guido drawing location
+JoystkBtns01 DS 2         ; Status of buttons 0 and 1 this cycle (bits7,8)
+
 Lupe     DS    2          ; Minor update loop byte(s)
 Acnt     DS    2          ; Animation flags counter
 Ahed     DS    2          ; Sprite for head

@@ -13,11 +13,11 @@ Recorder sep   #$20       ; actual entry point
          beq   Recordr3
          lda   SprI+3,x
          and   #$0F
-         cmp   MhK        ; 1,2- Current index to records
+         cmp   JoystkHDir ; 1,2- Current index to records
          bne   Recordr1   ; 3- last joystick & buttons status
          lda   SprI+3,x   ; 4- duration counter
          and   #$F0       ; 5- Very first cycle flag (1st=$69)
-         cmp   But01
+         cmp   JoystkBtns01
          bne   Recordr1
          inc   SprI+4,x
          lda   SprI+4,x
@@ -36,7 +36,7 @@ Recordr1 rep   #$20
          sep   #$20
          ldx   Tmp         ; Get new status & reset index
 Recordr3 stz   SprI+4,x
-         lda   MhK
-         ora   But01
+         lda   JoystkHDir
+         ora   JoystkBtns01 ; Bits 7 and 8 from here can overlay without interfering
          sta   SprI+3,x
 Recordr2 rts

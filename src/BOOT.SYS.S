@@ -9,9 +9,9 @@ ThisProg =     $002000
 ScrnRaw  =     $012000
 
 DataII   =     $020000    ; Special data for this world
-SprGuiTb =     $025000    ; MainChar sprites jmp table
+SprGuiTb =     $025000    ; Guido sprites jmp table
 SprLevTb =     SprGuiTb+$400 ; Other sprites jmp table
-ErsGuiTb =     SprGuiTb+$800 ; MainCher eraser jmp table
+ErsGuiTb =     SprGuiTb+$800 ; Guido eraser jmp table
 ErsLevTb =     ErsGuiTb+$400 ; Other eraser jmp table
 TrollsEntry =  $02C000
 

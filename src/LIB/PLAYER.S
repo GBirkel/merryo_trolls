@@ -11,10 +11,10 @@ Player   sep   #$20       ; actual entry point
          beq   Player5    ; Set up index
          lda   SprI+3,x
          and   #$0F
-         sta   MhK        ; 1,2- Current index to records
+         sta   JoystkHDir ; 1,2- Current index to records
          lda   SprI+3,x   ; 3- last joystick & buttons status
          and   #$F0       ; 4- duration counter
-         sta   But01      ; 5- Very first cycle flag (1st=$69)
+         sta   JoystkBtns01 ; 5- Very first cycle flag (1st=$69)
          lda   SprI+4,x   ; 6- Skript number
          beq   Player1
          dec   SprI+4,x
@@ -34,7 +34,7 @@ Player4  lda   EndLevA,y  ; Get new status & index
          beq   Player2
          cmp   #$7734     ; "Enter door" ending
          bne   Player3
-         stz   VARY       ; Make joystick go up to enter door
+         stz   JoystkReadY  ; Make joystick go up to enter door
          bra   Player6
 Player3  sta   SprI+3,x
 Player6  iny

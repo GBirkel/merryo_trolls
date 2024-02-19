@@ -105,8 +105,8 @@ Time2    DS    4          ; Amount to add to time + delay counter
 AnimHed  DS    2          ; Status of head
 AnimLeg  ds    2          ; Animation stage for leg
 Face     DS    2          ; Current direction Guido faces
-VARX     ds    2          ; Raw joystick X read
-VARY     ds    2          ; Raw joystick Y read
+JoystkReadX     ds    2          ; Raw joystick X read
+JoystkReadY     ds    2          ; Raw joystick Y read
 FunkX    DS    2          ; Location of Guido on map X
 FunkY    DS    2          ; Location of Guido on map Y
 NewX     ds    2          ; Potential new Guido X location
@@ -436,8 +436,8 @@ Hork     jsr   DoMouse
 
 
 JoyCrit  rep   #$20
-         STZ   VARX
-         STZ   VARY
+         STZ   JoystkReadX
+         STZ   JoystkReadY
          SEP   $30
          LDAL  $E0C070
          LDY   #$60
@@ -446,13 +446,13 @@ JoyCrit  rep   #$20
          NOP              ; FTA's joystick routine
          NOP              ; /:)
          BRA   *+4
-         INC   VARX
+         INC   JoystkReadX
          LDAL  $E0C065
          BMI   *+6
          NOP
          NOP
          BRA   *+4
-         INC   VARY
+         INC   JoystkReadY
          LDAL  $E0C066
          BMI   *+6
          NOP
@@ -474,7 +474,7 @@ JoyCrit  rep   #$20
          BPL   ]lp
 
          rep   #$30
-         LDA   VARX       ; Set X:
+         LDA   JoystkReadX ; Set X:
          ldx   #$FFFF
          cmp   #15        ; <-15--87->
          Bcc   Stork1     ; F Left
@@ -488,7 +488,7 @@ Stork1   txa
          adc   FunkX
          sta   NewX
 
-         LDA   VARY       ; Set Y:
+         LDA   JoystkReadY       ; Set Y:
          ldx   #$FFFF
          cmp   #15        ; <-15--87->
          Bcc   Stork2     ; F Left
