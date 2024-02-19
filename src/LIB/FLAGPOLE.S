@@ -4,7 +4,7 @@
 
          MX    %00
 FlagTop  =     *
-FlagPole lda   ExStats
+FlagPole lda   GameFlags    ; Skip all this if the "don't respond to the flagpole" flag is set
          and   #$0040
          beq   :Br1
          rts
@@ -25,12 +25,12 @@ FlagPole lda   ExStats
          adc   #$000f
          sta   WindowedGuido ; DraTrol's PEA field
          sty   SizStack   ; Screen location
-         lda   Mvb
+         lda   GPositionYBlk
          dec
          dec
          and   #$000F
          ASLS  4
-         adc   Mhs
+         adc   GPositionXFifth
          lsr
          inc              ; Just in case we have a zero-high flag slide
          sta   Lupe
@@ -72,19 +72,19 @@ FlagPole lda   ExStats
          dec   Lupe
          bne   ]lp2
          lda   #$0080
-         sta   Mvv
-         sta   Mhv        ; Set Guido's position to bottom of flag,
-         lda   #$0002     ; no velocities.
-         sta   Mvb
+         sta   GVelocityY
+         sta   GVelocityX ; Set Guido's position to bottom of flag, which is always 2 blocks up,
+         lda   #$0002     ; and zero velocity.
+         sta   GPositionYBlk
          stz   Xaxs
          stz   Yaxs
-         stz   Mvs
+         stz   GPositionYSlice
          stz   WindowedPEA
          stz   WindowedGuido
 
-                          ; lda SpAc
+                          ; lda SpritesActiveCnt
                           ; ASLS 3 ; x8
-                          ; adc SpAc ; x9
+                          ; adc SpritesActiveCnt ; x9
                           ; tax ; in X
                           ; lda #IDPlayer
                           ; sta SprI,x ; Sets playback ID
@@ -92,10 +92,10 @@ FlagPole lda   ExStats
                           ; sta SprI+1,x ; Resets index
                           ; lda #$0169
                           ; sta SprI+5,x ; Sets "first cycle" flag
-                          ; inc SpAc ; and index to "end of level 1"
+                          ; inc SpritesActiveCnt ; and index to "end of level 1"
                           ; sep #$20
          lda   #$40       ; Set autopilot indicator flag (was $C0)
-         tsb   ExStats    ; And the "ignore flagpole" flag
+         tsb   GameFlags  ; And the "ignore flagpole" flag
                           ; lda #$FF
                           ; sta SprI+8,x ; M: Sets non-level I.D.
 

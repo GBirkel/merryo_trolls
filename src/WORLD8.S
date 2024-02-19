@@ -432,7 +432,7 @@ Hork     jsr   DoMouse
          bpl   Hork
          cmp   #"q"
          bne   Hork2
-         jmp   Quit
+         jmp   GameOver
 
 
 JoyCrit  rep   #$20
@@ -681,7 +681,7 @@ Dammit   lda   #$0006
          plb
          rts
 
-Quit     clc
+GameOver clc
          xce
          rep   #$30
          lda   #ShelPage

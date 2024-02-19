@@ -45,7 +45,7 @@ Player6  iny
          rts
 Player2  sep   #$20
          lda   #$C0       ; Turn off auto flag & NoPole flag
-         trb   ExStats
+         trb   GameFlags
          jmp   KillDis
 
 Skriptz  DA    Demo,EndLevA

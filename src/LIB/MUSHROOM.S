@@ -157,42 +157,42 @@ Mushey15 lda   Tmp2
          bne   Mushey12
 Mushey16 lda   SprI+6,x
          inc
-         cmp   Mhb
+         cmp   GPositionXBlk
          bcc   Mushey24   ; Too far before the freak
          dec
          dec
          dec
-         cmp   Mhb
+         cmp   GPositionXBlk
          bcs   Mushey24   ; Too far after the bozo
          lda   SprI+6,x
-         cmp   Mhb
+         cmp   GPositionXBlk
          beq   Mushey18   ; If on the same block, contact.
          bcs   Mushey17   ; If before Guidoguy, check section
          lda   SprI+7,x   ; Same if after
          dec
-         cmp   Mhs
+         cmp   GPositionXFifth
          bcs   Mushey18   ; Not within boundary? No grab.
          bra   Mushey24
 Mushey17 lda   SprI+7,x
-         cmp   Mhs
+         cmp   GPositionXFifth
          bcs   Mushey24
-Mushey18 lda   Mvb
+Mushey18 lda   GPositionYBlk
          inc
          inc
          cmp   SprI+4,x
          bcc   Mushey24   ; V check above
          lda   SprI+4,x
          inc
-         cmp   Mvb        ; V check below
+         cmp   GPositionYBlk ; V check below
          bcc   Mushey24
          lda   SprI+4,x   ; Both on same block?
-         cmp   Mvb
+         cmp   GPositionYBlk
          beq   Mushey23   ; Then the mushroom is definitely in reach
          inc
-         cmp   Mvb        ; Is shroom one below?
+         cmp   GPositionYBlk ; Is shroom one below?
          bne   Mushey22
          lda   SprI+5,x
-         cmp   Mvs        ; Either it's nabbed, or no contact.
+         cmp   GPositionYSlice ; Either it's nabbed, or no contact.
          bcc   Mushey24
 Mushey23 rep   #$20
          lda   SprI+2,x   ; Yipee! Guido gets a mushroom!
@@ -210,13 +210,13 @@ Mushey23 rep   #$20
          plx
          ply
          jmp   KillDis    ; Kill the mushroom
-Mushey22 lda   Mvb
+Mushey22 lda   GPositionYBlk
          inc              ; Avoid 0 wrap!
          inc
          cmp   SprI+4,x   ; Is Guido 2 below?
          bne   Mushey23
          lda   SprI+5,x
-         cmp   Mvs        ; Then it's a contest check
+         cmp   GPositionYSlice ; Then it's a contest check
          bcc   Mushey23
 Mushey24 rep   #$20
          lda   SprI+7,x

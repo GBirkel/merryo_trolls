@@ -122,7 +122,7 @@ BackFld  =     $060000    ; Background feild bank
          cpx   #$0000
          bne   ]lp2
 
-MainLp   JSR   PeaBlit    ; blit dat screen!
+MainPlayLoop JSR   PeaBlit    ; blit dat screen!
 
          rep   #$30
          phb
@@ -160,7 +160,7 @@ MainLp   JSR   PeaBlit    ; blit dat screen!
          lda   #79
 NoFgWrp3 sta   FogDork
          plb
-         jmp   MainLp
+         jmp   MainPlayLoop
 
 PeaBlit  php
          rep   #$20

@@ -23,9 +23,9 @@ Flower10 sep   #$20
          rep   #$20
          jsr   BlokZap
          rep   #$30
-         lda   SpAc
+         lda   SpritesActiveCnt
          ASLS  3          ; x8
-         adc   SpAc       ; x9
+         adc   SpritesActiveCnt ; x9
          tax              ; in X
          lda   #IDFlower
          sta   SprI,x     ; Sets ID and anim. stage
@@ -52,9 +52,9 @@ Flower01 sep   #$20
          rep   #$30
          jsr   BlokZap
          rep   #$30
-         lda   SpAc
+         lda   SpritesActiveCnt
          ASLS  3          ; x8
-         adc   SpAc       ; x9
+         adc   SpritesActiveCnt ; x9
          tax              ; in X
          lda   #IDFlower
          sta   SprI,x     ; Sets ID and anim. stage
@@ -80,9 +80,9 @@ Flower11 sep   #$20
          rep   #$30
          jsr   BlokZap
          rep   #$30
-         lda   SpAc
+         lda   SpritesActiveCnt
          ASLS  3          ; x8
-         adc   SpAc       ; x9
+         adc   SpritesActiveCnt ; x9
          tax              ; in X
          lda   #IDFlower
          sta   SprI,x     ; Sets ID and anim. stage
@@ -100,9 +100,9 @@ Flowr11c lda   #Gsp1
          rep   #$30
          jsr   BlokZap
          rep   #$30
-         lda   SpAc
+         lda   SpritesActiveCnt
          ASLS  3          ; x8
-         adc   SpAc       ; x9
+         adc   SpritesActiveCnt ; x9
          tax              ; in X
          lda   #IDFlower
          sta   SprI,x     ; Sets ID and anim. stage
@@ -126,7 +126,7 @@ FlFinish sta   SprI+2,x
          ASLS  4          ; x16
          dec
          sta   SprI+6,x   ; Sets vertical strip location
-         inc   SpAc
+         inc   SpritesActiveCnt
          sep   #$20
          lda   #$FF
          sta   SprI+8,x   ; Sets non-level I.D.

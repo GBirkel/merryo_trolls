@@ -222,41 +222,41 @@ SlimBal4 ldx   Tmp
          bne   :Br1       ; contact is irrelevant. Skip it.
          lda   SprI+6,x
          inc
-         cmp   Mhb
+         cmp   GPositionXBlk
          bcc   :Br1       ; Too far before the freak
          dec
          dec
          dec
-         cmp   Mhb
+         cmp   GPositionXBlk
          bcs   :Br1       ; Too far after the bozo
          lda   SprI+6,x
-         cmp   Mhb
+         cmp   GPositionXBlk
          beq   Fondle     ; If on the same block, contact.
          bcs   ZamFir     ; If before Guido, check section
          lda   SprI+7,x   ; Same if after (dec here)
          dec
-         cmp   Mhs
+         cmp   GPositionXFifth
          bcs   Fondle     ; Not within boundary? No squish.
 :Br1     bra   SlimBal5
 ZamFir   lda   SprI+7,x
-         cmp   Mhs
+         cmp   GPositionXFifth
          bcs   SlimBal5   ; ^^^ was a bcc
-Fondle   lda   Mvb
+Fondle   lda   GPositionYBlk
          inc
          inc
          cmp   SprI+4,x
          bcc   SlimBal5   ; V check above
          lda   SprI+4,x
          inc
-         cmp   Mvb        ; V check below
+         cmp   GPositionYBlk ; V check below
          bcc   SlimBal5
          lda   SprI+4,x   ; Both on same block?
-         cmp   Mvb
+         cmp   GPositionYBlk
          beq   SlimBalC   ; Then it's a contest.
          inc
-         cmp   Mvb        ; Is slime one below?
+         cmp   GPositionYBlk ; Is slime one below?
          beq   SlimBalS   ; Either he dies, or no contact.
-         lda   Mvb
+         lda   GPositionYBlk
          inc              ; we must always increase, to avoid 0 wrap.
          inc
          cmp   SprI+4,x   ; Is Guido 2 below?
@@ -271,21 +271,21 @@ Fondle   lda   Mvb
          jmp   Die        ; he's always whacked.
          MX    %10
 SlimBalY lda   SprI+5,x
-         cmp   Mvs
+         cmp   GPositionYSlice
          bcs   SlimBal5   ; Two above check
          bra   ]lp
 SlimBalC lda   SprI+5,x
-         cmp   Mvs        ; Contest check
+         cmp   GPositionYSlice ; Contest check
          bcc   SlimBalD
          bra   ]lp
 SlimBalS lda   SprI+5,x
-         cmp   Mvs        ; One below check
+         cmp   GPositionYSlice ; One below check
          bcc   SlimBal5
 SlimBalD inc   SprI+1,x
          lda   #$1E       ; Squish him mercilessly
          sta   SprI+2,x
          lda   #$75
-         sta   Mvv        ; Make Guido bounce up
+         sta   GVelocityY ; Make Guido bounce up
          phx              ; Never tried this before...
          phy
          rep   #$20

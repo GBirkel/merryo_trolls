@@ -196,41 +196,41 @@ TurtleW  lda   Tmp2
 Turtle4  ldx   Tmp
          lda   SprI+6,x
          inc
-         cmp   Mhb
+         cmp   GPositionXBlk
          bcc   Turtle9    ; Too far before the freak
          dec
          dec
          dec
-         cmp   Mhb
+         cmp   GPositionXBlk
          bcs   Turtle9    ; Too far after the bozo
          lda   SprI+6,x
-         cmp   Mhb
+         cmp   GPositionXBlk
          beq   TurtleI    ; If on the same block, contact.
          bcs   TurtleH    ; If before Guido, check section
          lda   SprI+7,x   ; Same if after (dec here)
          dec
-         cmp   Mhs
+         cmp   GPositionXFifth
          bcs   TurtleI    ; Not within boundary? No contact.
 Turtle9  bra   Turtle5
 TurtleH  lda   SprI+7,x
-         cmp   Mhs
+         cmp   GPositionXFifth
          bcs   Turtle5    ; ^^^ was a bcc
-TurtleI  lda   Mvb
+TurtleI  lda   GPositionYBlk
          inc
          inc
          cmp   SprI+4,x
          bcc   Turtle5    ; V check above
          lda   SprI+4,x
          inc
-         cmp   Mvb        ; V check below
+         cmp   GPositionYBlk ; V check below
          bcc   Turtle5
          lda   SprI+4,x   ; Both on same block?
-         cmp   Mvb
+         cmp   GPositionYBlk
          beq   TurtleC    ; Then it's a contest.
          inc
-         cmp   Mvb        ; Is slime one below?
+         cmp   GPositionYBlk ; Is slime one below?
          beq   TurtleS    ; Either he dies, or no contact.
-         lda   Mvb
+         lda   GPositionYBlk
          inc              ; we must always increase, to avoid 0 wrap.
          inc
          cmp   SprI+4,x   ; Is Guido 2 below?
@@ -246,15 +246,15 @@ TurtleI  lda   Mvb
          jmp   Die        ; he's always whacked.
          MX    %10
 TurtleY  lda   SprI+5,x
-         cmp   Mvs
+         cmp   GPositionYSlice
          bcs   Turtle5    ; Two above check
          bra   ]lp
 TurtleC  lda   SprI+5,x
-         cmp   Mvs        ; Contest check
+         cmp   GPositionYSlice ; Contest check
          bcc   TurtleD
          bra   ]lp
 TurtleS  lda   SprI+5,x
-         cmp   Mvs        ; One below check
+         cmp   GPositionYSlice ; One below check
          bcc   Turtle5
 TurtleD  inc   SprI,x     ; Make I.D into empty shell
          rep   #$20
@@ -264,7 +264,7 @@ TurtleD  inc   SprI,x     ; Make I.D into empty shell
          ora   #$0001     ; Freeze shell, adapt type bit for "shell"
          sta   SprI+1,x   ; and reset animation.
          lda   #$0072
-         sta   Mvv        ; Make Guido bounce up
+         sta   GVelocityY ; Make Guido bounce up
          phy
          phx
          lda   #$0205     ; Award 25 points
@@ -505,39 +505,39 @@ Shell15  lda   Tmp2
          bne   Shell12
 Shell16  lda   SprI+6,x
          inc
-         cmp   Mhb
+         cmp   GPositionXBlk
          bcc   Shell69    ; Too far before the freak
          dec
          dec              ; was one more dec
-         cmp   Mhb
+         cmp   GPositionXBlk
          bcs   Shell69    ; Too far after the bozo
          lda   SprI+6,x
-         cmp   Mhb
+         cmp   GPositionXBlk
          beq   Shell18    ; If on the same block, contact.
          bcs   Shell17    ; If before Guido, check section
-         lda   Mhs
+         lda   GPositionXFifth
          cmp   SprI+7,x   ; Same if after
          bcc   Shell18    ; Not within boundary? No hit.
 Shell69  bra   Shell24
 Shell17  lda   SprI+7,x
-         cmp   Mhs
+         cmp   GPositionXFifth
          bcs   Shell24
-Shell18  lda   Mvb
+Shell18  lda   GPositionYBlk
          inc
          inc
          cmp   SprI+4,x
          bcc   Shell24    ; V check above
          lda   SprI+4,x
          inc
-         cmp   Mvb        ; V check below
+         cmp   GPositionYBlk ; V check below
          bcc   Shell24
          lda   SprI+4,x   ; Both on same block?
-         cmp   Mvb
+         cmp   GPositionYBlk
          beq   Shell26    ; Then it's a contest.
          inc
-         cmp   Mvb        ; One below?
+         cmp   GPositionYBlk ; One below?
          beq   Shell22    ; Either he's nabbed, or no contact.
-         lda   Mvb
+         lda   GPositionYBlk
          inc              ; Avoid 0 wrap!
          inc
          cmp   SprI+4,x   ; Is Guido 2 below?
@@ -564,21 +564,21 @@ Shell27  rep   #$30
          jmp   Die        ; he's always smacked
          MX    %10
 Shell21  lda   SprI+5,x
-         cmp   Mvs
+         cmp   GPositionYSlice
          bcs   Shell24    ; Two above check
          bra   ]lp
 Shell26  lda   SprI+5,x
-         cmp   Mvs        ; Contest check
+         cmp   GPositionYSlice ; Contest check
          bcc   Shell23
          bra   ]lp
 Shell22  lda   SprI+5,x
-         cmp   Mvs        ; One below check
+         cmp   GPositionYSlice ; One below check
          bcc   Shell24
 Shell23  lda   SprI+1,x
          eor   #$01
          sta   SprI+1,x   ; Invert movement bit
          lda   #$72
-         sta   Mvv        ; Make Guido bounce up
+         sta   GVelocityY ; Make Guido bounce up
 Shell24  rep   #$20
          lda   SprI+7,x
          and   #$00FF

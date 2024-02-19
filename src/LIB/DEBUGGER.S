@@ -101,32 +101,32 @@ SpamTabs DA    $205,$285,$305,$385
 
 DebugDat ASC   " Super? Merryo Trolls Debug Screen v1.0 "
          ASC   "FifT:0000 Xaxs:0000 ErAc:0000  00000000 "
-         ASC   "Mbl :0000 Ahed:0000 SizT:0000           "
+         ASC   "GSF :0000 Ahed:0000 SizT:0000           "
          DS    8
          ASC   "                                        "
-         ASC   "MIdx:0000 JoyZ:0000 SpAc:0000  00000000 "
-         ASC   "Mhb :0000 Alrm:0000 SizS:0000           "
+         ASC   "MIdx:0000 JoyZ:0000 SCnt:0000  00000000 "
+         ASC   "PXB :0000 Alrm:0000 SizS:0000           "
          DS    8
          ASC   "If anything's fucked up, it's your fault"
          ASC   "Tmp :0000 Jcnt:0000 ErCn:0000 Time1:    "
-         ASC   "Mhs :0000 Awlb:0000 ExSt:0000           "
+         ASC   "PXF :0000 Awlb:0000 ExSt:0000           "
          DS    8
          ASC   "                                        "
          ASC   "Tmp2:0000 WPEA:0000 SpCn:0000  000000   "
          ASC   "JHL :0000 Artm:0000 Pal :0000           "
          DS    8
-         ASC   "ST  :0000 Mvv :0000 AblC:0000 Score1:   "
+         ASC   "ST  :0000 GVY :0000 AblC:0000 Score1:   "
          ASC   "Tmp3:0000 WING:0000 IMsp:0000 Time2:    "
          ASC   "JHD :0000 Awlk:0000 Pal2:0000           "
          DS    8
          ASC   "WinX:0000 Mdir:0000 Aeye:0000  00000000 "
          ASC   "Tmp4:0000 Bt01:0000 DMsp:0000  00000000 "
-         ASC   "Mhv :0000 Amth:0000                     "
+         ASC   "GVX :0000 Amth:0000                     "
          DS    8
          ASC   "WBCl:0000 NoFl:0000 Itm :0000  00000000 "
          ASC   "DCnt:0000 Lupe:0000 OVRt:0000           "
-         ASC   "Mvb :0000 Ably:0000                     "
+         ASC   "PYB :0000 Ably:0000                     "
          DS    8
          ASC   "WSbB:0000 Yaxs:0000 Itm2:0000 Score2:   "
          ASC   "DCsl:0000 Acnr:0000 DWNt:0000           "
-         ASC   "Mvs :0000 Amtf:0000                     "
+         ASC   "PYS :0000 Amtf:0000                     "

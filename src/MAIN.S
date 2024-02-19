@@ -55,7 +55,7 @@ LSRS     MAC
 
          DUM   ]ZPSys
 WldNumb  DS    2          ; Globals
-WldSect  DS    2          ; Map packet #
+WldSect  DS    2          ; Map bundle # (maps are kept in bundles of 4)
 WldIndx  DS    2          ; Map index # (0-3)
 LevLet   DS    2          ; Level letter
 LevSect  DS    2          ; Level section letter
@@ -78,32 +78,32 @@ TmpB     DS    2
          DUM   ]ZPPlay
 ST               DS    2          ; Stack storage
 
-WinXEdgeBlk      DS    2  ; Play window _right_edge_ X position on level map, in blocks
-WinXBlkIDsPtr    DS    2  ; WinXEdgeBlk x12, used as a pointer into the level map IDs
-WinXEdgeBlkFifth DS    2  ; Play window _right_edge_ X offset into one block, in fifths (0-4)
-WinXEdgeTotalFifths DS 2  ; WinXEdgeBlk x 5 plus WinXEdgeBlkFifth, for sprites
-
 MapIndex DS    2          ; Starting position for troll
 Tmp      DS    2          ; Temporary storage
 Tmp2     DS    2          ; More Temporary storage
 Tmp3     DS    2          ; Even more
 Tmp4     DS    2          ; Yet more!
 DCnt     DS    2          ; Update quantity reg counter
-Mbl      DS    2          ; Main guy screen offset vsl
-Mhb      DS    2          ; Horiz block location, leftmost=0
-Mhs      DS    2          ; Horiz section location, leftmost=0
 
-JoystkHLev DS    2        ; Horiz joystick level meter (+) = r (-) = l
-JoystkHDir DS    2        ; Horiz joystick dir (0=LF,1=L,2=M,3=R,4=RF)
+WinXEdgeBlk      DS    2  ; Play window _right_edge_ X position on level map, in blocks
+WinXBlkIDsPtr    DS    2  ; WinXEdgeBlk x12, used as a pointer into the level map IDs
+WinXEdgeBlkFifth DS    2  ; Play window _right_edge_ X offset into one block, in fifths (0-4)
+WinXEdgeTotalFifths DS 2  ; WinXEdgeBlk x 5 plus WinXEdgeBlkFifth, for sprites
 
-Mhv      DS    2          ; Horiz velocity (+) = rigt (-) = left
-Mvb      DS    2          ; Vertical block location, bottom=0
-Mvs      DS    2          ; Vertical section location, bottom=0
-Mvv      DS    2          ; Vertical velocity (+) = down, (-) = up
+GPositionXScreenFifth DS 2 ; Number of block fifths Guido is from the left edge of the _screen_
+GPositionXBlk   DS    2   ; Horizontal block location on map, leftmost=0
+GPositionXFifth DS    2   ; Horizontal sub-block location, in fifths (0-4) leftmost=0
+GPositionYBlk   DS    2   ; Vertical block location, bottom=0
+GPositionYSlice DS    2   ; Vertical sub-block location, bottom=0
+GVelocityX      DS    2   ; Horiz velocity (+) = right (-) = left
+GVelocityY      DS    2   ; Vertical velocity (+) = down, (-) = up
 Mdir     DS    2          ; Bit 1=Troll dir.flag, Bit 7=Scroll dir.flag
 NoFall   DS    2          ; Block under the moron flag 0=air 1=srfc
 Yaxs     DS    2          ; Y axis (vertical!!!) offset storage
 Xaxs     DS    2          ; X axis (Horizontal!) offset storage
+
+JoystkHLev DS    2        ; Horiz joystick level meter (+) = r (-) = l
+JoystkHDir DS    2        ; Horiz joystick dir (0=LF,1=L,2=M,3=R,4=RF)
 
 JoyZ     DS    2          ; Joystick hold-down flag
 Jcnt     DS    2          ; Joystick from-jump counter
@@ -128,7 +128,7 @@ AblC     DS    2          ; Flag for belly
 Itm      DS    2          ; Item check temporary holder
 Itm2     DS    2          ; Item check temporary storage 2
 ErAc     DS    2          ; Number of active on-screen sprites
-SpAc     DS    2          ; Number of active sprites
+SpritesActiveCnt DS 2     ; Number of active sprites
 ErCn     DS    2          ; On-screen sprite currently processing
 SpCn     DS    2          ; Active sprite currently processing
 IMsp     DS    2          ; Left-scroll location in the map Sprite List
@@ -139,7 +139,7 @@ OVRt     DS    2          ; Blox over temp (for sprites)
 DWNt     DS    2          ; Blox down temp (for sprites)
 SizTotal DS    2          ; Total length of PEA field
 SizStack DS    2          ; Initial entry point for stack when blitting
-ExStats  DS    2          ; The extras flags (1=twist, 7=NoPole, 8=auto)
+GameFlags DS   2         ; Flags for activating in-game extra features (1=twist, 7=NoPole, 8=auto)
 Pal      DS    2          ; QM Palette cycle pointer
 Pal2     DS    2          ; Logo palette cycle pointer
 Score1   DS    8          ; Current score
@@ -466,9 +466,9 @@ TrolPlay sep   #$20
          stz   WinXBlkIDsPtr
          stz   WinXEdgeBlkFifth
          stz   DCnt
-         stz   Mbl
-         stz   Mhb
-         stz   Mvs
+         stz   GPositionXScreenFifth
+         stz   GPositionXBlk
+         stz   GPositionYSlice
          stz   Mdir
          stz   JoyZ
          stz   Jcnt
@@ -581,9 +581,9 @@ LivesRef HEX   7474       ; "##"   (2)[9]
          bpl   ]lp        ; pointing to blank pallette 0.
          LDA   #^ForeFld
          STAl  PeaJumpPtr+2       ; Set the PEA bank jump address correctly
-         stz   ExStats    ; ExStats flag set standard off for now
+         stz   GameFlags  ; GameFlags all set standard off for now
          stz   MapIndex   ; MapIndex initially at first entry
-         stz   Mhs
+         stz   GPositionXFifth
          lda   #$0A
          sta   Time2+3    ; Set timer delay
          lda   #28
@@ -598,8 +598,8 @@ LivesRef HEX   7474       ; "##"   (2)[9]
          sta   Artm       ; Guido: right arm
 
          lda   #$0080     ; V and H velocity set to "Still"
-         STA   Mvv
-         STA   Mhv
+         STA   GVelocityY
+         STA   GVelocityX
          STA   JoystkHLev
 
          phd
@@ -708,24 +708,24 @@ NewLoc2  rep   #$30
          sep   #$20
          ldx   MapIndex
          LDA   Connects+3,x
-         STA   Mvb
+         STA   GPositionYBlk
          lda   Connects+5,x
          and   #$07
-         sta   Mhs
+         sta   GPositionXFifth
          DO    BF_HeatWav
          lda   Connects+6,x
          asl
          sta   AcidIndx+1
          FIN
          lda   Connects+2,x
-         STA   Mhb        ; Coordinates at MapIndex
+         STA   GPositionXBlk  ; Coordinates at MapIndex
          sec
          sbc   Connects+4,x
-         sta   Mbl
+         sta   Tmp
          ASLS  2
-         adc   Mbl
-         adc   Mhs
-         sta   Mbl        ; Calculate Mbl from H coordinate, window, and Mhs
+         adc   Tmp
+         adc   GPositionXFifth
+         sta   GPositionXScreenFifth ; Calculate from H coordinate, window, and GPositionXFifth
          rep   #$20
          lda   Connects+4,x ; window location
          and   #$00FF
@@ -740,7 +740,7 @@ NewLoc2  rep   #$30
          adc   WinXEdgeBlk ; x5
          sta   WinXEdgeTotalFifths
 
-         stz   SpAc       ; Kill all sprites
+         stz   SpritesActiveCnt ; Kill all sprites
          stz   ErAc
          stz   IMsp       ; This takes the WinXEdgeBlk value
          ldx   #$0000
@@ -783,10 +783,10 @@ Bonk     stz   Lupe
          dec   WinXEdgeTotalFifths
          inc   Lupe
 
-:CantDo lda   Mhb
+:CantDo lda   GPositionXBlk
          ASLS  4
          sec
-         sbc   Mhb        ; x15
+         sbc   GPositionXBlk ; x15
          eor   #$FFFF
          sec
          sbc   #$d7ff     ; result same as subtracting it from 2800
@@ -826,7 +826,7 @@ Bonk     stz   Lupe
 
          rep   #$30
          jsr   DraTrol    ; draw the skumbucket prior to fade-in
-         lda   SpAc       ; if there were any sprites,
+         lda   SpritesActiveCnt ; if there were any sprites,
          beq   *+5
          jsr   SprUp      ; Update them once
          lda   ErAc
@@ -857,7 +857,7 @@ Bonk     stz   Lupe
          stz   TVcntr     ; Temporary check to see if it works
          FIN
 
-MainLp   rep   #$20
+MainPlayLoop rep   #$20
          lda   Flashing
          and   #$0001
          bne   *+7
@@ -890,13 +890,15 @@ MainLp   rep   #$20
 
          sep   #$20
          ldal  $e1c000
-         bpl   NoKey
-         cmp   #"Q"       ; check for quit
-         bne   NotPause
-         jmp   Quit
+         bpl   NoKeyIsDown
 
-NotPause cmp   #$9B       ; ESC
+         cmp   #"Q"       ; check for quit
          bne   NotQuit
+         jmp   GameOver
+NotQuit = *
+
+         cmp   #$9B       ; ESC
+         bne   NotPause
          DO    Debugger
          jsr   DebugWin
          ELSE
@@ -904,15 +906,16 @@ NotPause cmp   #$9B       ; ESC
          cmp   #$9B
          bne   ]lp
          FIN
+NotPause = *
 
          DO    BF_Recordr
          MX    %10
-NotQuit  cmp   #"r"       ; Check for instigation of recorder
-         bne   NotRecrd
+         cmp   #"r"       ; Check for instigation of recorder
+         bne   NotRecordStart
          rep   #$30
-         lda   SpAc
+         lda   SpritesActiveCnt
          ASLS  3          ; x8
-         adc   SpAc       ; x9
+         adc   SpritesActiveCnt ; x9
          tax              ; in X
          lda   #$000A
          sta   SprI,x     ; Sets recorder ID
@@ -920,17 +923,18 @@ NotQuit  cmp   #"r"       ; Check for instigation of recorder
          sta   SprI+1,x   ; Resets index
          lda   #$0069
          sta   SprI+5,x   ; Sets "first cycle" flag
-         inc   SpAc       ; inc SpAc
+         inc   SpritesActiveCnt
          sep   #$20
          lda   #$FF
          sta   SprI+8,x   ; M: Sets non-level I.D.
+NotRecordStart = *
 
-NotRecrd cmp   #"p"
-         bne   NotPlay
+         cmp   #"p"
+         bne   NotPlaybackStart
          rep   #$30
-         lda   SpAc
+         lda   SpritesActiveCnt
          ASLS  3          ; x8
-         adc   SpAc       ; x9
+         adc   SpritesActiveCnt ; x9
          tax              ; in X
          lda   #$000C
          sta   SprI,x     ; Sets playback ID
@@ -938,21 +942,23 @@ NotRecrd cmp   #"p"
          sta   SprI+1,x   ; Resets index
          lda   #$0069
          sta   SprI+5,x   ; Sets "first cycle" flag, index to "demo"
-         inc   SpAc       ; inc SpAc
+         inc   SpritesActiveCnt
          sep   #$20
          lda   #$80       ; Set autopilot indicator flag
-         tsb   ExStats
+         tsb   GameFlags
          lda   #$FF
          sta   SprI+8,x   ; M: Sets non-level I.D.
+NotPlaybackStart = *
 
-NotPlay  lda   #$00       ; clear keyb
+         lda   #$00       ; clear keyb
          ELSE
-NotQuit  lda   #$00
+         lda   #$00       ; Not using record/playback tools? Just clear the keyboard
          FIN
          stal  $e1c010
 
-NoKey    lda   ExStats    ; Skip new reads if
-         bmi   AutoSkip   ; autopilot is running them
+NoKeyIsDown = *
+         lda   GameFlags    ; Skip new reads if autopilot is running
+         bmi   AutoSkip
 
          PUT   LIB/JOYSTICK
 
@@ -1000,7 +1006,7 @@ MeepMeep sta   Time1,x
          plb
 
 DoneTime sep   #$20
-         lda   Mhv
+         lda   GVelocityX
          cmp   #$80       ; this sets Mdir 0=forards
          beq   Junky     ; and 1=backwards, if the bozo is not
          cmp   #$80       ; standing still.
@@ -1012,28 +1018,28 @@ Cream    lda   #$01
          tsb   Mdir
 
 Junky    rep   #$10       ; Set the anal Xaxs value
-         lda   Mhv
+         lda   GVelocityX
          eor   #$80
          sta   Xaxs
          sep   #$20       ; check the vertical axis
 
          DO    BF_Slopes
-         lda   Mvb        ; if it is above the screen
+         lda   GPositionYBlk ; if it is above or below the screen
          beq   JumpEr
          cmp   #$0d       ; It's always empty.
          bcs   JumpEr
          rep   #$31
-         lda   Mhb
+         lda   GPositionXBlk
          asl
-         adc   Mhb
+         adc   GPositionXBlk
          ASLS  2
          adc   #$000b
          sec
-         sbc   Mvb        ; Subtract in the vertical location
+         sbc   GPositionYBlk ; Subtract in the vertical location
          tax
          ldy   #$0000
          sep   #$20
-         lda   Mvs
+         lda   GPositionYSlice
          beq   Barney     ; If not on the bottom of the block, check slope.
 
          DO    BF_Buttons
@@ -1042,7 +1048,7 @@ Junky    rep   #$10       ; Set the anal Xaxs value
          lda   MapBl,x
          cmp   #MapTypeButton
          beq   ScrewMe
-         lda   Mhs        ; Mhs = 0>2?
+         lda   GPositionXFifth ; GPositionXFifth = 0>2?
          cmp   #$03
          bcc   Burger
          rep   #$21
@@ -1061,7 +1067,7 @@ Burger   =     *
          beq   Keifer
          cmp   #GplR
          beq   Suthrlnd
-         lda   Mhs
+         lda   GPositionXFifth
          cmp   #$03
          bcc   Buttock
          lda   MapBl+$C,x
@@ -1072,11 +1078,11 @@ Burger   =     *
 Suthrlnd ldy   #$0005
 Keifer   rep   #$21
          tya
-         adc   Mhs
+         adc   GPositionXFifth
          tay              ; Make a height-check index
          sep   #$20
          lda   SlopLeft,y
-         cmp   Mvs
+         cmp   GPositionYSlice
          beq   ScrewMe    ; If no match, Guido falls
 JumpEr   jmp   Buttock
 Barney   inx              ; one extra block down
@@ -1084,27 +1090,27 @@ Barney   inx              ; one extra block down
          ELSE
 
          DO    BF_Buttons
-         lda   Mvs
+         lda   GPositionYSlice
          beq   PayUp
          cmp   #$08       ; Step 8 half-height button check
          bne   PayUp-2    ; (Buttock)
-         lda   Mvb
+         lda   GPositionYBlk
          cmp   #$0d       ; It's always empty.
          bcs   PayUp-2
          rep   #$31
-         lda   Mhb
+         lda   GPositionXBlk
          asl
-         adc   Mhb
+         adc   GPositionXBlk
          ASLS  2
          adc   #$000b
          sec
-         sbc   Mvb
+         sbc   GPositionYBlk
          tax
          sep   #$20
          lda   MapBl,x
          cmp   #MapTypeButton
          beq   ScrewMe
-         lda   Mhs        ; Mhs = 0>2?
+         lda   GPositionXFifth  ; GPositionXFifth = 0>2?
          cmp   #$03
          bcc   Buttock
          lda   MapBl+$c,x
@@ -1115,22 +1121,22 @@ Barney   inx              ; one extra block down
 PayUp    =     *          ; normal 'below' check
 
          ELSE
-         lda   Mvs
+         lda   GPositionYSlice
          bne   Buttock    ; If not on the bottom of the block, drop.
-         lda   Mvb        ; if it is above the screen
+         lda   GPositionYBlk ; if it is above or below the screen
          beq   Buttock
          cmp   #$0d       ; It's always empty.
          bcs   Buttock
          FIN
 
          rep   #$31
-         lda   Mhb
+         lda   GPositionXBlk
          asl
-         adc   Mhb
+         adc   GPositionXBlk
          ASLS  2
          adc   #$000c     ; Extra block down
          sec
-         sbc   Mvb
+         sbc   GPositionYBlk
          tax
          sep   #$20
 
@@ -1145,13 +1151,13 @@ PayUp    =     *          ; normal 'below' check
          bcs   ScrewMe
          cmp   #Gplt
          beq   ScrewMe
-:Br1     lda   Mhs
+:Br1     lda   GPositionXFifth
          ELSE
          cmp   #Gppd
          bcs   ScrewMe
          cmp   #Gplt
          beq   ScrewMe
-         lda   Mhs
+         lda   GPositionXFifth
          FIN
 
          cmp   #$03
@@ -1173,7 +1179,7 @@ ScrewMe  lda   #$01
          bpl   Twinkie
          inc   JoyZ
          lda   #$74
-         sta   Mvv
+         sta   GVelocityY
          lda   #$05
          sta   Jcnt
          DO    BF_SFXCode    ; MOD for jump sfx
@@ -1188,29 +1194,29 @@ ScrewMe  lda   #$01
          inc   Jcnt
          bra   Twinkie
 Buttock  stz   NoFall
-         inc   Mvv
-         inc   Mvv
-         inc   Mvv
+         inc   GVelocityY
+         inc   GVelocityY
+         inc   GVelocityY
 
 Twinkie  lda   Jcnt
          beq   GenrlBoy   ; If Jcnt has a value,
          lda   JoyZ
          beq   :Br1       ; and the button is down,
-         dec   Mvv        ; then we add to Guido's upward velocity,
-         dec   Mvv
-         dec   Mvv
+         dec   GVelocityY        ; then we add to Guido's upward velocity,
+         dec   GVelocityY
+         dec   GVelocityY
 :Br1     dec   Jcnt       ; and decrement Jcnt.
          bne   GenrlBoy
-         inc   Mvv
+         inc   GVelocityY
 
 GenrlBoy lda   Xaxs
          clc
-         adc   Mbl
+         adc   GPositionXScreenFifth
          dec
-         cmp   #$c0       ; this checks to see if the bozo is trying
+         cmp   #$c0      ; this checks to see if the bozo is trying
          bcc   Fester   ; to go off the left border of the screen
          ldy   #$0080
-         sty   Mhv
+         sty   GVelocityX
 ]lp      inc   Xaxs       ; and corrects it.
          inc
          bne   ]lp
@@ -1219,7 +1225,7 @@ GenrlBoy lda   Xaxs
 Fester   cmp   #$4b
          bcc   CheckDoorDown       ; And this is a similar check for the
          ldy   #$0080     ; right border
-         sty   Mhv
+         sty   GVelocityX
 ]lp      dec   Xaxs
          dec
          cmp   #$4a
@@ -1229,23 +1235,23 @@ CheckDoorDown sep   #$20
          lda   JoystkReadY       ; If joystick is down,
          cmp   #80
          bcc   CheckDoorRight
-         lda   Mhv        ; And horiz velocity is still,
+         lda   GVelocityX        ; And horiz velocity is still,
          cmp   #$80
          bne   CheckDoorRight
-         lda   Mvv        ; And vertical velocity is still,
+         lda   GVelocityY        ; And vertical velocity is still,
          cmp   #$80
          bne   CheckDoorRight
-         lda   Mhs
+         lda   GPositionXFifth
          cmp   #$02       ; And slice is not 0 or 1
          bcc   CheckDoorRight
          rep   #$31       ; map loc in X...
-         lda   Mhb
+         lda   GPositionXBlk
          asl
-         adc   Mhb
+         adc   GPositionXBlk
          ASLS  2
          adc   #$000c     ; 1 extra down
          sec
-         sbc   Mvb
+         sbc   GPositionYBlk
          tax
          sta   MapLocWrite+1   ; (Save that map location)
          sep   #$20
@@ -1255,7 +1261,7 @@ CheckDoorDown sep   #$20
          lda   MapBl+$C,x
          cmp   #Gppd
          bne   CheckDoorRight ; AND there is a down pipe right of Guido,
-         lda   Mvb        ; SHOVE HIS ASS OFF!! 8)
+         lda   GPositionYBlk  ; SHOVE HIS ASS OFF!! 8)
          cmp   #$0c
          bcs   *+8        ; If vertical is off map, no draw :(
          rep   #$20
@@ -1267,20 +1273,20 @@ CheckDoorDown sep   #$20
 CheckDoorRight lda   Xaxs       ; If joystick is right,
          cmp   #$80
          bcs   CheckDoorLeft
-         lda   Mvv        ; And vertical velocity is still,
+         lda   GVelocityY        ; And vertical velocity is still,
          cmp   #$80
          bne   CheckDoorLeft
-         lda   Mhs
+         lda   GPositionXFifth
          cmp   #$02       ; And slice is in 2
          bne   CheckDoorLeft
          rep   #$31       ; map loc in X...
-         lda   Mhb
+         lda   GPositionXBlk
          asl
-         adc   Mhb
+         adc   GPositionXBlk
          ASLS  2          ; x12
          adc   #$0017     ; +23 (1 extra line right, plus 1 extra line to subtract vertical offset from)
          sec
-         sbc   Mvb
+         sbc   GPositionYBlk
          tax
          sta   MapLocWrite+1   ; (Save that map location)
          lda   MapBl,x
@@ -1300,18 +1306,18 @@ CheckDoorLeft sep   #$20
          lda   Xaxs       ; If joystick is left,
          cmp   #$80
          bcc   CheckDoorUp
-         lda   Mvv        ; And vertical velocity is still,
+         lda   GVelocityY        ; And vertical velocity is still,
          cmp   #$80
          bne   CheckDoorUp
-         lda   Mhs        ; And slice is in 0
+         lda   GPositionXFifth ; And slice is in 0
          cmp   #$00
          bne   CheckDoorUp
          rep   #$31       ; map loc in X...
-         lda   Mhb
+         lda   GPositionXBlk
          asl
-         adc   Mhb
+         adc   GPositionXBlk
          ASLS  2          ; One extra line left (no sec)
-         sbc   Mvb
+         sbc   GPositionYBlk
          tax
          sta   MapLocWrite+1   ; (Save that map location)
          lda   MapBl,x
@@ -1330,23 +1336,23 @@ CheckDoorUp sep   #$20
          lda   JoystkReadY       ; If joystick is up,
          cmp   #23
          bcs   Wralf
-         lda   Mhv        ; And horiz velocity is still,
+         lda   GVelocityX        ; And horiz velocity is still,
          cmp   #$80
          bne   Wralf
-         lda   Mvv        ; And vertical velocity is still,
+         lda   GVelocityY        ; And vertical velocity is still,
          cmp   #$80
          bne   Wralf
-         lda   Mhs        ; And horiz strip=1 (block-aligned visually)
+         lda   GPositionXFifth ; And horiz strip=1 (block-aligned visually)
          dec
          bne   Wralf
          rep   #$31       ; map loc in X...
-         lda   Mhb
+         lda   GPositionXBlk
          asl
-         adc   Mhb
+         adc   GPositionXBlk
          ASLS  2
          adc   #$000b
          sec
-         sbc   Mvb
+         sbc   GPositionYBlk
          tax
          sta   MapLocWrite+1   ; (Save location for later)
          lda   MapBl,x
@@ -1354,7 +1360,7 @@ CheckDoorUp sep   #$20
          cmp   #Gdor      ; And there is a door behind Merry-Man,
          beq   *+5
 Wralf    jmp   Worf
-         lda   Mvb        ; VANISH HIS ASS!! 8)
+         lda   GPositionYBlk ; VANISH HIS ASS!! 8)
          cmp   #$000c
          bcs   *+8        ; If vertical is off map, no vanish :(
          jsr   DoorCompute
@@ -1367,8 +1373,8 @@ Wralf    jmp   Worf
          bra   Smurf
 
 Worf     sep   #$30
-         lda   Mvv        ; Define this cycle's vertical
-         bpl   ]lp        ; update amount from Mvv
+         lda   GVelocityY ; Define this cycle's vertical
+         bpl   ]lp        ; update amount from GVelocityY
          lsr
          and   #$3F
 Smurf    sta   Yaxs
@@ -1381,26 +1387,26 @@ HopHop   cmp   #$80
          bcs   *+5        ; go to second routine if offset positive
          jmp   Stimpy
          inc   Xaxs
-         dec   Mhs
-         dec   Mbl
-         lda   Mhs
+         dec   GPositionXFifth
+         dec   GPositionXScreenFifth
+         lda   GPositionXFifth
          cmp   #$FF
          bne   ]lp
-         dec   Mhb
+         dec   GPositionXBlk
          rep   #$31
-         lda   Mhb        ; get map location
+         lda   GPositionXBlk ; get map location
          asl
-         adc   Mhb
+         adc   GPositionXBlk
          ASLS  2
          adc   #$000a     ; up 1 block
          sec
-         sbc   Mvb
+         sbc   GPositionYBlk
          tax
          sep   #$20
-         lda   Mvb        ; If he's offscreen, the bastard is
+         lda   GPositionYBlk ; If he's offscreen, the bastard is
          cmp   #$0b       ; automatically clear-
          bcc   :Br1
-         ldy   Mhb
+         ldy   GPositionXBlk
          lda   ClmInfo,y  ; -unless the solid above bit is set
          and   #$20
          beq   Smooth
@@ -1409,7 +1415,7 @@ HopHop   cmp   #$80
          cmp   #Gppd      ; Solid?
          bcs   Flesh
          jsr   ChItem     ; Check the block directly in front.
-         lda   Mvb        ; If off screen, branch
+         lda   GPositionYBlk ; If off screen, branch
          cmp   #$0a
          beq   Smooth
          inx
@@ -1417,10 +1423,10 @@ HopHop   cmp   #$80
          cmp   #Gppd      ; If this block is solid, do one more
          bcs   Laffer     ; special check before giving up.
          jsr   ChItem
-         lda   Mvs
+         lda   GPositionYSlice
          cmp   #$04       ; If bozorina is not near the bottom,
          bcc   Smooth     ; Check the third block
-         lda   Mvb        ; If off screen,
+         lda   GPositionYBlk ; If off screen,
          cmp   #$09       ; skip check
          bcs   Smooth
          dex
@@ -1430,53 +1436,53 @@ HopHop   cmp   #$80
          bcs   Flesh
          jsr   ChItem
 Smooth   lda   #$04
-         sta   Mhs
+         sta   GPositionXFifth
          jmp   Larry
-Laffer   lda   Mvs
+Laffer   lda   GPositionYSlice
          cmp   #$0f
          bne   Flesh
          dex
          dex              ; Move to block 2 above
          lda   MapBl,x
          cmp   #Gppd
-         bcs   Flesh      ; If it's not solid, move Guido up
-         stz   Mvs        ; into the space-
-         inc   Mvb        ; result: he can "catch" a block
-         bra   Smooth     ; when only one pixel down from the top
-Flesh    inc   Mhb
-         inc   Mbl
-         stz   Mhs
+         bcs   Flesh           ; If it's not solid, move Guido up
+         stz   GPositionYSlice ; into the space-
+         inc   GPositionYBlk   ; result: he can "catch" a block
+         bra   Smooth          ; when only one pixel down from the top
+Flesh    inc   GPositionXBlk
+         inc   GPositionXScreenFifth
+         stz   GPositionXFifth
          lda   #$80
-         sta   Mhv
+         sta   GVelocityX
          sta   JoystkHLev
          stz   Xaxs
          jmp   Larry
 
 Stimpy   dec   Xaxs       ; second routine
-         inc   Mbl
-         inc   Mhs
-         lda   Mhs
+         inc   GPositionXScreenFifth
+         inc   GPositionXFifth
+         lda   GPositionXFifth
          cmp   #$03
          beq   Poopy
          cmp   #$05
          bne   Godflesh-2
-         inc   Mhb
-         stz   Mhs
+         inc   GPositionXBlk
+         stz   GPositionXFifth
          jmp   Larry
 Poopy    rep   #$31
-         lda   Mhb        ; get map location
+         lda   GPositionXBlk ; get map location
          asl
-         adc   Mhb
+         adc   GPositionXBlk
          ASLS  2
-         adc   #$0016     ; Up one block + 1 Mhb value
+         adc   #$0016     ; Up one block + 1 GPositionXBlk value
          sec
-         sbc   Mvb
+         sbc   GPositionYBlk
          tax
          sep   #$20
-         lda   Mvb        ; Bastard-offscreen check
+         lda   GPositionYBlk ; Bastard-offscreen check
          cmp   #$0b
          bcc   :Br1
-         ldy   Mhb
+         ldy   GPositionXBlk
          lda   ClmInfo+1,y ; -unless the solid above bit is set
          and   #$20
          beq   Larry
@@ -1485,7 +1491,7 @@ Poopy    rep   #$31
          cmp   #Gppd
          bcs   Drugs
          jsr   ChItem     ; Second up block:
-         lda   Mvb        ; If off screen, branch
+         lda   GPositionYBlk ; If off screen, branch
          cmp   #$0a
          bcs   Larry
          inx
@@ -1493,10 +1499,10 @@ Poopy    rep   #$31
          cmp   #Gppd
          bcs   Godflesh
          jsr   ChItem
-         lda   Mvs        ; If the bloated sack is not near
+         lda   GPositionYSlice ; If the bloated sack is not near
          cmp   #$04       ; the bottom, check the 3rd block
          bcc   Larry
-         lda   Mvb        ; If off the screen, no check either
+         lda   GPositionYBlk ; If off the screen, no check either
          cmp   #$09
          bcs   Larry
          dex
@@ -1506,23 +1512,23 @@ Poopy    rep   #$31
          bcs   Drugs
          jsr   ChItem
          bra   Larry
-Godflesh lda   Mvs
+Godflesh lda   GPositionYSlice
          cmp   #$0f
          bne   Drugs
          dex
          dex              ; Move to block 2 above
          lda   MapBl,x
          cmp   #Gppd
-         bcs   Drugs      ; If it's not solid, move Guido up
-         stz   Mvs        ; into the space-
-         inc   Mvb        ; result: he can "catch" a block
-         bra   Larry      ; when only one pixel down from the top
-Drugs    dec   Mbl
+         bcs   Drugs           ; If it's not solid, move Guido up
+         stz   GPositionYSlice ; into the space-
+         inc   GPositionYBlk   ; result: he can "catch" a block
+         bra   Larry           ; when only one pixel down from the top
+Drugs    dec   GPositionXScreenFifth
          lda   #$80
-         sta   Mhv
+         sta   GVelocityX
          sta   JoystkHLev
          lda   #$02
-         sta   Mhs
+         sta   GPositionXFifth
          stz   Xaxs
 
 Larry    sep   #$30
@@ -1532,42 +1538,42 @@ Larry    sep   #$30
          bcs   :Br1       ; go to second routine if offset positive
          jmp   Juicy
 :Br1     inc   Yaxs
-         inc   Mvs
-         lda   Mvs
+         inc   GPositionYSlice
+         lda   GPositionYSlice
          cmp   #$10       ; check for edge of block increment
          bne   Lips
          lda   #$00
-         sta   Mvs
-         inc   Mvb
+         sta   GPositionYSlice
+         inc   GPositionYBlk
 Freem    jmp   Uranus
 Lips     cmp   #$02       ; MORE space!!
          bne   Freem
-         lda   Mvb        ; If he's offscreen, no check
+         lda   GPositionYBlk ; If he's offscreen, no check
          cmp   #$0a
          bcs   Round      ; Besides, the check would come up wrong!
          rep   #$31
-         lda   Mhb        ; get map location
+         lda   GPositionXBlk ; get map location
          asl
-         adc   Mhb
+         adc   GPositionXBlk
          ASLS  2
          adc   #$0009     ; Two blocks extra up.
          sec
-         sbc   Mvb
+         sbc   GPositionYBlk
          tax
          sep   #$20
-         lda   Mhs
+         lda   GPositionXFifth
          cmp   #$04       ; If the slice is 4 (was 3 or more),
          bcs   Check2nd   ; check the rightmost block >first< for
          lda   MapBl,x    ; a solid
          cmp   #Gbh1
-         bcs   Clittie
+         bcs   HitSolidAbove
          cmp   #Gpl2
-         beq   Clittie    ; Or if reverse platform...
+         beq   HitSolidAbove ; Or if reverse platform...
          jsr   ChItem
-         lda   Mhs        ; Does Mhs = 0>2?
+         lda   GPositionXFifth ; Does GPositionXFifth = 0>2?
          cmp   #$03
          bcc   Round      ; If so, we only need to check 1 block
-Check2nd stx   ReamHer+1  ; Save original so we don't have to subtract
+Check2nd stx   :SavedMapSpot+1  ; Save original so we don't have to subtract
          rep   #$21
          txa
          adc   #$000c
@@ -1575,57 +1581,57 @@ Check2nd stx   ReamHer+1  ; Save original so we don't have to subtract
          sep   #$20
          lda   MapBl,x    ; next column
          cmp   #Gbh1      ; check the second block
-         bcs   Clittie
+         bcs   HitSolidAbove
          cmp   #Gpl2
-         beq   Clittie    ; Or if reverse platform...
+         beq   HitSolidAbove ; Or if reverse platform...
          jsr   ChItem
-         lda   Mhs
+         lda   GPositionXFifth
          cmp   #$03       ; was 2
          bcc   Round
-ReamHer  ldx   #$0000     ; Restore that val.
+:SavedMapSpot ldx   #$0000     ; Restore that val.
          lda   MapBl,x    ; This column
          cmp   #Gbh1      ; check the second block
-         bcs   Clittie
+         bcs   HitSolidAbove
          cmp   #Gpl2
-         beq   Clittie    ; Or if reverse platform...
+         beq   HitSolidAbove ; Or if reverse platform...
          jsr   ChItem
 Round    jmp   Uranus
-Clittie  inc   Mvs
+HitSolidAbove  inc   GPositionYSlice
          stx   Itm
          jsr   ChSolid    ; Check for affecting block
          sep   #$20
          stz   Yaxs
-         lda   Mvv
+         lda   GVelocityY
          eor   #$FF
-         sta   Mvv
+         sta   GVelocityY
          inc   Amtf       ; Tongue out when hitting a brick :)
          stz   Jcnt       ; Not adding for a jump anymore
          jmp   Uranus
 
 Juicy    dec   Yaxs       ; second routine
          DO    BF_Buttons
-         lda   Mvs
+         lda   GPositionYSlice
          bne   *+5
          jmp   TopHat
          cmp   #$08       ; Step 8 half-height button check
          bne   Elsa
-         lda   Mvb
+         lda   GPositionYBlk
          cmp   #$0d
          bcs   Elsa
          rep   #$31
-         lda   Mhb        ; get map location
+         lda   GPositionXBlk ; get map location
          asl
-         adc   Mhb
-         ASLS  2
+         adc   GPositionXBlk
+         ASLS  2          ; x12
          adc   #$000b     ; One block extra down.
          sec
-         sbc   Mvb
+         sbc   GPositionYBlk
          tax
          sep   #$20
          lda   MapBl,x
          cmp   #MapTypeButton
          beq   NotElsa
-         lda   Mhs        ; Mhs = 0>2?
+         lda   GPositionXFifth ; GPositionXFifth = 0>2?
          cmp   #$03
          bcc   Elsa
          rep   #$21
@@ -1636,12 +1642,12 @@ Juicy    dec   Yaxs       ; second routine
          lda   MapBl,x
          cmp   #MapTypeButton      ; Next block over
          bne   Elsa
-NotElsa  inc   Mvs
+NotElsa  inc   GPositionYSlice
          lda   #$01
          sta   NoFall     ; Obviously not falling anymore
          stz   Jcnt       ; Not adding for a jump anymore
          stz   Yaxs
-         lda   Mvv
+         lda   GVelocityY
          cmp   #$87
          bcc   NoPress
          stx   Itm
@@ -1663,28 +1669,28 @@ NotElsa  inc   Mvs
          rep   #$10
          ldx   Itm        ; Restore the variables
          lda   #$02       ; Rest of code goes here
-         sta   Mvs
+         sta   GPositionYSlice
 NoPress  lda   #$80       ; Vertical descent stopped
-         sta   Mvv
+         sta   GVelocityY
 Elsa     =     *
          ELSE
-         lda   Mvs
+         lda   GPositionYSlice
          beq   TopHat
          FIN
-         dec   Mvs
+         dec   GPositionYSlice
          bra   Uranus
-TopHat   lda   Mvb        ; Bastard-offscreen check
+TopHat   lda   GPositionYBlk ; Bastard-offscreen check
          beq   Panties
          cmp   #$0d
          bcs   Panties
          rep   #$31
-         lda   Mhb        ; get map location
+         lda   GPositionXBlk ; get map location
          asl
-         adc   Mhb
+         adc   GPositionXBlk
          ASLS  2
          adc   #$000c     ; One block extra down.
          sec
-         sbc   Mvb
+         sbc   GPositionYBlk
          tax
          sep   #$20
          lda   MapBl,x
@@ -1706,7 +1712,7 @@ Br1      =     *
          jsr   ChItem
          FIN
 
-         lda   Mhs        ; Mhs = 0>2?
+         lda   GPositionXFifth ; GPositionXFifth = 0>2?
          cmp   #$03
          bcc   Panties
          rep   #$21
@@ -1727,17 +1733,17 @@ Br1      =     *
          beq   Kitties
          jsr   ChItem
 Panties  lda   #$0F
-         sta   Mvs
-         dec   Mvb
+         sta   GPositionYSlice
+         dec   GPositionYBlk
          bra   Uranus
 Kitties  lda   #$00
-         sta   Mvs
+         sta   GPositionYSlice
          inc
          sta   NoFall     ; Obviously not falling anymore
          stz   Jcnt       ; Not adding for a jump anymore
          stz   Yaxs
          lda   #$80       ; Vertical descent stopped
-         sta   Mvv
+         sta   GVelocityY
 
 Uranus   sep   #$30       ; Go back if both axes are not 0
          lda   Yaxs
@@ -1745,7 +1751,7 @@ Uranus   sep   #$30       ; Go back if both axes are not 0
          lda   Xaxs
          bne   Beefy
 
-         lda   Mvb        ; for now, if the asshole falls off,
+         lda   GPositionYBlk ; for now, if the asshole falls off,
          cmp   #$FE       ; we go straight to death.
          bcs   Mono1
          cmp   #$F8       ; Two blocks off, then the dead zone.
@@ -1754,8 +1760,8 @@ Uranus   sep   #$30       ; Go back if both axes are not 0
 
 Beefy    jmp   Boingg    ; Not finished
 
-Mono1    lda   Mbl        ; Check screen loc.
-         cmp   #$34       ; Right border of "window"
+Mono1    lda   GPositionXScreenFifth ; Check screen loc.
+         cmp   #$34       ; Right border of center range where scrolling doesn't trigger
          bcc   UpThere
          sbc   #$33       ; Right border -1
          sta   DCnt
@@ -1773,15 +1779,15 @@ UpDwn    JSR   PeaInc
 UpHere   lda   #$33       ; Right border -1
          clc
          adc   DCnt
-         sta   Mbl
+         sta   GPositionXScreenFifth
 
          DO    BF_ScrlLft
-UpThere  lda   Mbl        ; Check screen loc.
-         cmp   #$1C       ; Left border of "window"
+UpThere  lda   GPositionXScreenFifth ; Check screen loc.
+         cmp   #$1C       ; Left border of center range where scrolling doesn't trigger
          bcs   DirtClod
          lda   #$1C
          sec
-         sbc   Mbl        ; Left border
+         sbc   GPositionXScreenFifth ; Left border
          sta   DCnt
 Chuck    ldx   WinXEdgeBlk
          lda   ClmInfo-15,x
@@ -1797,7 +1803,7 @@ Babe     JSR   PeaDec
 Eediot   lda   #$1C       ; Left border
          sec
          sbc   DCnt
-         sta   Mbl
+         sta   GPositionXScreenFifth
 
 DirtClod sep   #$30
          ELSE
@@ -1822,11 +1828,11 @@ AnimSk4  lda   Acnt
          and   #$3f       ; If counter hits 64 cycle mark,
          cmp   #$3f
          bne   AnimSk2
-         lda   Mhv
-         cmp   #$80       ; and Mhv is neutral,
+         lda   GVelocityX
+         cmp   #$80       ; and GVelocityX is neutral,
          bne   AnimSk2
-         lda   Mvv
-         cmp   #$80       ; and Mvv is neutral,
+         lda   GVelocityY
+         cmp   #$80       ; and GVelocityY is neutral,
          bne   AnimSk2
          lda   Aeye
          cmp   #56        ; and eyes are open (no shades,etc)
@@ -1838,7 +1844,7 @@ AnimSk2  rep   #$10       ; Guido's walking and belly
          lda   NoFall
          beq   AnimSk3
          ldy   #0
-         lda   Mhv        ; dealt with in the animation here,
+         lda   GVelocityX ; dealt with in the animation here,
          cmp   #$80       ; DraTrol does that.
          beq   AnimSk3
          lda   Acnt
@@ -1855,10 +1861,10 @@ AnimSk3  lda   AlrmD,y    ; Left arm
          lda   AblC
          sta   Ably
 
-         lda   SpAc
+         lda   SpritesActiveCnt
          beq   *+5        ; If there are any sprites,
          jsr   SprUp      ; Update sprite list
-         jmp   MainLp      ; Spot for next animation routine
+         jmp   MainPlayLoop
 
 AlrmD    DB    28,29,28,00,00,00,00,00 ; Animation data
 AwlkD    DB    00,01,02,03,04,05,06,07
@@ -1929,7 +1935,7 @@ Die      rep   #$30       ; Mario death routine so far!
          xba
          dec
          bpl   *+5
-         jmp   Quit       ; If both skip over, game over
+         jmp   GameOver    ; If both skip over, game over
          xba
 :Br1     rep   #$20
          stal  WldLives+ShelPage
@@ -1948,7 +1954,7 @@ PeaInc   SEP   #$30
          lda   #$80
          trb   Mdir       ; Set the forward scroll flag
          DO    BF_VrtFunk
-         lda   ExStats
+         lda   GameFlags
          and   #$01
          beq   IncBr2
          lda   FunkFlag   ; Here on to there
@@ -2003,10 +2009,10 @@ IncBr2   =     *
          cmp   WinXEdgeBlk
          bne   IncBr3     ; If it's >, can't add yet.
          inc   IMsp
-         lda   SpAc
+         lda   SpritesActiveCnt
          beq   IncBr5
          ASLS  3
-         adc   SpAc
+         adc   SpritesActiveCnt
          tay
          sep   #$20
 ]lp2     lda   SprI-1,y
@@ -2018,9 +2024,9 @@ IncBr2   =     *
          --^
          bne   ]lp2
          rep   #$21
-         lda   SpAc
+         lda   SpritesActiveCnt
 IncBr5   ASLS  3          ; x8
-         adc   SpAc       ; x9
+         adc   SpritesActiveCnt ; x9
          tay
          lda   MapSpr+1,x ; Move in the new sprite
          sta   SprI,y
@@ -2035,7 +2041,7 @@ IncBr5   ASLS  3          ; x8
          dec
          sta   SprI+8,y   ; Stick sprite i.d. onto end of data.
          rep   #$20
-         inc   SpAc
+         inc   SpritesActiveCnt
          bra   ]lp
          DO    BF_ScrlLft
 IncBr3   jmp   IncBr3B
@@ -2046,7 +2052,7 @@ IncBr3   rep   #$30
          LDA   #$000B
          STA   Tmp
          DO    BF_VrtFunk
-         lda   ExStats
+         lda   GameFlags
          and   #$0001
          beq   TwistSk
          lda   FunkReg
@@ -2161,7 +2167,7 @@ PeaDec   REP   #$31       ; Draw grafix 1st, in the dec routine
          LDA   #$000B
          STA   Tmp
          DO    BF_VrtFunk
-         lda   ExStats
+         lda   GameFlags
          and   #$0001
          bne   TwistS3
          lda   #$00f0
@@ -2231,7 +2237,7 @@ TwistS2  clc
          lda   #$80
          tsb   Mdir
          DO    BF_VrtFunk
-         lda   ExStats
+         lda   GameFlags
          and   #$01
          beq   DecBr2
          lda   FunkFlag   ; Here on to there
@@ -2291,10 +2297,10 @@ DecBr3   lda   #$04
          bne   DecBr4
          rep   #$21
          dec   DMsp
-         lda   SpAc
+         lda   SpritesActiveCnt
          beq   DecBr6
          ASLS  3
-         adc   SpAc
+         adc   SpritesActiveCnt
          tay
          sep   #$20
 ]lp2     lda   SprI-1,y
@@ -2305,9 +2311,9 @@ DecBr3   lda   #$04
          --^
          bne   ]lp2
          rep   #$21
-         lda   SpAc
+         lda   SpritesActiveCnt
 DecBr6   ASLS  3          ; x8
-         adc   SpAc       ; x9
+         adc   SpritesActiveCnt ; x9
          tay
          lda   MapSpr-8,x ; Move in a new sprite
          sta   SprI,y
@@ -2321,7 +2327,7 @@ DecBr6   ASLS  3          ; x8
          lda   DMsp
          sta   SprI+8,y
          rep   #$20
-         inc   SpAc
+         inc   SpritesActiveCnt
          bra   ]lp
 DecBr5   RTS
 DecBr4   rep   #$20
@@ -2448,15 +2454,15 @@ Toad     txa
          sta   DaSpot+1
          inc
          sta   DaSpotB+1
-         lda   Mvb
+         lda   GPositionYBlk
          cmp   #$0c
          bcs   Whoah      ; If vertical is off map, no draw
          REP   #$30
-         lda   Mvb        ; Vertical block comp. with reversal
+         lda   GPositionYBlk ; Vertical block comp. with reversal
          Xba
          and   #$0F00
          sta   Tmp2
-         lda   Mvs
+         lda   GPositionYSlice
          ASLS  4
          adc   Tmp2
          sta   Tmp2       ; Saved for later
@@ -2464,11 +2470,11 @@ Toad     txa
          sec
          sbc   Tmp2       ; Vertical computed
          sec
-         sbc   Mbl
+         sbc   GPositionXScreenFifth
          sec
-         sbc   Mbl
+         sbc   GPositionXScreenFifth
          sec
-         sbc   Mbl
+         sbc   GPositionXScreenFifth
          sec              ; adds 1 as well
          adcl  PeaJumpPtr ; (i.e. no this is not a mistake!)
          inc
@@ -2699,11 +2705,11 @@ Chompem  sta   DWNt       ; Store the blox down for safekeeping
 * space, so it appears he's going down a pipe that's already present
 * on the screen below the space.
 DoorCompute REP   #$30
-         lda   Mvb        ; Vertical block comp. with reversal
+         lda   GPositionYBlk ; Vertical block comp. with reversal
          Xba
          and   #$0F00
          sta   Tmp2
-         lda   Mvs
+         lda   GPositionYSlice
          ASLS  4
          adc   Tmp2
          sta   Tmp2       ; Saved for later
@@ -2714,7 +2720,7 @@ DoorCompute REP   #$30
          ASLS  2
          adc   Tmp3
          clc              ; xA, plus screen offset x2
-         adc   Mbl
+         adc   GPositionXScreenFifth
          asl
          adc   #SHR+$A7   ; MOD 3 less than location for left-overlap
          tay              ; =SHR screen location
@@ -2725,11 +2731,11 @@ DoorCompute REP   #$30
          sta   Tmp2
          ldal  PeaJumpPtr
          sec
-         sbc   Mbl
+         sbc   GPositionXScreenFifth
          sec
-         sbc   Mbl
+         sbc   GPositionXScreenFifth
          sec
-         sbc   Mbl
+         sbc   GPositionXScreenFifth
          clc
          adc   Tmp2
          sec
@@ -2893,7 +2899,7 @@ DoorGo =     *
 * 2:   Horz destination location
 * 3: Vert destination location
 * 4: Horz window destination location
-* 5: Horz strip on block (Mhs)
+* 5: Horz strip on block (GPositionXFifth)
 * 6:
 * 7: 0 Internal   + letter
 *    1 New area   + 0-3
@@ -2936,7 +2942,7 @@ NewPack2 stz   MapIndex
          stal  WldSect+ShelPage
          jmp   NewPack
 
-Quit     clc
+GameOver clc
          xce
          rep   #$30
          lda   #ShelPage
@@ -2980,10 +2986,10 @@ Quit     clc
          STAl  $e1c029
          Jsr   WaitKey
          cmp   #"Y"       ; if yes, call Trolls
-         beq   DuckPoop   ; player again.
+         beq   :Yes   ; player again.
          cmp   #"y"
          bne   *+5
-DuckPoop jmp   TrolPlay
+:Yes     jmp   TrolPlay
          brk   00
          brk   00
 
@@ -3034,7 +3040,7 @@ ActList  =     *
          lst   off
 
 SprUp    rep   #$30
-         lda   SpAc
+         lda   SpritesActiveCnt
          sta   SpCn
          stz   ErAc
 TopSpr   dec   SpCn
@@ -3060,15 +3066,15 @@ TopSpr   dec   SpCn
 
 KillMe   ldx   Tmp
 KillDis  sep   #$20       ; REMOVE the current sprite
-         dec   SpAc
+         dec   SpritesActiveCnt
          beq   KillRet
-         lda   SpAc
+         lda   SpritesActiveCnt
          cmp   SpCn
          beq   KillRet
          rep   #$20
-         lda   SpAc
+         lda   SpritesActiveCnt
          ASLS  3          ; x8
-         adc   SpAc       ; x9
+         adc   SpritesActiveCnt ; x9
          tay
          lda   SprI,y     ; Shift the last
          sta   SprI,x     ; on the list

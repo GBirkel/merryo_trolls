@@ -66,17 +66,17 @@ Tmp2     DS    2          ; More Temporary storage
 Tmp3     DS    2          ; Even more
 Tmp4     DS    2          ; Yet more!
 DCnt     DS    2          ; Update quantity reg counter
-Mbl      DS    2          ; Main guy screen offset vsl
-Mhb      DS    2          ; Horiz block location, leftmost=0
-Mhs      DS    2          ; Horiz section location, leftmost=0
+GPositionXScreenFifth DS 2 ; Main guy screen offset vsl
+GPositionXBlk   DS 2      ; Horiz block location, leftmost=0
+GPositionXFifth DS 2      ; Horiz section location, leftmost=0
 
 JoystkHLev DS    2          ; Horiz joystick level meter (+) = r (-) = l
 JoystkHDir DS    2          ; Horiz joystick dir (0=LF,1=L,2=M,3=R,4=RF)
 
-Mhv      DS    2          ; Horiz velocity (+) = rigt (-) = left
-Mvb      DS    2          ; Vertical block location, bottom=0
-Mvs      DS    2          ; Vertical section location, bottom=0
-Mvv      DS    2          ; Vertical velocity (+) = down, (-) = up
+GVelocityX      DS 2      ; Horiz velocity (+) = rigt (-) = left
+GPositionYBlk   DS 2      ; Vertical block location, bottom=0
+GPositionYSlice DS 2      ; Vertical section location, bottom=0
+GVelocityY      DS 2          ; Vertical velocity (+) = down, (-) = up
 Mdir     DS    2          ; Bit 1=Troll dir.flag, Bit 7=Scroll dir.flag
 NoFall   DS    2          ; Block under the moron flag 0=air 1=srfc
 Yaxs     DS    2          ; Y axis (vertical!!!) offset storage
@@ -105,7 +105,7 @@ AblC     DS    2          ; Flag for belly
 Itm      DS    2          ; Item check temporary holder
 Itm2     DS    2          ; Item check temporary storage 2
 ErAc     DS    2          ; Number of active on-screen sprites
-SpAc     DS    2          ; Number of active sprites
+SpritesActiveCnt DS 2     ; Number of active sprites
 ErCn     DS    2          ; On-screen sprite currently processing
 SpCn     DS    2          ; Active sprite currently processing
 IMsp     DS    2          ; Left-scroll location in the map Sprite List
@@ -114,7 +114,7 @@ OVRt     DS    2          ; Blox over temp (for sprites)
 DWNt     DS    2          ; Blox down temp (for sprites)
 SizTotal DS    2          ; Total length of PEA field
 SizStack DS    2          ; Initial entry point for stack when blitting
-ExStats  DS    2          ; The extras flags (1=twist, 7=NoPole, 8=auto)
+GameFlags DS   2          ; Flags for activating in-game extra features (1=twist, 7=NoPole, 8=auto)
 Pal      DS    2          ; QM Palette cycle pointer
 Pal2     DS    2          ; Logo palette cycle pointer
 Score1   DS    8          ; Current score

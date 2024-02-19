@@ -222,7 +222,6 @@ def main(argv):
 	# Phase 7: Clean up
 	#
 
-
 	os.remove(os.path.join(src_folder, "TROLL.SYSTEM_Output.txt"))
 
 	os.remove(os.path.join(src_folder, "WORLD1.S"))

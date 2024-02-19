@@ -54,9 +54,9 @@ Bl_Coin  ldx   Itm
          sta   Score2+1   ; Award 50 points for the coin
          jsr   ScoreAdd
          rep   #$31
-         lda   SpAc
+         lda   SpritesActiveCnt
          ASLS  3          ; x8
-         adc   SpAc       ; x9
+         adc   SpritesActiveCnt ; x9
          tax              ; in X
          lda   #$0305
          sta   SprI,x     ; C: sets ID and anim. stage
@@ -77,7 +77,7 @@ Bl_Coin  ldx   Itm
          ASLS  4          ; x16
          inc
          sta   SprI+6,x   ; C: sets vertical line
-         inc   SpAc       ; C: inc SpAc
+         inc   SpritesActiveCnt
          sep   #$20
          lda   #$FF
          sta   SprI+8,x   ; Coin- Sets non-level I.D.
@@ -171,9 +171,9 @@ Bl_Breakable  ldx   Itm
          sta   Score2     ; Give 3 points
          jsr   ScoreAdd   ; for bothering to break it
          rep   #$31
-         lda   SpAc
+         lda   SpritesActiveCnt
          ASLS  3          ; x8
-         adc   SpAc       ; x9
+         adc   SpritesActiveCnt ; x9
          tax              ; in X
          lda   #$0101
          sta   SprI,x     ; set up "brick"
@@ -213,7 +213,7 @@ Bl_Breakable  ldx   Itm
          ASLS  4          ; x16
          dec
          sta   Tmp
-         lda   Mvv-1
+         lda   GVelocityY-1
          lsr
          and   #$7F00
          ORA   #$4000
@@ -231,10 +231,10 @@ Bl_Breakable  ldx   Itm
          sta   SprI+17,x  ; these sprites didn't come from
          sta   SprI+26,x  ; the level list
          sta   SprI+35,x
-         inc   SpAc       ; increment SpAc
-         inc   SpAc       ; for four new sprites
-         inc   SpAc
-         inc   SpAc
+         inc   SpritesActiveCnt
+         inc   SpritesActiveCnt ; four new sprites
+         inc   SpritesActiveCnt
+         inc   SpritesActiveCnt
          ldx   Itm        ; --Check for coin above--
          lda   MapBl-1,x
          and   #$FD
@@ -257,9 +257,9 @@ Bl_Breakable  ldx   Itm
          sta   Score2+1   ; Award 50 points for the coin
          jsr   ScoreAdd
          rep   #$30
-         lda   SpAc
+         lda   SpritesActiveCnt
          ASLS  3          ; x8
-         adc   SpAc       ; x9
+         adc   SpritesActiveCnt ; x9
          tax              ; in X
          lda   #$0305
          sta   SprI,x     ; C: sets ID and anim. stage
@@ -280,7 +280,7 @@ Bl_Breakable  ldx   Itm
          ASLS  4          ; x16
          inc
          sta   SprI+6,x   ; C: sets vertical line
-         inc   SpAc       ; C: inc SpAc
+         inc   SpritesActiveCnt
          sep   #$20
          lda   #$FF
          sta   SprI+8,x   ; Coin- Sets non-level I.D.
@@ -306,9 +306,9 @@ Bl_Mushroom sec
          rep   #$30
          jsr   BlokZap
          rep   #$30
-         lda   SpAc
+         lda   SpritesActiveCnt
          ASLS  3          ; x8
-         adc   SpAc       ; x9
+         adc   SpritesActiveCnt ; x9
          tax              ; in X
          lda   #$0003
          sta   SprI+9,x   ; P: sets ID and anim. stage
@@ -334,8 +334,8 @@ Parakeet lda   #$8000
          ASLS  4          ; x16
          dec
          sta   SprI+15,x  ; P: sets vertical line
-         inc   SpAc       ; M: inc SpAc
-         inc   SpAc       ; P: inc SpAc
+         inc   SpritesActiveCnt ; M
+         inc   SpritesActiveCnt ; P
          sep   #$20
          lda   #$FF
          sta   SprI+17,x  ; P: Sets non-level I.D.

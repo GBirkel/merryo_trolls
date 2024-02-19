@@ -101,8 +101,8 @@ Stick4   cmp   #$100-MhMfv
          dec              ; with overflow control
 Stick2   sta   JoystkHLev
 
-         tay              ; Affect Mhv:
-         lda   Mhv
+         tay              ; Affect GVelocityX:
+         lda   GVelocityX
          cpy   #MhMsv
          bcc   Stuck1
          cmp   #$81
@@ -132,4 +132,4 @@ Stuck5   cmp   #$80       ; Rubber-band back to 0
 Stuck6   cmp   #$81
          bcc   Stuck2
          dec
-Stuck2   sta   Mhv
+Stuck2   sta   GVelocityX
