@@ -965,14 +965,14 @@ NotPlaybackStart = *
          bmi   DoneWithKeyboard
          lda   Tmp
 
-         cmp   #$15
+         cmp   #$95
          bne   NotRightArrow
          lda   #$04
          sta   JoystkHDir
          bra   HandledGuidoMovementKey
 NotRightArrow = *
 
-         cmp   #$08
+         cmp   #$88
          bne   NotLeftArrow
          lda   #$00
          sta   JoystkHDir
