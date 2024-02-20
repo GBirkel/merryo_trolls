@@ -1,5 +1,5 @@
          LST   OFF
-PeaJumpPtr =     $000800    ; Long jump location (Important)
+PeaJumpPtr =   $000800    ; Long jump location (Important)
 ShelPage =     $001000    ; Shell/loader zero page
 Zpl      =     $001100    ; Zero page location
 AcidPtrn =     $001600    ; Acid land wave patterns
@@ -76,8 +76,7 @@ JoystkHDir DS    2          ; Horiz joystick dir (0=LF,1=L,2=M,3=R,4=RF)
 GVelocityX      DS 2      ; Horiz velocity (+) = rigt (-) = left
 GPositionYBlk   DS 2      ; Vertical block location, bottom=0
 GPositionYSlice DS 2      ; Vertical section location, bottom=0
-GVelocityY      DS 2          ; Vertical velocity (+) = down, (-) = up
-Mdir     DS    2          ; Bit 1=Troll dir.flag, Bit 7=Scroll dir.flag
+GVelocityY      DS 2      ; Vertical velocity (+) = down, (-) = up
 NoFall   DS    2          ; Block under the moron flag 0=air 1=srfc
 Yaxs     DS    2          ; Y axis (vertical!!!) offset storage
 Xaxs     DS    2          ; X axis (Horizontal!) offset storage
@@ -92,16 +91,16 @@ JoystkBtns01 DS 2         ; Status of buttons 0 and 1 this cycle (bits7,8)
 
 Lupe     DS    2          ; Minor update loop byte(s)
 Acnt     DS    2          ; Animation flags counter
-Ahed     DS    2          ; Sprite for head
-Alrm     DS    2          ; Sprite for left arm
-Awlb     DS    2          ; Sprite for body section B
-Artm     DS    2          ; Sprite for right arm
-Awlk     DS    2          ; Sprite for feet
-Amth     DS    2          ; Sprite for mouth
-Ably     DS    2          ; Sprite for belly
-Aeye     DS    2          ; Sprite for eye
-Amtf     DS    2          ; Flag for mouth
-AblC     DS    2          ; Flag for belly
+GCurrentSpr_Head     DS 2 ; Sprite for head
+GCurrentSpr_LArm     DS 2 ; Sprite for left arm
+GCurrentSpr_LegB     DS 2 ; Sprite for body section B
+GCurrentSpr_RArm     DS 2 ; Sprite for right arm
+GCurrentSpr_LegA     DS 2 ; Sprite for feet
+GCurrentSpr_Mouth    DS 2 ; Sprite for mouth
+GCurrentSpr_Belly    DS 2 ; Sprite for belly
+GCurrentSpr_Eye      DS 2 ; Sprite for eye
+GBodyFlg_Tongue      DS 2 ; Flag for mouth
+GBodyFlg_Facing      DS 2 ; Bit 1=Troll dir.flag, Bit 7=Scroll dir.flag
 Itm      DS    2          ; Item check temporary holder
 Itm2     DS    2          ; Item check temporary storage 2
 ErAc     DS    2          ; Number of active on-screen sprites

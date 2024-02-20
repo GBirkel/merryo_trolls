@@ -15,8 +15,8 @@ FlagPole lda   GameFlags    ; Skip all this if the "don't respond to the flagpol
          lda   SizStack
          pha
          jsr   DoorCompute
-         lda   #27
-         sta   Artm       ; "Carry" arm for grabbing flag
+         lda   #GuidoSprId_ArmCarry
+         sta   GCurrentSpr_RArm       ; "Carry" arm for grabbing flag
          txa
          clc
          adc   #BF_SizLine

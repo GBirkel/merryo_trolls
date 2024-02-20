@@ -278,13 +278,13 @@ Mushey70 ldal  WldCndtn+ShelPage ; Guido life
          stal  $0121e0+129,x
          stal  $012280+129,x
 AlrdyFul rts
-Mushey71 lda   #41        ; Horns
-         sta   Ahed
+Mushey71 lda   #GuidoSprId_Horns        ; Horns
+         sta   GCurrentSpr_Head
          rts
-Mushey72 lda   #44        ; Beanie
-         sta   Ahed
+Mushey72 lda   #GuidoSprId_Beanie        ; Beanie
+         sta   GCurrentSpr_Head
          rts
-Mushey73 lda   #43        ; Shades
-         sta   Aeye
+Mushey73 lda   #GuidoSprId_Shades        ; Shades
+         sta   GCurrentSpr_Eye
          rts
 Mushey74 jmp   LivesInc   ; Extra life

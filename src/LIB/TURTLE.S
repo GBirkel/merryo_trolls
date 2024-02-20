@@ -3,7 +3,7 @@
          lst   off
 
 * 1- bit 4: red type
-*    bit 8: backwards
+*    bit 8: direction (1=backwards)
 * 2- animation stage
 * 3- Vertical velocity
 * 4- Map Y in blocks
@@ -546,11 +546,12 @@ Shell18  lda   GPositionYBlk
          and   #$01
          beq   Shell27    ; If it's moving, Guido gets hit.
          rep   #$20
-         lda   Mdir
-         XBA
-         lsr
-         and   #$0080     ; Otherwise, make it move, in his direction.
-         ora   SprI+1,x
+* Note that this is imperfect logic.
+* The direction should be determined by relative horizontal
+* position of Guido and the shell, not velocity.
+         lda   GVelocityX
+         and   #$0080     ; Grabbing "sign" bit of 8-bit value,
+         ora   SprI+1,x   ; and turning it into a direction flag
          sta   SprI+1,x
          bra   Shell24
 Shell27  rep   #$30

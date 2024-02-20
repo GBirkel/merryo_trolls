@@ -55,13 +55,3 @@
          Bcc   :Match     ; S Right
          inx              ; F Right
 :Match   stx   JoystkHDir
-
-         sep   #$30
-         ldx   #$40
-         ldal  $00c062
-         bmi   :Button1
-         ldx   #$00
-:Button1 stx   JoystkBtns01
-         ldal  $00c061
-         and   #$80
-         tsb   JoystkBtns01

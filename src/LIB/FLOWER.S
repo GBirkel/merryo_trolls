@@ -5,12 +5,13 @@
 * There are three triggers to deal with:
 * A block with one left-facing flower (10),
 * a block with one right-racing flower (01), and a block with both (11).
-* In the case of the block with both, only one flower will be activated. 
+* In the case of the block with both, only one flower will be activated:
+* The one leaning in the same direction Guido is facing.
 
          MX    %10
 Flower10 sep   #$20
-         lda   Mdir       ; If not facing forward,
-         and   #$01       ; no valid contact.
+         lda   GBodyFlg_Facing ; If not facing forward,
+         and   #$01            ; no valid contact.
          beq   :Continue
          rts
 :Continue lda   #BlkId_Empty
@@ -38,7 +39,7 @@ Flower10 sep   #$20
 
          MX    %10
 Flower01 sep   #$20
-         lda   Mdir       ; If not facing forward,
+         lda   GBodyFlg_Facing ; If not facing forward,
          and   #$01       ; no valid contact.
          bne   :Continue
          rts
@@ -67,7 +68,7 @@ Flower01 sep   #$20
 
          MX    %10
 Flower11 sep   #$20
-         lda   Mdir       ; If not facing forward,
+         lda   GBodyFlg_Facing ; If not facing forward,
          and   #$01       ; no valid contact.
          bne   Flowr11c
          lda   #BlkId_Sprt1+1

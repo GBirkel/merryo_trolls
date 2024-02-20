@@ -97,34 +97,33 @@ GPositionYBlk   DS    2   ; Vertical block location, bottom=0
 GPositionYSlice DS    2   ; Vertical sub-block location, bottom=0
 GVelocityX      DS    2   ; Horiz velocity (+) = right (-) = left
 GVelocityY      DS    2   ; Vertical velocity (+) = down, (-) = up
-Mdir     DS    2          ; Bit 1=Troll dir.flag, Bit 7=Scroll dir.flag
 NoFall   DS    2          ; Block under the moron flag 0=air 1=srfc
 Yaxs     DS    2          ; Y axis (vertical!!!) offset storage
 Xaxs     DS    2          ; X axis (Horizontal!) offset storage
 
 JoystkHLev DS    2        ; Horiz joystick level meter (+) = r (-) = l
 JoystkHDir DS    2        ; Horiz joystick dir (0=LF,1=L,2=M,3=R,4=RF)
-
 JoyZ     DS    2          ; Joystick hold-down flag
 Jcnt     DS    2          ; Joystick from-jump counter
 JoystkReadX DS 2          ; Joystick X axis read result
 JoystkReadY DS 2          ; Joystick Y axis read result
+
 WindowedPEA DS 2          ; Windowed blitter routine PEA origin
 WindowedGuido DS 2        ; Windowed blitter routine Guido drawing location
 JoystkBtns01 DS 2         ; Status of buttons 0 and 1 this cycle (bits7,8)
 
 Lupe     DS    2          ; Minor update loop byte(s)
 Acnt     DS    2          ; Animation flags counter
-Ahed     DS    2          ; Sprite for head
-Alrm     DS    2          ; Sprite for left arm
-Awlb     DS    2          ; Sprite for body section B
-Artm     DS    2          ; Sprite for right arm
-Awlk     DS    2          ; Sprite for feet
-Amth     DS    2          ; Sprite for mouth
-Ably     DS    2          ; Sprite for belly
-Aeye     DS    2          ; Sprite for eye
-Amtf     DS    2          ; Flag for mouth
-AblC     DS    2          ; Flag for belly
+GCurrentSpr_Head     DS 2 ; Sprite for head
+GCurrentSpr_Mouth    DS 2 ; Sprite for mouth
+GCurrentSpr_Eye      DS 2 ; Sprite for eye
+GCurrentSpr_RArm     DS 2 ; Sprite for right arm
+GCurrentSpr_LArm     DS 2 ; Sprite for left arm
+GCurrentSpr_Belly    DS 2 ; Sprite for belly
+GCurrentSpr_LegA     DS 2 ; Sprite for feet
+GCurrentSpr_LegB     DS 2 ; Sprite for body section B
+GBodyFlg_Tongue   DS    2 ; Flag for mouth
+GBodyFlg_Facing   DS    2 ; Bit 1: Guido's body. (1=Facing left)
 Itm      DS    2          ; Item check temporary holder
 Itm2     DS    2          ; Item check temporary storage 2
 ErAc     DS    2          ; Number of active on-screen sprites
@@ -139,7 +138,7 @@ OVRt     DS    2          ; Blox over temp (for sprites)
 DWNt     DS    2          ; Blox down temp (for sprites)
 SizTotal DS    2          ; Total length of PEA field
 SizStack DS    2          ; Initial entry point for stack when blitting
-GameFlags DS   2         ; Flags for activating in-game extra features (1=twist, 7=NoPole, 8=auto)
+GameFlags DS   2          ; Flags for activating in-game extra features (1=twist, 7=NoPole, 8=auto)
 Pal      DS    2          ; QM Palette cycle pointer
 Pal2     DS    2          ; Logo palette cycle pointer
 Score1   DS    8          ; Current score
@@ -176,46 +175,69 @@ AcidIndx DS    2
 * Various constants
 *
 
-EsqA            = $01C03E  ; Ensoniq Address reg
-EsqC            = $01C03C  ; Ensoniq Control reg
-EsqD            = $01C03D  ; Ensoniq Data reg
+EsqA            EQU $01C03E  ; Ensoniq Address reg
+EsqC            EQU $01C03C  ; Ensoniq Control reg
+EsqD            EQU $01C03D  ; Ensoniq Data reg
 
-PalNum          = $10  ; Standard number of palletes to fade.
-GVelocityHWalking  = $82  ; Horizontal movement lower level (walking)
-GVelocityHRunning  = $86  ; Horizontal movement upper level (running)
+PalNum            EQU $10  ; Standard number of palletes to fade.
+GVelocityHWalking EQU $82  ; Horizontal movement lower level (walking)
+GVelocityHRunning EQU $86  ; Horizontal movement upper level (running)
 
 * A key for interpreting the block IDs in the level map
 
-BlkId_Empty       = $00  ; Clear invisible space i.d
-BlkId_Sprt1       = $01  ; 1st clear sprite-activatior i.d
-BlkId_Sprt8       = $08  ; 8th clear sprite-activatior i.d
-BlkId_EmptyDeadly = $10  ; Clear deady block i.d
-BlkId_Door        = $11  ; Clear door space i.d
-BlkId_Pltfm       = $14  ; Straight platform i.d
-BlkId_RevPltfm    = $15  ; Straight reverse platform i.d
+BlkId_Empty       EQU $00  ; Clear invisible space i.d
+BlkId_Sprt1       EQU $01  ; 1st clear sprite-activatior i.d
+BlkId_Sprt8       EQU $08  ; 8th clear sprite-activatior i.d
+BlkId_EmptyDeadly EQU $10  ; Clear deady block i.d
+BlkId_Door        EQU $11  ; Clear door space i.d
+BlkId_Pltfm       EQU $14  ; Straight platform i.d
+BlkId_RevPltfm    EQU $15  ; Straight reverse platform i.d
          DO    BF_Slopes
-BlkId_SlopeLeft   = $16  ; Left sloped platform i.d
-BlkId_SlopeRight  = $17  ; Right sloped platform i.d
+BlkId_SlopeLeft   EQU $16  ; Left sloped platform i.d
+BlkId_SlopeRight  EQU $17  ; Right sloped platform i.d
          FIN
-BlkId_CoinA       = $1C  ; Coin with block $00 under
-BlkId_FoodA       = $1D  ; Food with block $00 under
-BlkId_CoinB       = $1E  ; Coin with block $A0 under
-BlkId_FoodB       = $1F  ; Food with block $A0 under
-BlkId_HiddenSld1  = $21  ; 1st hidden action solid i.d
-BlkId_HiddenSld10 = $2A  ; 10th hidden action solid i.d
-BlkId_PipeDown    = $2C  ; Entry down i.d (all solids past here)(usually)
-BlkId_PipeUp      = $2D  ; Entry up i.d
-BlkId_PipeRight   = $2E  ; Entry right i.d
-BlkId_PipeLeft    = $2F  ; Entry left i.d
-BlkId_Solid       = $30  ; Solid i.d
-BlkId_SolidActn1  = $31  ; 1st action solid i.d
-BlkId_SolidActn10 = $3A  ; 10th action solid i.d
+BlkId_CoinA       EQU $1C  ; Coin with block $00 under
+BlkId_FoodA       EQU $1D  ; Food with block $00 under
+BlkId_CoinB       EQU $1E  ; Coin with block $A0 under
+BlkId_FoodB       EQU $1F  ; Food with block $A0 under
+BlkId_HiddenSld1  EQU $21  ; 1st hidden action solid i.d
+BlkId_HiddenSld10 EQU $2A  ; 10th hidden action solid i.d
+BlkId_PipeDown    EQU $2C  ; Entry down i.d (all solids past here)(usually)
+BlkId_PipeUp      EQU $2D  ; Entry up i.d
+BlkId_PipeRight   EQU $2E  ; Entry right i.d
+BlkId_PipeLeft    EQU $2F  ; Entry left i.d
+BlkId_Solid       EQU $30  ; Solid i.d
+BlkId_SolidActn1  EQU $31  ; 1st action solid i.d
+BlkId_SolidActn10 EQU $3A  ; 10th action solid i.d
          DO    BF_Buttons
-BlkId_ButtonHalf  = $3B  ; Half-height button i.d , only useful if BF_Buttons = 1
+BlkId_ButtonHalf  EQU $3B  ; Half-height button i.d , only useful if BF_Buttons = 1
          FIN
-BlkId_SolidDeadly = $3F  ; Solid deadly block i.d
+BlkId_SolidDeadly EQU $3F  ; Solid deadly block i.d
 
-BlkPic_SolidEmpty = $48  ; Standard starting location of blank solids in blox MOD
+BlkPic_SolidEmpty EQU $48  ; Standard starting location of blank solids in blox MOD
+
+* A key for the standard layout of Guido sprites/erasers in his set
+
+GuidoSprId_LegB        EQU 16
+GuidoSprId_Belly       EQU 25
+GuidoSprId_ArmCarry    EQU 27
+GuidoSprId_LeftArm     EQU 28
+GuidoSprId_RightArm    EQU 36
+GuidoSprId_HeadNormal  EQU 40
+GuidoSprId_Horns       EQU 41
+GuidoSprId_Shades      EQU 43
+GuidoSprId_Beanie      EQU 44
+GuidoSprId_MouthNormal EQU 48
+GuidoSprId_TongueOut   EQU 51
+GuidoSprId_EyesNormal  EQU 56
+GuidoSprId_EyesClosed  EQU 57
+
+* Animation frames for the standard Guido walk animation
+
+GuidoWalk_LArm    DB    28,29,28,00,00,00,00,00
+GuidoWalk_LegA    DB    00,01,02,03,04,05,06,07
+GuidoWalk_LegB    DB    16,17,18,19,20,21,22,23
+GuidoWalk_RArm    DB    36,35,36,37,38,39,38,37
 
 
 ProgBegn SEC
@@ -428,9 +450,9 @@ ProgBegn SEC
          lda   #Zpl
          tcd
          lda   #40
-         sta   Ahed       ; Guido: head
+         sta   GCurrentSpr_Head       ; Guido: head
          LDA   #48
-         sta   Amth       ; Guido: mouth
+         sta   GCurrentSpr_Mouth       ; Guido: mouth
 
 NewPack  rep   #$20
          lda   #World-1*2+$21
@@ -472,18 +494,18 @@ TrolPlay sep   #$20
          stz   GPositionXScreenFifth
          stz   GPositionXBlk
          stz   GPositionYSlice
-         stz   Mdir
+         stz   GBodyFlg_Facing
          stz   JoyZ
          stz   Jcnt
          stz   JoystkBtns01
          stz   Acnt
-         stz   Amtf
+         stz   GBodyFlg_Tongue
          stz   Pal
          stz   Pal2
          stz   Time2
          stz   Time2+2
-         lda   #56
-         sta   Aeye       ; Guido: eye
+         lda   #GuidoSprId_EyesNormal
+         sta   GCurrentSpr_Eye       ; Guido: eye
          DO    BF_VrtFunk
          stz   FunkFlag
          stz   FunkReg
@@ -589,16 +611,15 @@ LivesRef HEX   7474       ; "##"   (2)[9]
          stz   GPositionXFifth
          lda   #$0A
          sta   Time2+3    ; Set timer delay
-         lda   #28
-         sta   Alrm       ; Guido: left arm
-         stz   Awlk       ; Guido: leg section A
-         lda   #16
-         sta   Awlb       ; Guido: leg section B
-         lda   #25
-         sta   AblC
-         sta   Ably       ; Guido: belly
-         lda   #36
-         sta   Artm       ; Guido: right arm
+         lda   #GuidoSprId_LeftArm
+         sta   GCurrentSpr_LArm       ; Guido: left arm
+         stz   GCurrentSpr_LegA       ; Guido: leg section A
+         lda   #GuidoSprId_LegB
+         sta   GCurrentSpr_LegB       ; Guido: leg section B
+         lda   #GuidoSprId_Belly
+         sta   GCurrentSpr_Belly       ; Guido: belly
+         lda   #GuidoSprId_RightArm
+         sta   GCurrentSpr_RArm       ; Guido: right arm
 
          lda   #$0080     ; V and H velocity set to "Still"
          STA   GVelocityY
@@ -912,7 +933,7 @@ NotQuit = *
          cmp   #$9B
          bne   ]lp
          FIN
-         jmp   DoneWithKeyboard
+         jmp   HandledKey
 NotPause = *
 
          DO    BF_Recordr
@@ -934,7 +955,7 @@ NotPause = *
          sep   #$20
          lda   #$FF
          sta   SprI+8,x   ; M: Sets non-level I.D.
-         jmp   DoneWithKeyboard
+         jmp   HandledKey
 NotRecordStart = *
 
          cmp   #"p"
@@ -956,46 +977,40 @@ NotRecordStart = *
          tsb   GameFlags
          lda   #$FF
          sta   SprI+8,x   ; M: Sets non-level I.D.
-         bra   DoneWithKeyboard
+         bra   HandledKey
 NotPlaybackStart = *
          FIN              ; FIN BF_Recordr 
 
          sta   Tmp
          lda   GameFlags    ; Skip arrow key reads if autopilot is running
-         bmi   DoneWithKeyboard
+         bmi   HandledKey
          lda   Tmp
 
          cmp   #$95
          bne   NotRightArrow
          lda   #$04
          sta   JoystkHDir
-         bra   HandledGuidoMovementKey
+         bra   HandledKey
 NotRightArrow = *
 
          cmp   #$88
          bne   NotLeftArrow
          lda   #$00
          sta   JoystkHDir
-         bra   HandledGuidoMovementKey
+         bra   HandledKey
 NotLeftArrow = *
 
-         cmp   #$20
+         cmp   #$A0
          bne   NotSpacebar
          lda   #$02
          sta   JoystkHDir
-         bra   HandledGuidoMovementKey
 NotSpacebar = *
 
-         bra   DoneWithKeyboard
-
-HandledGuidoMovementKey = *
-*         lda   #$00       ; Clear the keyboard here
-*         stal  $e1c010    ; since we're skipping over DoneWithKeyboard
+HandledKey = *
+         lda   #$00       ; Clear the keyboard here
+         stal  $e1c010    ; since we're skipping over HandledKey
          jmp   SkipJoystickRead
 
-DoneWithKeyboard = *
-         lda   #$00       ; Done with keyboard - clear it
-         stal  $e1c010
 NoKeyIsDown = *
 
          lda   GameFlags    ; Skip joystick reads if autopilot is running
@@ -1004,6 +1019,16 @@ NoKeyIsDown = *
          PUT   LIB/JOYSTICKREAD
 
 SkipJoystickRead = *
+
+         sep   #$30
+         ldx   #$40
+         ldal  $00c062
+         bmi   :Button1
+         ldx   #$00
+:Button1 stx   JoystkBtns01
+         ldal  $00c061
+         and   #$80
+         tsb   JoystkBtns01
 
          PUT   LIB/MOVEMENT
 
@@ -1052,17 +1077,17 @@ MeepMeep sta   Time1,x
 
 DoneTime sep   #$20
          lda   GVelocityX
-         cmp   #$80       ; this sets Mdir 0=forards
-         beq   Junky     ; and 1=backwards, if the bozo is not
-         cmp   #$80       ; standing still.
-         bcc   Cream
+         cmp   #$80       ; this sets GBodyFlg_Facing 0=Forwards
+         beq   :Continue     ; and 1=Backwards, if Guido is not
+         cmp   #$80       ; standing still.  Otherwise the value
+         bcc   :ToLeft  ; is left as-is.
          lda   #$01
-         trb   Mdir
-         bra   Junky
-Cream    lda   #$01
-         tsb   Mdir
+         trb   GBodyFlg_Facing
+         bra   :Continue
+:ToLeft  lda   #$01
+         tsb   GBodyFlg_Facing
 
-Junky    rep   #$10       ; Set the anal Xaxs value
+:Continue rep   #$10       ; Set the anal Xaxs value
          lda   GVelocityX
          eor   #$80
          sta   Xaxs
@@ -1649,7 +1674,7 @@ HitSolidAbove  inc   GPositionYSlice
          lda   GVelocityY
          eor   #$FF
          sta   GVelocityY
-         inc   Amtf       ; Tongue out when hitting a brick :)
+         inc   GBodyFlg_Tongue ; Tongue out when hitting a brick :)
          stz   Jcnt       ; Not adding for a jump anymore
          jmp   Uranus
 
@@ -1857,18 +1882,18 @@ UpThere  sep   #$30
          lda   #$00
          xba              ; Clear out the B reg
          inc   Acnt       ; Increment animation counter
-         lda   #48
-         sta   Amth
-         lda   Amtf
+         lda   #GuidoSprId_MouthNormal
+         sta   GCurrentSpr_Mouth
+         lda   GBodyFlg_Tongue
          beq   AnimSk1
-         lda   #51        ; Display the tongue one time only
-         sta   Amth
-         stz   Amtf
-AnimSk1  lda   Aeye       ; If eyes are closed,
-         cmp   #57        ; open them
+         lda   #GuidoSprId_TongueOut ; Display the tongue one time only
+         sta   GCurrentSpr_Mouth
+         stz   GBodyFlg_Tongue
+AnimSk1  lda   GCurrentSpr_Eye       ; If eyes are closed,
+         cmp   #GuidoSprId_EyesClosed        ; open them
          bne   AnimSk4
-         lda   #56
-         sta   Aeye
+         lda   #GuidoSprId_EyesNormal
+         sta   GCurrentSpr_Eye
 AnimSk4  lda   Acnt
          and   #$3f       ; If counter hits 64 cycle mark,
          cmp   #$3f
@@ -1879,11 +1904,11 @@ AnimSk4  lda   Acnt
          lda   GVelocityY
          cmp   #$80       ; and GVelocityY is neutral,
          bne   AnimSk2
-         lda   Aeye
-         cmp   #56        ; and eyes are open (no shades,etc)
+         lda   GCurrentSpr_Eye
+         cmp   #GuidoSprId_EyesNormal ; and eyes are open (no shades,etc)
          bne   AnimSk2
-         lda   #57        ; make him blink.
-         sta   Aeye
+         lda   #GuidoSprId_EyesClosed ; make him blink.
+         sta   GCurrentSpr_Eye
 AnimSk2  rep   #$10       ; Guido's walking and belly
          ldy   #6         ; - directional modification is not
          lda   NoFall
@@ -1895,26 +1920,21 @@ AnimSk2  rep   #$10       ; Guido's walking and belly
          lda   Acnt
          and   #$07
          tay
-AnimSk3  lda   AlrmD,y    ; Left arm
-         sta   Alrm
-         lda   ArtmD,y    ; Right arm
-         sta   Artm
-         lda   AwlbD,y    ; Lower belly section
-         sta   Awlb
-         lda   AwlkD,y    ; Legs
-         sta   Awlk
-         lda   AblC
-         sta   Ably
+AnimSk3  lda   GuidoWalk_LArm,y    ; Left arm
+         sta   GCurrentSpr_LArm
+         lda   GuidoWalk_RArm,y    ; Right arm
+         sta   GCurrentSpr_RArm
+         lda   GuidoWalk_LegB,y    ; Lower belly section
+         sta   GCurrentSpr_LegB
+         lda   GuidoWalk_LegA,y    ; Legs
+         sta   GCurrentSpr_LegA
+         lda   #GuidoSprId_Belly
+         sta   GCurrentSpr_Belly
 
          lda   SpritesActiveCnt
          beq   *+5        ; If there are any sprites,
          jsr   SprUp      ; Update sprite list
          jmp   MainPlayLoop
-
-AlrmD    DB    28,29,28,00,00,00,00,00 ; Animation data
-AwlkD    DB    00,01,02,03,04,05,06,07
-AwlbD    DB    16,17,18,19,20,21,22,23
-ArtmD    DB    36,35,36,37,38,39,38,37
 
          DO    BF_Slopes
          DB    0          ; Subtract 1 for lower limit check values
@@ -1986,18 +2006,16 @@ Die      rep   #$30       ; Mario death routine so far!
          stal  WldLives+ShelPage
          lda   #$0001
          stal  WldCndtn+ShelPage ; Guido life reset
-         lda   #40
-         sta   Ahed       ; Guido: head: normal
-         LDA   #48
-         sta   Amth       ; Guido: mouth: normal
+         lda   #GuidoSprId_HeadNormal
+         sta   GCurrentSpr_Head       ; Guido: head: normal
+         LDA   #GuidoSprId_MouthNormal
+         sta   GCurrentSpr_Mouth       ; Guido: mouth: normal
          jmp   TrolPlay
 
 * Scroll "forward":
 * Extend the PEA field down in memory, making room for another 4 pixels on the
 * right edge of the screen, and draw a stripe of graphics there.
 PeaInc   SEP   #$30
-         lda   #$80
-         trb   Mdir       ; Set the forward scroll flag
          DO    BF_VrtFunk
          lda   GameFlags
          and   #$01
@@ -2279,8 +2297,6 @@ TwistS2  clc
          plb
          FIN
          SEP   #$30       ; THEN do computing:
-         lda   #$80
-         tsb   Mdir
          DO    BF_VrtFunk
          lda   GameFlags
          and   #$01
@@ -2491,7 +2507,7 @@ DraTrol  sep   #$30
 Organism sta   DaSpot+2
          sta   DaSpotB+2
          ldx   #SprGuiTb
-         lda   Mdir
+         lda   GBodyFlg_Facing
          and   #$01
          beq   Toad
          ldx   #SprGuiTb+$C0 ; second sprite set
@@ -2533,26 +2549,26 @@ DrawGuidoHere sec
          pea   #>ForeFld
          plb
          plb
-         ldy   Alrm       ; The bastard's left arm
+         ldy   GCurrentSpr_LArm       ; The bastard's left arm
          beq   Dinkle
          jsr   FukinDra
-Dinkle   ldy   Awlk       ; The bastard's leg A
+Dinkle   ldy   GCurrentSpr_LegA       ; The bastard's leg A
          jsr   FukinDra
-         ldy   Awlb       ; The bastard's leg B
+         ldy   GCurrentSpr_LegB       ; The bastard's leg B
          jsr   FukinDra
-         ldy   Ably       ; The bastard's belly
+         ldy   GCurrentSpr_Belly      ; The bastard's belly
          jsr   FukinDra
-         ldy   Artm       ; The bastard's right arm
+         ldy   GCurrentSpr_RArm       ; The bastard's right arm
          jsr   FukinDra
          lda   #$0f00
          clc
          adc   Tmp        ; up one full block
          sta   Tmp
-         ldy   Ahed       ; The bastard's head
+         ldy   GCurrentSpr_Head       ; The bastard's head
          jsr   FukinDra
-         ldy   Amth       ; The bastard's mouth
+         ldy   GCurrentSpr_Mouth       ; The bastard's mouth
          jsr   FukinDra
-         ldy   Aeye       ; The bastard's eyes
+         ldy   GCurrentSpr_Eye       ; The bastard's eyes
          jsr   FukinDra
          plb
          rts
@@ -2911,7 +2927,7 @@ WindowedBlit sep   #$30
 SkipAheadToDraw sta   DaSpot+2
          sta   DaSpotB+2
          ldx   #SprGuiTb
-         lda   Mdir
+         lda   GBodyFlg_Facing
          and   #$01
          beq   :Br1
          ldx   #SprGuiTb+$C0
