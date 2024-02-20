@@ -58,7 +58,7 @@ Bl_Coin  ldx   Itm
          ASLS  3          ; x8
          adc   SpritesActiveCnt ; x9
          tax              ; in X
-         lda   #$0305
+         lda   #$0300 + IDCoinGet
          sta   SprI,x     ; C: sets ID and anim. stage
          stz   SprI+2,x   ; C: clear flip counter
          lda   WinXEdgeBlk
@@ -175,7 +175,7 @@ Bl_Breakable  ldx   Itm
          ASLS  3          ; x8
          adc   SpritesActiveCnt ; x9
          tax              ; in X
-         lda   #$0101
+         lda   #$0100 + IDBrickBits
          sta   SprI,x     ; set up "brick"
          sta   SprI+9,x   ; call #'s and stages
          clc
@@ -261,7 +261,7 @@ Bl_Breakable  ldx   Itm
          ASLS  3          ; x8
          adc   SpritesActiveCnt ; x9
          tax              ; in X
-         lda   #$0305
+         lda   #$0300+IDCoinGet
          sta   SprI,x     ; C: sets ID and anim. stage
          stz   SprI+2,x   ; C: clear flip counter
          lda   WinXEdgeBlk
@@ -312,7 +312,7 @@ Bl_Mushroom sec
          tax              ; in X
          lda   #$0003
          sta   SprI+9,x   ; P: sets ID and anim. stage
-         lda   #$0504
+         lda   #$0500 + IDMushroom
          sta   SprI,x     ; M: sets ID and pause counter
 Parakeet lda   #$8000
          sta   SprI+2,x   ; M: Standard mushroom, Vv at $80

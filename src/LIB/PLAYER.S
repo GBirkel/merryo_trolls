@@ -2,7 +2,7 @@
 * Sprite: Player v0.06
          lst   off
 
-Player   sep   #$20       ; actual entry point
+SH_Player   sep   #$20       ; actual entry point
          rep   #$10
          ldx   Tmp
          lda   SprI+5,x

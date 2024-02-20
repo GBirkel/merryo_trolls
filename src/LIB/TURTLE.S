@@ -256,7 +256,7 @@ TurtleC  lda   SprI+5,x
 TurtleS  lda   SprI+5,x
          cmp   GPositionYSlice ; One below check
          bcc   Turtle5
-TurtleD  inc   SprI,x     ; Make I.D into empty shell
+TurtleD  inc   SprI,x     ; Make I.D into empty shell (rather dangerous)
          rep   #$20
          lda   SprI+1,x
          and   #$0008

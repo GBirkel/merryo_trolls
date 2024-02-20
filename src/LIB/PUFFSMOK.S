@@ -2,7 +2,7 @@
 * Sprite: PufSmok v0.11
          lst   off
 
-PufSmok  rep   #$20       ; actual entry point
+PuffSmoke rep   #$20       ; actual entry point
          ldx   Tmp
          lda   SprI+4,x
          cmp   WinXEdgeTotalFifths

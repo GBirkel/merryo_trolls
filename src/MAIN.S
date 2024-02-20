@@ -891,9 +891,12 @@ MainPlayLoop rep   #$20
          beq   *+5
          JSR   ZapEm      ; Erase sprites, if any
 
+* Interpret keyboard signals
+
          sep   #$20
          ldal  $e1c000
-         bpl   NoKeyIsDown
+         bmi   *+5
+         jmp   NoKeyIsDown
 
          cmp   #"Q"       ; check for quit
          bne   NotQuit
@@ -909,6 +912,7 @@ NotQuit = *
          cmp   #$9B
          bne   ]lp
          FIN
+         jmp   DoneWithKeyboard
 NotPause = *
 
          DO    BF_Recordr
@@ -920,7 +924,7 @@ NotPause = *
          ASLS  3          ; x8
          adc   SpritesActiveCnt ; x9
          tax              ; in X
-         lda   #$000A
+         lda   #IDRecorder
          sta   SprI,x     ; Sets recorder ID
          lda   #$0000
          sta   SprI+1,x   ; Resets index
@@ -930,6 +934,7 @@ NotPause = *
          sep   #$20
          lda   #$FF
          sta   SprI+8,x   ; M: Sets non-level I.D.
+         jmp   DoneWithKeyboard
 NotRecordStart = *
 
          cmp   #"p"
@@ -939,7 +944,7 @@ NotRecordStart = *
          ASLS  3          ; x8
          adc   SpritesActiveCnt ; x9
          tax              ; in X
-         lda   #$000C
+         lda   #IDPlayer
          sta   SprI,x     ; Sets playback ID
          lda   #$0000
          sta   SprI+1,x   ; Resets index
@@ -951,19 +956,59 @@ NotRecordStart = *
          tsb   GameFlags
          lda   #$FF
          sta   SprI+8,x   ; M: Sets non-level I.D.
+         bra   DoneWithKeyboard
 NotPlaybackStart = *
+         FIN              ; FIN BF_Recordr 
 
-         lda   #$00       ; clear keyb
-         ELSE
-         lda   #$00       ; Not using record/playback tools? Just clear the keyboard
-         FIN
+         sta   Tmp
+         lda   GameFlags    ; Skip arrow key reads if autopilot is running
+         bmi   DoneWithKeyboard
+         lda   Tmp
+
+         cmp   #$15
+         bne   NotRightArrow
+         lda   #$04
+         sta   JoystkHDir
+         bra   HandledGuidoMovementKey
+NotRightArrow = *
+
+         cmp   #$08
+         bne   NotLeftArrow
+         lda   #$00
+         sta   JoystkHDir
+         bra   HandledGuidoMovementKey
+NotLeftArrow = *
+
+         cmp   #$20
+         bne   NotSpacebar
+         lda   #$02
+         sta   JoystkHDir
+         bra   HandledGuidoMovementKey
+NotSpacebar = *
+
+         bra   DoneWithKeyboard
+
+HandledGuidoMovementKey = *
+*         lda   #$00       ; Clear the keyboard here
+*         stal  $e1c010    ; since we're skipping over DoneWithKeyboard
+         jmp   SkipJoystickRead
+
+DoneWithKeyboard = *
+         lda   #$00       ; Done with keyboard - clear it
          stal  $e1c010
-
 NoKeyIsDown = *
-         PUT   LIB/JOYSTICK
+
+         lda   GameFlags    ; Skip joystick reads if autopilot is running
+         bmi   SkipJoystickRead
+
+         PUT   LIB/JOYSTICKREAD
+
+SkipJoystickRead = *
+
+         PUT   LIB/MOVEMENT
 
          rep   #$30       ; all this does
-         JSR   PalUpdate      ; is update the palette.
+         JSR   PalUpdate  ; is update the palette.
          DO    BF_TVScrns
          jsr   DrawScrn   ; Temporary check to see if it works
          FIN
@@ -1060,7 +1105,7 @@ Junky    rep   #$10       ; Set the anal Xaxs value
          cmp   #BlkId_ButtonHalf  ; Next block over
          beq   ScrewMe
 Burger   =     *
-         FIN
+         FIN    ; FIN BF_Buttons
 
          lda   MapBl,x
          cmp   #BlkId_SlopeLeft   ; Immediate slope check
@@ -1127,7 +1172,7 @@ PayUp    =     *          ; normal 'below' check
          beq   Buttock
          cmp   #$0d       ; It's always empty.
          bcs   Buttock
-         FIN
+         FIN    ; FIN BF_Buttons
 
          rep   #$31
          lda   GPositionXBlk
@@ -1140,7 +1185,7 @@ PayUp    =     *          ; normal 'below' check
          tax
          sep   #$20
 
-         FIN
+         FIN    ; FIN BF_Slopes
 
          lda   MapBl,x
 
@@ -1158,7 +1203,7 @@ PayUp    =     *          ; normal 'below' check
          cmp   #BlkId_Pltfm
          beq   ScrewMe
          lda   GPositionXFifth
-         FIN
+         FIN    ; FIN BF_Buttons
 
          cmp   #$03
          bcc   Buttock
@@ -3058,7 +3103,7 @@ TopSpr   dec   SpCn
          asl
          tax              ; So we can use an index.
          sep   #$20
-         jsr   (SprList,x)
+         jsr   (SpritePointers,x)
          rep   #$30
          lda   SpCn
          bne   TopSpr
@@ -3088,25 +3133,39 @@ KillDis  sep   #$20       ; REMOVE the current sprite
          sta   SprI+7,x
 KillRet  rts
 
-SprList  DA    KillMe,AnBrik,Flag,PufSmok,Mushey,CoinGet
+SpritePointers = *
+         DA    KillMe
+IDBrickBits = {*-SpritePointers} / 2
+         DA    AnBrik
+         DA    Flag
+IDPuffSmoke = {*-SpritePointers} / 2
+         DA    PuffSmoke
+IDMushroom = {*-SpritePointers} / 2
+         DA    Mushey
+IDCoinGet = {*-SpritePointers} / 2
+         DA    CoinGet
          DO    BF_S_Turtl
-         DA    TurtleSp,Shell
+         DA    TurtleSp
+         DA    Shell
          FIN
          DO    BF_S_Flowr
-IDFlower =     *-SprList/2
+* Without using {} here, Merlin32 gets the precedence wrong.
+* {} are supported by Merlin16 so this remains compatible.
+IDFlower =     {*-SpritePointers} / 2
          DA    SH_Flower
          FIN
          DO    BF_S_Snail
          DA    SH_Snail
          FIN
          DO    BF_S_Chstr
-         DA    Chester
+         DA    SH_Chester
          FIN
          DO    BF_Recordr
+IDRecorder =   {*-SpritePointers} / 2
          DA    Recorder
          FIN
-         DA    Player
-IDPlayer =     *-SprList/2
+IDPlayer =     {*-SpritePointers} / 2
+         DA    SH_Player
 
          PUT   LIB/BRIKBITS
 

@@ -9,7 +9,7 @@
 * 6: V strip (bottom=1)
 * 7: timer delay value
 
-Chester  sep   #$20       ; actual entry point
+SH_Chester sep   #$20       ; actual entry point
          ldx   Tmp
          lda   SprI+3,x
          cmp   SprI+2,x   ; If in timer mode, skip

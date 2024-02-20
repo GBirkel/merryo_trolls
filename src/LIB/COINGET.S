@@ -45,7 +45,7 @@ CoinGet  rep   #$20       ; actual entry point
          lda   SprI+2,x
          cmp   #$02
          bne   CoinGetB
-         lda   #$03       ; This is risky I suppose,
+         lda   #IDPuffSmoke ; This is risky I suppose,
          sta   SprI,x     ; Since we're actually changing
          dec              ; the I.D. of this sprite to another
          sta   SprI+1,x   ; on the fly...
