@@ -1078,9 +1078,9 @@ MeepMeep sta   Time1,x
 DoneTime sep   #$20
          lda   GVelocityX
          cmp   #$80       ; this sets GBodyFlg_Facing 0=Forwards
-         beq   :Continue     ; and 1=Backwards, if Guido is not
+         beq   :Continue  ; and 1=Backwards, if Guido is not
          cmp   #$80       ; standing still.  Otherwise the value
-         bcc   :ToLeft  ; is left as-is.
+         bcc   :ToLeft    ; is left as-is.
          lda   #$01
          trb   GBodyFlg_Facing
          bra   :Continue
@@ -1095,9 +1095,11 @@ DoneTime sep   #$20
 
          DO    BF_Slopes
          lda   GPositionYBlk ; if it is above or below the screen
-         beq   JumpEr
+         bne   *+5
+         jmp   StartFalling
          cmp   #$0d       ; It's always empty.
-         bcs   JumpEr
+         bcc   *+5
+         jmp   StartFalling
          rep   #$31
          lda   GPositionXBlk
          asl
@@ -1139,12 +1141,14 @@ Burger   =     *
          beq   Suthrlnd
          lda   GPositionXFifth
          cmp   #$03
-         bcc   Buttock
+         bcs   *+5
+         jmp   StartFalling
          lda   MapBl+$C,x
          cmp   #BlkId_SlopeLeft   ; To right slope check
          beq   Keifer
          cmp   #BlkId_SlopeRight
-         bne   Buttock
+         beq   *+5
+         jmp   StartFalling
 Suthrlnd ldy   #$0005
 Keifer   rep   #$21
          tya
@@ -1154,7 +1158,7 @@ Keifer   rep   #$21
          lda   SlopLeft,y
          cmp   GPositionYSlice
          beq   ScrewMe    ; If no match, Guido falls
-JumpEr   jmp   Buttock
+         jmp   StartFalling
 Barney   inx              ; one extra block down
 
          ELSE
@@ -1163,10 +1167,12 @@ Barney   inx              ; one extra block down
          lda   GPositionYSlice
          beq   PayUp
          cmp   #$08       ; Step 8 half-height button check
-         bne   PayUp-2    ; (Buttock)
+         beq   *+5
+         jmp   StartFalling
          lda   GPositionYBlk
-         cmp   #$0d       ; It's always empty.
-         bcs   PayUp-2
+         cmp   #$0d       ; Above the map is always empty.
+         bcc   *+5
+         jmp   StartFalling
          rep   #$31
          lda   GPositionXBlk
          asl
@@ -1182,21 +1188,22 @@ Barney   inx              ; one extra block down
          beq   ScrewMe
          lda   GPositionXFifth  ; GPositionXFifth = 0>2?
          cmp   #$03
-         bcc   Buttock
+         bcs   *+5
+         jmp   StartFalling
          lda   MapBl+$c,x
          cmp   #BlkId_ButtonHalf  ; Next block over
          beq   ScrewMe
-         bra   Buttock
+         jmp   StartFalling
 
 PayUp    =     *          ; normal 'below' check
 
          ELSE
          lda   GPositionYSlice
-         bne   Buttock    ; If not on the bottom of the block, drop.
+         bne   StartFalling    ; If not on the bottom of the block, drop.
          lda   GPositionYBlk ; if it is above or below the screen
-         beq   Buttock
+         beq   StartFalling
          cmp   #$0d       ; It's always empty.
-         bcs   Buttock
+         bcs   StartFalling
          FIN    ; FIN BF_Buttons
 
          rep   #$31
@@ -1215,13 +1222,16 @@ PayUp    =     *          ; normal 'below' check
          lda   MapBl,x
 
          DO    BF_Buttons
+* Generally, any Id higher than a "down pipe" is solid, but the
+* exception is the un-pressed half-height button, which Guido
+* can fall exactly halfway into.
          cmp   #BlkId_ButtonHalf
-         beq   :Br1
+         beq   :KeepChecking
          cmp   #BlkId_PipeDown
          bcs   ScrewMe
          cmp   #BlkId_Pltfm
          beq   ScrewMe
-:Br1     lda   GPositionXFifth
+:KeepChecking lda   GPositionXFifth
          ELSE
          cmp   #BlkId_PipeDown
          bcs   ScrewMe
@@ -1231,16 +1241,16 @@ PayUp    =     *          ; normal 'below' check
          FIN    ; FIN BF_Buttons
 
          cmp   #$03
-         bcc   Buttock
+         bcc   StartFalling
          lda   MapBl+$c,x ; Next row of blocks
 
          DO    BF_Buttons
          cmp   #BlkId_ButtonHalf
-         beq   Buttock
+         beq   StartFalling
          FIN
 
          cmp   #BlkId_Pltfm
-         bcc   Buttock
+         bcc   StartFalling
 ScrewMe  lda   #$01
          sta   NoFall
          lda   JoyZ       ; If the button has not been "reset", no jump
@@ -1263,7 +1273,8 @@ ScrewMe  lda   #$01
          inc   Jcnt
          inc   Jcnt
          bra   Twinkie
-Buttock  stz   NoFall
+StartFalling = *
+         stz   NoFall
          inc   GVelocityY
          inc   GVelocityY
          inc   GVelocityY
