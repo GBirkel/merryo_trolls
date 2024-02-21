@@ -321,26 +321,26 @@ ProgBegn SEC
          lda   #ShelPage
          tcd
          stz   NumDone
-         lda   #^SprLevel+$1000000
+         lda   #^LevelSprites+$1000000
          sta   SprMkBnk
          jsr   SpriteMk
          rep   #$30
          LDA   #$7FFF     ; move level sprites out
          LDX   #SprProg
-         LDY   #SprLevel
-         MVN   SprProg,SprLevel
+         LDY   #LevelSprites
+         MVN   SprProg,LevelSprites
          LDA   #$7FFF     ; move level erasers out
          LDX   #ErsProg
-         LDY   #ErsLevel
-         MVN   ErsProg,ErsLevel
+         LDY   #LevelErasers
+         MVN   ErsProg,LevelErasers
          LDA   #$03FF     ; move level sprite jumps out
          LDX   #SprTable
-         LDY   #SprLevTb
-         MVN   SprTable,SprLevTb
+         LDY   #LevelSpriteJumpTable
+         MVN   SprTable,LevelSpriteJumpTable
          LDA   #$03FF     ; move level eraser jumps out
          LDX   #ErsTable
-         LDY   #ErsLevTb
-         MVN   ErsProg,ErsLevTb
+         LDY   #LevelEraserJumpTable
+         MVN   ErsProg,LevelEraserJumpTable
          pea   #>ThisProg
          plb
          plb
@@ -391,12 +391,12 @@ ProgBegn SEC
          MVN   ErsProg,ErsGuido
          LDA   #$03FF     ; move level sprite jumps out
          LDX   #SprTable
-         LDY   #SprGuiTb
-         MVN   SprTable,SprGuiTb
+         LDY   #GuidoSpriteJumpTable
+         MVN   SprTable,GuidoSpriteJumpTable
          LDA   #$03FF     ; move level eraser jumps out
          LDX   #ErsTable
-         LDY   #ErsGuiTb
-         MVN   ErsProg,ErsGuiTb
+         LDY   #GuidoEraserJumpTable
+         MVN   ErsProg,GuidoEraserJumpTable
          pea   #>ThisProg
          plb
          plb
@@ -607,7 +607,7 @@ LivesRef HEX   7474       ; "##"   (2)[9]
          dex              ; Blank the SHR screen,
          dex              ; Every scanline 320 mode
          bpl   ]lp        ; pointing to blank pallette 0.
-         LDA   #^ForeFld
+         LDA   #^ForegPeaField
          STAl  PeaJumpPtr+2       ; Set the PEA bank jump address correctly
          stz   GameFlags  ; GameFlags all set standard off for now
          stz   MapIndex   ; MapIndex initially at first entry
@@ -820,17 +820,17 @@ Bonk     stz   Lupe
          tax
          stal  PeaJumpPtr ; according to the horizontal block
          phb
-         pea   #>ForeFld
+         pea   #>ForegPeaField
          plb
          plb
          ldy   #$1e00     ; being started at,
          clc
 ]lp      LDA   #$11F4     ; set up the two PEA feilds
-         STA   ForeFld,x  ; (that is, the foreground one
-         STAL  BackFld,x  ;  and the background one.)
+         STA   ForegPeaField,x  ; (that is, the foreground one
+         STAL  BackgPeaField,x  ;  and the background one.)
          XBA
-         STA   ForeFld+2,x ; and their jump locations.
-         STAL  BackFld+2,x
+         STA   ForegPeaField+2,x ; and their jump locations.
+         STAL  BackgPeaField+2,x
          txa
          adc   #$0006
          tax
@@ -2072,9 +2072,9 @@ IncBr2   =     *
          sbc   #$0002
          stal  PeaJumpPtr
          taX
-         LDA   #$01F4     ; Make new PEA
-         STAL  ForeFld,X
-         STAL  BackFld,x
+         LDA   #$01F4     ; Make a new PEA instruction
+         STAL  ForegPeaField,x
+         STAL  BackgPeaField,x
          INC   WinXEdgeBlkFifth
          LDA   WinXEdgeBlkFifth
          CMP   #$0005     ; Not gone a block?
@@ -2158,28 +2158,28 @@ TwistSk  clc
          tay
          DO    BF_HeatWav
          phb
-         pea   #>ForeFld
+         pea   #>ForegPeaField
          plb
          plb
 ]lp      =     BF_SizLine-BF_SizCode
 ]lp2     =     0
          LUP   #128
          lda   #]lp2*$100+$e5 ; sbc ##
-         sta   ForeFld+]lp,y
+         sta   ForegPeaField+]lp,y
 ]lp      =     ]lp+BF_SizLine
 ]lp2     =     ]lp2+2
          --^
 ]lp2     =     0
          LUP   #62
          lda   #]lp2*$100+$f5 ; sbc ##,x    Using X to reach beyond the direct page
-         sta   ForeFld+]lp,y
+         sta   ForegPeaField+]lp,y
 ]lp      =     ]lp+BF_SizLine
 ]lp2     =     ]lp2+2
          --^
          lda   #$f41b     ; tcs, pea #$xxxx
 ]lp      =     BF_SizLine-BF_SizCode+2
          LUP   #190
-         sta   ForeFld+]lp,y
+         sta   ForegPeaField+]lp,y
 ]lp      =     ]lp+BF_SizLine
          --^
          plb
@@ -2359,11 +2359,11 @@ DecBr2   REP   #$31
          stal  PeaJumpPtr
          sep   #$20
          LDA   #$F4
-         STAL  ForeFld,X  ; Don't mess up the new data!
-         STAL  BackFld,x
-         rep   #$20       ; Note: this is kind of unstable,
+         STAL  ForegPeaField,x  ; 8 bit store, so we don't mess up the new image data!
+         STAL  BackgPeaField,x
+         rep   #$20             ; Note: this is kind of unstable,
          LDA   WinXEdgeBlkFifth ; since we drew the grafix BEFORE
-         BEQ   DecBr3     ; we ran this variable adjustment
+         BEQ   DecBr3           ; we ran this variable adjustment
          DEC   WinXEdgeBlkFifth ; routine
          bra   DecBr5
 DecBr3   lda   #$04
@@ -2441,9 +2441,9 @@ PeaBlit  phb
          adcl  PeaJumpPtr   ; Starts as 26e6 , total dae6
          tax
          LDA   #PeaCR*$100+$5C ; Return Jump
-         STAL  ForeFld,x
+         STAL  ForegPeaField,x
          LDA   #>PeaCR
-         STAL  ForeFld+2,x
+         STAL  ForegPeaField+2,x
          DO    BF_HeatWav
          LDA   HeatSync
          clc
@@ -2491,11 +2491,11 @@ PeaCR    SEP   #$20
          RTS
 
 DraEm    rep   #$30
-         lda   #SprLevTb
+         lda   #LevelSpriteJumpTable
          bra   Bouncy
 
 ZapEm    rep   #$31
-         lda   #ErsLevTb
+         lda   #LevelEraserJumpTable
 Bouncy   sta   DaSpot+1
          inc
          sta   DaSpotB+1
@@ -2515,7 +2515,7 @@ Earlobe  dec
          and   #$00FF
          tay
          phb
-         pea   #>ForeFld
+         pea   #>ForegPeaField
          plb
          plb
          jsr   FukinDra
@@ -2526,18 +2526,18 @@ Earlobe  dec
 Whoah    rts
 
 ZapTrol  sep   #$30
-         lda   #>ErsGuiTb ; Erase jump values
+         lda   #>GuidoEraserJumpTable ; Erase jump values
          bra   Organism   ; Jump to animation routine entry
 
 DraTrol  sep   #$30
-         lda   #>SprGuiTb
+         lda   #>GuidoSpriteJumpTable
 Organism sta   DaSpot+2
          sta   DaSpotB+2
-         ldx   #SprGuiTb
+         ldx   #GuidoSpriteJumpTable
          lda   GBodyFlg_Facing
          and   #$01
          beq   Toad
-         ldx   #SprGuiTb+$C0 ; second sprite set
+         ldx   #GuidoSpriteJumpTable+$C0 ; second sprite set
 Toad     txa
          sta   DaSpot+1
          inc
@@ -2573,7 +2573,7 @@ DrawGuidoHere sec
          sbc   #BF_SizLine   ; Down 1 line
          sta   Tmp        ; Horitontal computed
          phb              ; (entry point for pipes)
-         pea   #>ForeFld
+         pea   #>ForegPeaField
          plb
          plb
          ldy   GCurrentSpr_LArm       ; The bastard's left arm
@@ -2606,9 +2606,9 @@ FukinDra tya
          asl
          adc   Tmp2
          tax
-DaSpot   ldal  SprGuiTb,x
+DaSpot   ldal  GuidoSpriteJumpTable,x
          stal  FukDra+1
-DaSpotB  ldal  SprGuiTb+1,x
+DaSpotB  ldal  GuidoSpriteJumpTable+1,x
          AND   #$0FFf
          stal  FukDra+2
          ldx   Tmp
@@ -2895,15 +2895,15 @@ DownOut  txa              ; Frame in PEA field
          pea   #>SHR
          plb
          plb
-         ldal  ForeFld+1,x ; Erase Guido's feet, which would otherwise remain outside the window,
+         ldal  ForegPeaField+1,x ; Erase Guido's feet, which would otherwise remain outside the window,
          sta   $009F,y     ; because when Guido is standing on a block, he is drawn with his feet
-         ldal  ForeFld+4,x ; overlapping the block below by 1 pixel.
+         ldal  ForegPeaField+4,x ; overlapping the block below by 1 pixel.
          sta   $009D,y
-         ldal  ForeFld+7,x
+         ldal  ForegPeaField+7,x
          sta   $009B,y
-         ldal  ForeFld+10,x
+         ldal  ForegPeaField+10,x
          sta   $0099,y
-         ldal  ForeFld+13,x
+         ldal  ForegPeaField+13,x
          sta   $0097,y
          plb
          lda   #$001f
@@ -2920,7 +2920,7 @@ DownOut  txa              ; Frame in PEA field
          rts
 
 WindowedBlit sep   #$30
-         lda   #>SprGuiTb
+         lda   #>GuidoSpriteJumpTable
 * JSR ahead to the part of this windowing code that draws/erases, to draw Guido.
 * When it returns, we draw the frame and blit it, then run into the same code
 * to erase Guido, where the RTS will return us to the caller.
@@ -2930,16 +2930,16 @@ WindowedBlit sep   #$30
          stal  PeaJumpPtr
          tax
          ldy   #$0021
-* The $F in "ForeFld+$F,x" and "#$000F" below is the width of 5 PEA instructions,
+* The $F in "ForegPeaField+$F,x" and "#$000F" below is the width of 5 PEA instructions,
 * Which currently fixes the width of this "window" to 20 pixels.
 ]lp      lda   #$a0e9       ; Replace PEA instructions
-         stal  ForeFld+$F,x ; with some stack pointer math (SBC #$00A0, TCS)
+         stal  ForegPeaField+$F,x ; with some stack pointer math (SBC #$00A0, TCS)
          lda   #$1b00       ; and a BRL to the next line
-         stal  ForeFld+$11,x
+         stal  ForegPeaField+$11,x
          lda   #BF_SizLine-$16*$100+$82
-         stal  ForeFld+$13,x ; Establish frame
+         stal  ForegPeaField+$13,x ; Establish frame
          lda   #$0000
-         stal  ForeFld+$15,x
+         stal  ForegPeaField+$15,x
          txa
          clc
          adc   #BF_SizLine
@@ -2953,15 +2953,15 @@ WindowedBlit sep   #$30
          sta   SizTotal
          jsr   PeaBlit    ; Blit frame
          sep   #$30
-         lda   #>ErsGuiTb ; Erase him
+         lda   #>GuidoEraserJumpTable ; Erase him
 
 SkipAheadToDraw sta   DaSpot+2
          sta   DaSpotB+2
-         ldx   #SprGuiTb
+         ldx   #GuidoSpriteJumpTable
          lda   GBodyFlg_Facing
          and   #$01
          beq   :Br1
-         ldx   #SprGuiTb+$C0
+         ldx   #GuidoSpriteJumpTable+$C0
 :Br1     txa
          sta   DaSpot+1
          inc
@@ -3093,8 +3093,8 @@ Box      =     *          ; OR block drawing subroutine
 ]lp      =     $e11
          LUP   16
          lda   Blok+]lp2,y
-         STAl  ForeFld+]lp,x
-         STAl  BackFld+]lp,x
+         STAl  ForegPeaField+]lp,x
+         STAl  BackgPeaField+]lp,x
 ]lp      =     ]lp-$F0
 ]lp2     =     ]lp2+$A
          --^

@@ -58,10 +58,10 @@ ThisProg =     $020000
 Char     =     $025000    ; Character set
 FadeDat  =     $02FE00    ; Fader data
 
-ForeFld  =     $030000    ; Storage slot for scene
+ForegPeaField  =     $030000    ; Storage slot for scene
 RawSCB   =     $037D00    ; Scene SCB
 RawPal   =     $037E00    ; Scene pallete
-BackFld  =     $038000    ; Screen attributes field area
+BackgPeaField  =     $038000    ; Screen attributes field area
 OverVals =     $03E400    ; background plane overlay values
 
 SprGuido =     $040000
@@ -313,10 +313,10 @@ TrolPlay clc
          rep   #$30       ; Move on screens
          ldx   #$63FE     ; ($A0 x 160) - 2
          phb
-         pea   #>ForeFld
+         pea   #>ForegPeaField
          plb
          plb
-]lp      lda   ForeFld,x
+]lp      lda   ForegPeaField,x
          stal  SHR,x
          dex
          dex
@@ -551,10 +551,10 @@ StillGuy sta   AnimLeg
          sta   Tmp2
 ]lp2     lda   #$0004
          sta   Tmp
-         ldal  ForeFld-$140C,x
+         ldal  ForegPeaField-$140C,x
          stal  SHR-$140C,x     ; Erase "window"
 
-]lp      ldal  BackFld-$140A,x
+]lp      ldal  BackgPeaField-$140A,x
          stx   Tmp4
          sty   Tmp5
          sta   Tmp6
@@ -604,7 +604,7 @@ Crocky5  sty   BackMask
 
          lda   SprGuido,y
          bne   NoCThru
-         ldal  ForeFld-$140A,x ; Erase any residue
+         ldal  ForegPeaField-$140A,x ; Erase any residue
          bra   SeeThru
 NoCThru  stx   Tmp4
          sty   Tmp5
@@ -640,7 +640,7 @@ Croc5    tya              ; #$0023>$00FF #$1113>$FFF0
          and   BackMask
          tay
          eor   #$FFFF
-         ANDL  ForeFld-$140A,x
+         ANDL  ForegPeaField-$140A,x
          sta   Tmp4
          tya
          and   Tmp6
@@ -654,7 +654,7 @@ SeeThru  STAL  SHR-$140A,x     ; This shouldn't >really< be here...
          dec   Tmp
          bmi   Cuddly
          jmp   ]lp
-Cuddly   ldal  ForeFld-$140A,x
+Cuddly   ldal  ForegPeaField-$140A,x
          stal  SHR-$140A,x     ; Opposite edge of erase "window"
          txa
          clc
@@ -672,7 +672,7 @@ Furry    lda   AnimLeg
          jmp   ]lp3
 Dammit   lda   #$0006
          sta   Tmp
-]lp      ldal  ForeFld-$140C,x
+]lp      ldal  ForegPeaField-$140C,x
          stal  SHR-$140C,x     ; Erase any residue in scanline
          inx                   ; immediately beneath Guido.
          inx

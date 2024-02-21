@@ -234,7 +234,7 @@ CallDmmy MX    %00
          asl
          tax
          phb
-         pea   #^ForeFld*$100+BackFld
+         pea   #^ForegPeaField*$100+BackgPeaField
          plb
          jsr   (DestTabl,x)
          plb

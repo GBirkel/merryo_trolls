@@ -35,10 +35,10 @@ RawScren =     $012500
 
 ThisProg =     $020000
 
-ForeFld  =     $040000    ; Foreground feild bank
+ForegPeaField  =     $040000    ; Foreground feild bank
 FogTable =     $04FFFF    ; (claims all of 5)
 
-BackFld  =     $060000    ; Background feild bank
+BackgPeaField  =     $060000    ; Background feild bank
 
          ORG   ThisProg
 
@@ -69,9 +69,9 @@ BackFld  =     $060000    ; Background feild bank
          dex
          bpl   ]lp
 
-         lda   #ForeFld
+         lda   #ForegPeaField
          stal  PeaJumpPtr
-         LDA   #^ForeFld
+         LDA   #^ForegPeaField
          STAl  PeaJumpPtr+2       ; Set the PEA bank correctly
          lda   #BF_SizLine*$C0 ; x192
          sta   SizTotal
@@ -85,11 +85,11 @@ BackFld  =     $060000    ; Background feild bank
          plb
          ldy   #$77FE
 ]lp      lda   #$00F4     ; set up the two PEA feilds
-         STAl  ForeFld,x  ; (that is, the foreground one
-         STAL  BackFld,x  ;  and the background one.)
+         STAl  ForegPeaField,x  ; (that is, the foreground one
+         STAL  BackgPeaField,x  ;  and the background one.)
          lda   RawScren,y ; According to the raw picture
-         STAl  ForeFld+1,x ; supplied at location RawScren
-         STAL  BackFld+1,x
+         STAl  ForegPeaField+1,x ; supplied at location RawScren
+         STAL  BackgPeaField+1,x
          inx
          inx
          inx
@@ -126,7 +126,7 @@ MainPlayLoop JSR   PeaBlit    ; blit dat screen!
 
          rep   #$30
          phb
-         pea   #>ForeFld  ; Go to the right bank
+         pea   #>ForegPeaField  ; Go to the right bank
          plb
          plb
          lda   FogDork
@@ -174,9 +174,9 @@ PeaBlit  php
          adcl  PeaJumpPtr
          tax
          LDA   #PeaCR*$100+$5C ; Return Jump
-         STAL  ForeFld,x
+         STAL  ForegPeaField,x
          LDA   #>PeaCR
-         STAL  ForeFld+2,x
+         STAL  ForegPeaField+2,x
          LDA   PEAInitialStackPtr
          tcs
          sec

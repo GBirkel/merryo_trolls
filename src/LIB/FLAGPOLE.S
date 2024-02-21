@@ -38,24 +38,24 @@ FlagPole lda   GameFlags    ; Skip all this if the "don't respond to the flagpol
          jsr   WindowedBlit
          ldx   WindowedPEA
          ldy   #$0021
-]lp      ldal  BackFld+$F,x
-         stal  ForeFld+$F,x
-         ldal  BackFld+$11,x
-         stal  ForeFld+$11,x
-         ldal  BackFld+$13,x
-         stal  ForeFld+$13,x ; Erase frame
-         ldal  BackFld+$15,x
-         stal  ForeFld+$15,x
+]lp      ldal  BackgPeaField+$F,x
+         stal  ForegPeaField+$F,x
+         ldal  BackgPeaField+$11,x
+         stal  ForegPeaField+$11,x
+         ldal  BackgPeaField+$13,x
+         stal  ForegPeaField+$13,x ; Erase frame
+         ldal  BackgPeaField+$15,x
+         stal  ForegPeaField+$15,x
          txa
          clc
          adc   #BF_SizLine
          tax
          dey
          bne   ]lp
-         ldal  BackFld+$F,x ; Erase return jump
-         stal  ForeFld+$F,x
-         ldal  BackFld+$11,x
-         stal  ForeFld+$11,x
+         ldal  BackgPeaField+$F,x ; Erase return jump
+         stal  ForegPeaField+$F,x
+         ldal  BackgPeaField+$11,x
+         stal  ForegPeaField+$11,x
          lda   WindowedPEA
          sec
          sbc   #BF_SizLine   ; Guido position

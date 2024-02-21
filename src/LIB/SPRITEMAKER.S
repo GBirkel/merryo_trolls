@@ -148,7 +148,7 @@ Full     CPY   #$0000
          LDA   Sps
          STAL  ErsProg+1,X
          STAL  ErsProg+5,X
-         LDA   #^$9D000000+BackFld
+         LDA   #^$9D000000+BackgPeaField
          STAL  ErsProg+3,X
          TXA
          CLC
@@ -205,7 +205,7 @@ DupChk   LDA   DCRow
          LDA   BkB
          STAL  ErsProg+1,X
          STAL  ErsProg+5,X
-         LDA   #^$9D000000+BackFld
+         LDA   #^$9D000000+BackgPeaField
          STAL  ErsProg+3,X
          TXA
          CLC
@@ -258,7 +258,7 @@ Okay     LDX   Index
          LDA   Sps
          STAL  ErsProg+1,X
          STAL  ErsProg+5,X
-         LDA   #^$9D000000+BackFld
+         LDA   #^$9D000000+BackgPeaField
          STAL  ErsProg+3,X
          TXA
          CLC
@@ -294,7 +294,7 @@ Okay2    LDX   Index
          LDA   Sps
          STAL  ErsProg+1,X
          STAL  ErsProg+5,X
-         LDA   #^$9D000000+BackFld
+         LDA   #^$9D000000+BackgPeaField
          STAL  ErsProg+3,X
          TXA
          CLC
@@ -366,7 +366,7 @@ Dup8Fnd  STZ   SpriRaw-$A2,X
          LDA   BkB
          STAL  ErsProg+1,X
          STAL  ErsProg+5,X
-         LDA   #^$9D000000+BackFld
+         LDA   #^$9D000000+BackgPeaField
          STAL  ErsProg+3,X
          TXA
          CLC
@@ -419,7 +419,7 @@ Partial  CPY   #$0000
          LDA   Sps
          STAL  ErsProg+1,X
          STAL  ErsProg+5,X
-         LDA   #^$9D000000+BackFld
+         LDA   #^$9D000000+BackgPeaField
          STAL  ErsProg+3,X
          TXA
          CLC

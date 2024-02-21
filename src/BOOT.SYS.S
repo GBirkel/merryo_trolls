@@ -9,10 +9,10 @@ ThisProg =     $002000
 ScrnRaw  =     $012000
 
 DataII   =     $020000    ; Special data for this world
-SprGuiTb =     $025000    ; Guido sprites jmp table
-SprLevTb =     SprGuiTb+$400 ; Other sprites jmp table
-ErsGuiTb =     SprGuiTb+$800 ; Guido eraser jmp table
-ErsLevTb =     ErsGuiTb+$400 ; Other eraser jmp table
+GuidoSpriteJumpTable =     $025000    ; Guido sprites jmp table
+LevelSpriteJumpTable =     GuidoSpriteJumpTable+$400 ; Other sprites jmp table
+GuidoEraserJumpTable =     GuidoSpriteJumpTable+$800 ; Guido eraser jmp table
+LevelEraserJumpTable =     GuidoEraserJumpTable+$400 ; Other eraser jmp table
 TrollsEntry =  $02C000
 
 Blok     =     $030000    ; Block set
@@ -28,8 +28,8 @@ ErsTable =     $07fC00
 SprGuido =     $070000
 ErsGuido =     $078000
 
-SprLevel =     $080000
-ErsLevel =     $088000
+LevelSprites =     $080000
+LevelErasers =     $088000
 
 ScrnRef  =     $E12000    ; Temporary location- later, offscreen
 Shr      =     $E12000
@@ -290,26 +290,26 @@ EefEef   HEX   0000       ; "  "  (2)[2]
          rep   #$30
          lda   #ZeroPage
          tcd
-         lda   #^SprLevel+$1000000
+         lda   #^LevelSprites+$1000000
          sta   SprMkBnk
          jsr   SpriteMk
          rep   #$30
          LDA   #$7FFF     ; move level sprites out
          LDX   #SprProg
-         LDY   #SprLevel
-         MVN   SprProg,SprLevel
+         LDY   #LevelSprites
+         MVN   SprProg,LevelSprites
          LDA   #$7FFF     ; move level erasers out
          LDX   #ErsProg
-         LDY   #ErsLevel
-         MVN   ErsProg,ErsLevel
+         LDY   #LevelErasers
+         MVN   ErsProg,LevelErasers
          LDA   #$03FF     ; move level sprite jumps out
          LDX   #SprTable
-         LDY   #SprLevTb
-         MVN   SprTable,SprLevTb
+         LDY   #LevelSpriteJumpTable
+         MVN   SprTable,LevelSpriteJumpTable
          LDA   #$03FF     ; move level eraser jumps out
          LDX   #ErsTable
-         LDY   #ErsLevTb
-         MVN   ErsProg,ErsLevTb
+         LDY   #LevelEraserJumpTable
+         MVN   ErsProg,LevelEraserJumpTable
          pea   #>MoveDest
          plb
          plb
@@ -336,12 +336,12 @@ EefEef   HEX   0000       ; "  "  (2)[2]
          MVN   ErsProg,ErsGuido
          LDA   #$03FF     ; move level sprite jumps out
          LDX   #SprTable
-         LDY   #SprGuiTb
-         MVN   SprTable,SprGuiTb
+         LDY   #GuidoSpriteJumpTable
+         MVN   SprTable,GuidoSpriteJumpTable
          LDA   #$03FF     ; move level eraser jumps out
          LDX   #ErsTable
-         LDY   #ErsGuiTb
-         MVN   ErsProg,ErsGuiTb
+         LDY   #GuidoEraserJumpTable
+         MVN   ErsProg,GuidoEraserJumpTable
          pea   #>MoveDest
          plb
          plb

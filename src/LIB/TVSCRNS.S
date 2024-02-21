@@ -6,7 +6,7 @@ TVcntr   DA    2
 DrawScrn php
          rep   #$30
          phb
-         pea   #>ForeFld
+         pea   #>ForegPeaField
          plb
          plb
          ldal  PeaJumpPtr

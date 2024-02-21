@@ -30,10 +30,10 @@ GenInfo  =     MapBl+$2A00 ; Map general info- time, name, etc.
 LevPal   =     MapBl+$2d00 ; Map initial SCB arrangement and palette
 MsgList  =     MapBl+$3000 ; Map message list
 Char     =     $02C000    ; Character set
-SprGuiTb =     $02E000    ; MainChar sprites jmp table
-SprLevTb =     SprGuiTb+$400 ; Other sprites jmp table
-ErsGuiTb =     SprGuiTb+$800 ; MainChar eraser jmp table
-ErsLevTb =     ErsGuiTb+$400 ; Other eraser jmp table
+GuidoSpriteJumpTable =     $02E000                   ; Guido sprites jmp table
+LevelSpriteJumpTable =     GuidoSpriteJumpTable+$400 ; Other sprites jmp table
+GuidoEraserJumpTable =     GuidoSpriteJumpTable+$800 ; Guido sprite eraser jmp table
+LevelEraserJumpTable =     GuidoEraserJumpTable+$400 ; Other sprite eraser jmp table
 SprI     =     $02F000    ; Sprite data list
 DraW     =     $02FC00    ; On-screen to-draw list
 
@@ -62,16 +62,16 @@ ErsTable =     $05fC00
 
 * Bank 06 -----------------------------------------------------
 
-SprLevel =     $060000
-ErsLevel =     $068000
+LevelSprites =     $060000
+LevelErasers =     $068000
 
 * Bank 07 -----------------------------------------------------
 
-BackFld  =     $070000    ; Background feild bank
+BackgPeaField  =     $070000    ; Background feild bank
 
 * Bank 08 -----------------------------------------------------
 
-ForeFld  =     $080000    ; Foreground field bank
+ForegPeaField  =     $080000    ; Foreground field bank
 SpriRaw  =     $081000    ; Original sprite pics
          DO    BF_BlkComp
 Blox     =     $080000    ; Original block set

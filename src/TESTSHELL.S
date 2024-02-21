@@ -12,10 +12,10 @@ SHR      =     $012500    ; ShrA start of PEA window (standard)
 ShrA     =     $012000
 
 Char     =     $025000    ; Character set
-SprGuiTb =     $027000    ; MainChar sprites jmp table
-SprLevTb =     SprGuiTb+$400 ; Other sprites jmp table
-ErsGuiTb =     SprGuiTb+$800 ; MainChar eraser jmp table
-ErsLevTb =     ErsGuiTb+$400 ; Other eraser jmp table
+GuidoSpriteJumpTable =     $027000    ; MainChar sprites jmp table
+LevelSpriteJumpTable =     GuidoSpriteJumpTable+$400 ; Other sprites jmp table
+GuidoEraserJumpTable =     GuidoSpriteJumpTable+$800 ; MainChar eraser jmp table
+LevelEraserJumpTable =     GuidoEraserJumpTable+$400 ; Other eraser jmp table
 MapBl    =     $028000    ; Map
 MapSpr   =     MapBl+$C00 ; Map sprite list
 MapVl    =     MapBl+$1000 ; Map call #'s
@@ -41,12 +41,12 @@ ErsGuido =     $058000
 SprTable =     $05f800    ; Guido's sprites.
 ErsTable =     $05fC00
 
-SprLevel =     $060000
-ErsLevel =     $068000
+LevelSprites = $060000
+LevelErasers = $068000
 
-BackFld  =     $070000    ; Background feild bank
+BackgPeaField  =     $070000    ; Background feild bank
 
-ForeFld  =     $080000    ; Foreground field bank
+ForegPeaField  =     $080000    ; Foreground field bank
 SpriRaw  =     $081000    ; Original sprite pics
 Blox     =     $080000    ; Original block set
 Table    =     $08F000    ; Original table of block locations
