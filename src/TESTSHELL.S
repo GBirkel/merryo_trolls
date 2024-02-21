@@ -77,12 +77,12 @@ GVelocityX      DS 2      ; Horiz velocity (+) = rigt (-) = left
 GPositionYBlk   DS 2      ; Vertical block location, bottom=0
 GPositionYSlice DS 2      ; Vertical section location, bottom=0
 GVelocityY      DS 2      ; Vertical velocity (+) = down, (-) = up
-NoFall   DS    2          ; Block under the moron flag 0=air 1=srfc
-Yaxs     DS    2          ; Y axis (vertical!!!) offset storage
-Xaxs     DS    2          ; X axis (Horizontal!) offset storage
+GOnSolidGround  DS    2          ; Block under the moron flag 0=air 1=srfc
+GYVectorRemaining     DS    2          ; Y axis (vertical!!!) offset storage
+GXVectorRemaining     DS    2          ; X axis (Horizontal!) offset storage
 
-JoyZ     DS    2          ; Joystick hold-down flag
-Jcnt     DS    2          ; Joystick from-jump counter
+Button0Lifted     DS    2          ; Joystick hold-down flag
+JumpSustainCounter     DS    2          ; Joystick from-jump counter
 JoystkReadX DS 2          ; Joystick X axis read result
 JoystkReadY DS 2          ; Joystick Y axis read result
 WindowedPEA DS 2          ; Windowed blitter routine PEA origin

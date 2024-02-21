@@ -100,15 +100,15 @@ SpamTabs DA    $205,$285,$305,$385
          DA    $269,$2e9,$369,$3e9
 
 DebugDat ASC   " Super? Merryo Trolls Debug Screen v1.0 "
-         ASC   "FifT:0000 Xaxs:0000 ErAc:0000  00000000 "
+         ASC   "FifT:0000 Xvec:0000 ErAc:0000  00000000 "
          ASC   "GSF :0000 Ghed:0000 SizT:0000           "
          DS    8
          ASC   "                                        "
-         ASC   "MIdx:0000 JoyZ:0000 SCnt:0000  00000000 "
+         ASC   "MIdx:0000 Bt0L:0000 SCnt:0000  00000000 "
          ASC   "PXB :0000 Glrm:0000 SizS:0000           "
          DS    8
          ASC   "If anything's fucked up, it's your fault"
-         ASC   "Tmp :0000 Jcnt:0000 ErCn:0000 Time1:    "
+         ASC   "Tmp :0000 Jsus:0000 ErCn:0000 Time1:    "
          ASC   "PXF :0000 Glgb:0000 ExSt:0000           "
          DS    8
          ASC   "                                        "
@@ -127,6 +127,6 @@ DebugDat ASC   " Super? Merryo Trolls Debug Screen v1.0 "
          ASC   "DCnt:0000 Lupe:0000 OVRt:0000           "
          ASC   "PYB :0000 Gbly:0000                     "
          DS    8
-         ASC   "WSbB:0000 Yaxs:0000 Itm2:0000 Score2:   "
+         ASC   "WSbB:0000 Yvec:0000 Itm2:0000 Score2:   "
          ASC   "DCsl:0000 Acnr:0000 DWNt:0000           "
          ASC   "PYS :0000 GBFt:0000                     "

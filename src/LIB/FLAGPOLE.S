@@ -76,8 +76,8 @@ FlagPole lda   GameFlags    ; Skip all this if the "don't respond to the flagpol
          sta   GVelocityX ; Set Guido's position to bottom of flag, which is always 2 blocks up,
          lda   #$0002     ; and zero velocity.
          sta   GPositionYBlk
-         stz   Xaxs
-         stz   Yaxs
+         stz   GXVectorRemaining
+         stz   GYVectorRemaining
          stz   GPositionYSlice
          stz   WindowedPEA
          stz   WindowedGuido

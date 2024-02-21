@@ -91,26 +91,26 @@ WinXEdgeBlkFifth DS    2  ; Play window _right_edge_ X offset into one block, in
 WinXEdgeTotalFifths DS 2  ; WinXEdgeBlk x 5 plus WinXEdgeBlkFifth, for sprites
 
 GPositionXScreenFifth DS 2 ; Number of block fifths Guido is from the left edge of the _screen_
-GPositionXBlk   DS    2   ; Horizontal block location on map, leftmost=0
-GPositionXFifth DS    2   ; Horizontal sub-block location, in fifths (0-4) leftmost=0
-GPositionYBlk   DS    2   ; Vertical block location, bottom=0
-GPositionYSlice DS    2   ; Vertical sub-block location, bottom=0
-GVelocityX      DS    2   ; Horiz velocity (+) = right (-) = left
-GVelocityY      DS    2   ; Vertical velocity (+) = down, (-) = up
-NoFall   DS    2          ; Block under the moron flag 0=air 1=srfc
-Yaxs     DS    2          ; Y axis (vertical!!!) offset storage
-Xaxs     DS    2          ; X axis (Horizontal!) offset storage
+GPositionXBlk      DS  2  ; Horizontal block location on map, leftmost=0
+GPositionXFifth    DS  2  ; Horizontal sub-block location, in fifths (0-4) leftmost=0
+GPositionYBlk      DS  2  ; Vertical block location, bottom=0
+GPositionYSlice    DS  2  ; Vertical sub-block location, bottom=0
+GVelocityX         DS  2  ; Horiz velocity (+) = right (-) = left
+GVelocityY         DS  2  ; Vertical velocity (+) = down, (-) = up
+GOnSolidGround     DS  2  ; Block under the moron flag 0=air 1=srfc
+GYVectorRemaining  DS  2  ; Y axis (vertical!!!) offset storage
+GXVectorRemaining  DS  2  ; X axis (Horizontal!) offset storage
+JumpSustainCounter DS  2  ; Countdown for sustaining jump velocity boost
 
-JoystkHLev DS    2        ; Horiz joystick level meter (+) = r (-) = l
-JoystkHDir DS    2        ; Horiz joystick dir (0=LF,1=L,2=M,3=R,4=RF)
-JoyZ     DS    2          ; Joystick hold-down flag
-Jcnt     DS    2          ; Joystick from-jump counter
+JoystkHLev         DS  2  ; Horiz joystick level meter (+) = r (-) = l
+JoystkHDir         DS  2  ; Horiz joystick direction (0=Left Full,1=Left,2=Middle,3=Right,4=Right Full)
+Button0Lifted      DS  2  ; Joystick hold-down flag
 JoystkReadX DS 2          ; Joystick X axis read result
 JoystkReadY DS 2          ; Joystick Y axis read result
 
-WindowedPEA DS 2          ; Windowed blitter routine PEA origin
+WindowedPEA   DS 2        ; Windowed blitter routine PEA origin
 WindowedGuido DS 2        ; Windowed blitter routine Guido drawing location
-JoystkBtns01 DS 2         ; Status of buttons 0 and 1 this cycle (bits7,8)
+JoystkBtns01  DS 2        ; Status of buttons 0 and 1 this cycle (bits7,8)
 
 Lupe     DS    2          ; Minor update loop byte(s)
 Acnt     DS    2          ; Animation flags counter
@@ -238,6 +238,9 @@ GuidoWalk_LArm    DB    28,29,28,00,00,00,00,00
 GuidoWalk_LegA    DB    00,01,02,03,04,05,06,07
 GuidoWalk_LegB    DB    16,17,18,19,20,21,22,23
 GuidoWalk_RArm    DB    36,35,36,37,38,39,38,37
+
+Guido_Jump_Velocity EQU $71 ; Initial velocity given to Guido when jump button is pressed
+Guido_Jump_Sustain  EQU $07 ; Number of game cycles to sustain jump velocity if button is held down
 
 
 ProgBegn SEC
@@ -495,8 +498,8 @@ TrolPlay sep   #$20
          stz   GPositionXBlk
          stz   GPositionYSlice
          stz   GBodyFlg_Facing
-         stz   JoyZ
-         stz   Jcnt
+         stz   Button0Lifted
+         stz   JumpSustainCounter
          stz   JoystkBtns01
          stz   Acnt
          stz   GBodyFlg_Tongue
@@ -1087,19 +1090,19 @@ DoneTime sep   #$20
 :ToLeft  lda   #$01
          tsb   GBodyFlg_Facing
 
-:Continue rep   #$10       ; Set the anal Xaxs value
+:Continue rep   #$10       ; Set the anal GXVectorRemaining value
          lda   GVelocityX
          eor   #$80
-         sta   Xaxs
+         sta   GXVectorRemaining
          sep   #$20       ; check the vertical axis
 
          DO    BF_Slopes
          lda   GPositionYBlk ; if it is above or below the screen
          bne   *+5
-         jmp   StartFalling
+         jmp   IsFalling
          cmp   #$0d       ; It's always empty.
          bcc   *+5
-         jmp   StartFalling
+         jmp   IsFalling
          rep   #$31
          lda   GPositionXBlk
          asl
@@ -1119,7 +1122,7 @@ DoneTime sep   #$20
          bne   Burger
          lda   MapBl,x
          cmp   #BlkId_ButtonHalf
-         beq   ScrewMe
+         beq   OnSolidGround
          lda   GPositionXFifth ; GPositionXFifth = 0>2?
          cmp   #$03
          bcc   Burger
@@ -1130,7 +1133,7 @@ DoneTime sep   #$20
          sep   #$20
          lda   MapBl,x
          cmp   #BlkId_ButtonHalf  ; Next block over
-         beq   ScrewMe
+         beq   OnSolidGround
 Burger   =     *
          FIN    ; FIN BF_Buttons
 
@@ -1142,13 +1145,13 @@ Burger   =     *
          lda   GPositionXFifth
          cmp   #$03
          bcs   *+5
-         jmp   StartFalling
+         jmp   IsFalling
          lda   MapBl+$C,x
          cmp   #BlkId_SlopeLeft   ; To right slope check
          beq   Keifer
          cmp   #BlkId_SlopeRight
          beq   *+5
-         jmp   StartFalling
+         jmp   IsFalling
 Suthrlnd ldy   #$0005
 Keifer   rep   #$21
          tya
@@ -1157,8 +1160,8 @@ Keifer   rep   #$21
          sep   #$20
          lda   SlopLeft,y
          cmp   GPositionYSlice
-         beq   ScrewMe    ; If no match, Guido falls
-         jmp   StartFalling
+         beq   OnSolidGround    ; If no match, Guido falls
+         jmp   IsFalling
 Barney   inx              ; one extra block down
 
          ELSE
@@ -1168,11 +1171,11 @@ Barney   inx              ; one extra block down
          beq   PayUp
          cmp   #$08       ; Step 8 half-height button check
          beq   *+5
-         jmp   StartFalling
+         jmp   IsFalling
          lda   GPositionYBlk
          cmp   #$0d       ; Above the map is always empty.
          bcc   *+5
-         jmp   StartFalling
+         jmp   IsFalling
          rep   #$31
          lda   GPositionXBlk
          asl
@@ -1185,25 +1188,25 @@ Barney   inx              ; one extra block down
          sep   #$20
          lda   MapBl,x
          cmp   #BlkId_ButtonHalf
-         beq   ScrewMe
+         beq   OnSolidGround
          lda   GPositionXFifth  ; GPositionXFifth = 0>2?
          cmp   #$03
          bcs   *+5
-         jmp   StartFalling
+         jmp   IsFalling
          lda   MapBl+$c,x
          cmp   #BlkId_ButtonHalf  ; Next block over
-         beq   ScrewMe
-         jmp   StartFalling
+         beq   OnSolidGround
+         jmp   IsFalling
 
 PayUp    =     *          ; normal 'below' check
 
          ELSE
          lda   GPositionYSlice
-         bne   StartFalling    ; If not on the bottom of the block, drop.
+         bne   IsFalling    ; If not on the bottom of the block, drop.
          lda   GPositionYBlk ; if it is above or below the screen
-         beq   StartFalling
+         beq   IsFalling
          cmp   #$0d       ; It's always empty.
-         bcs   StartFalling
+         bcs   IsFalling
          FIN    ; FIN BF_Buttons
 
          rep   #$31
@@ -1228,86 +1231,95 @@ PayUp    =     *          ; normal 'below' check
          cmp   #BlkId_ButtonHalf
          beq   :KeepChecking
          cmp   #BlkId_PipeDown
-         bcs   ScrewMe
+         bcs   OnSolidGround
          cmp   #BlkId_Pltfm
-         beq   ScrewMe
+         beq   OnSolidGround
 :KeepChecking lda   GPositionXFifth
          ELSE
          cmp   #BlkId_PipeDown
-         bcs   ScrewMe
+         bcs   OnSolidGround
          cmp   #BlkId_Pltfm
-         beq   ScrewMe
+         beq   OnSolidGround
          lda   GPositionXFifth
          FIN    ; FIN BF_Buttons
 
          cmp   #$03
-         bcc   StartFalling
+         bcc   IsFalling
          lda   MapBl+$c,x ; Next row of blocks
 
          DO    BF_Buttons
          cmp   #BlkId_ButtonHalf
-         beq   StartFalling
+         beq   IsFalling
          FIN
 
          cmp   #BlkId_Pltfm
-         bcc   StartFalling
-ScrewMe  lda   #$01
-         sta   NoFall
-         lda   JoyZ       ; If the button has not been "reset", no jump
+         bcc   IsFalling
+
+OnSolidGround = *
+         lda   #$01
+         sta   GOnSolidGround
+         lda   Button0Lifted       ; If the button has not been "reset", no jump
          bne   Twinkie
          lda   JoystkBtns01
          bpl   Twinkie
-         inc   JoyZ
-         lda   #$74
+         inc   Button0Lifted
+         lda   #Guido_Jump_Velocity
          sta   GVelocityY
-         lda   #$05
-         sta   Jcnt
+         lda   #Guido_Jump_Sustain
+         sta   JumpSustainCounter
          DO    BF_SFXCode    ; MOD for jump sfx
          jsr   PlaySFX
          FIN
-         lda   Xaxs       ; If horiz. velocity is "fast", add to jump height
-         cmp   #$FF       ; That is, if Xaxs's offset is more than 2
+         lda   GXVectorRemaining       ; If horiz. velocity is "fast", add to jump sustain
+         cmp   #$FF       ; That is, if GXVectorRemaining's offset is more than 2
          beq   Twinkie
          cmp   #$02       ; - opposite direction
          bcc   Twinkie
-         inc   Jcnt
-         inc   Jcnt
+         inc   JumpSustainCounter
+         inc   JumpSustainCounter
          bra   Twinkie
-StartFalling = *
-         stz   NoFall
+
+IsFalling = *
+         stz   GOnSolidGround
+         inc   GVelocityY
+         inc   GVelocityY
          inc   GVelocityY
          inc   GVelocityY
          inc   GVelocityY
 
-Twinkie  lda   Jcnt
-         beq   GenrlBoy   ; If Jcnt has a value,
-         lda   JoyZ
+Twinkie  lda   JumpSustainCounter
+         beq   ConfineToScreen   ; If JumpSustainCounter has a value,
+         lda   Button0Lifted
          beq   :Br1       ; and the button is down,
          dec   GVelocityY        ; then we add to Guido's upward velocity,
          dec   GVelocityY
          dec   GVelocityY
-:Br1     dec   Jcnt       ; and decrement Jcnt.
-         bne   GenrlBoy
+         dec   GVelocityY
+:Br1     dec   JumpSustainCounter       ; and decrement JumpSustainCounter.
+         bne   ConfineToScreen
          inc   GVelocityY
 
-GenrlBoy lda   Xaxs
+* Checks to see if the bozo is trying to go off the left border of the screen
+ConfineToScreen = *
+         lda   GXVectorRemaining
          clc
          adc   GPositionXScreenFifth
          dec
-         cmp   #$c0      ; this checks to see if the bozo is trying
-         bcc   Fester   ; to go off the left border of the screen
+         cmp   #$c0
+         bcc   :CheckRight
          ldy   #$0080
          sty   GVelocityX
-]lp      inc   Xaxs       ; and corrects it.
+]lp      inc   GXVectorRemaining
          inc
          bne   ]lp
          bra   CheckDoorDown
 
-Fester   cmp   #$4b
-         bcc   CheckDoorDown       ; And this is a similar check for the
-         ldy   #$0080     ; right border
+* Similar check for the right border
+:CheckRight cmp   #$4b
+         bcc   CheckDoorDown
+         ldy   #$0080
          sty   GVelocityX
-]lp      dec   Xaxs
+]lp      dec   GXVectorRemaining
          dec
          cmp   #$4a
          bne   ]lp
@@ -1351,42 +1363,42 @@ CheckDoorDown sep   #$20
          jmp   DoorGo
 
          MX    %10
-CheckDoorRight lda   Xaxs       ; If joystick is right,
-         cmp   #$80
-         bcs   CheckDoorLeft
-         lda   GVelocityY        ; And vertical velocity is still,
+CheckDoorRight lda   JoystkHDir       
+         cmp   #$03             ; If joystick is right,
+         bcc   CheckDoorLeft
+         lda   GVelocityY       ; And vertical velocity is still,
          cmp   #$80
          bne   CheckDoorLeft
          lda   GPositionXFifth
-         cmp   #$02       ; And slice is in 2
+         cmp   #$02             ; And slice is in 2
          bne   CheckDoorLeft
-         rep   #$31       ; map loc in X...
+         rep   #$31
          lda   GPositionXBlk
          asl
          adc   GPositionXBlk
-         ASLS  2          ; x12
+         ASLS  2          ; Map Block X x12
          adc   #$0017     ; +23 (1 extra line right, plus 1 extra line to subtract vertical offset from)
          sec
          sbc   GPositionYBlk
          tax
-         sta   MapLocWrite+1   ; (Save that map location)
+         sta   MapLocWrite+1    ; (Save this map location for later)
          lda   MapBl,x
          and   #$00FF
-         cmp   #BlkId_PipeRight      ; And there is a pipe right of Merry-Man,
+         cmp   #BlkId_PipeRight ; And there is a pipe right of Merry-Man,
          bne   CheckDoorLeft
          lda   MapBl-1,x
          and   #$00FF
          cmp   #BlkId_PipeRight
-         bne   CheckDoorLeft   ; AND there is a pipe up&right of Mr.Man,
+         bne   CheckDoorLeft    ; AND there is a pipe up&right of Mr.Man,
 
-         jsr   DoorCompute   ; Shove his heine in.
+         jsr   DoorCompute      ; Shove his heine in.
          jsr   RSideOut
          jmp   DoorGo
 
 CheckDoorLeft sep   #$20
-         lda   Xaxs       ; If joystick is left,
-         cmp   #$80
-         bcc   CheckDoorUp
+         lda   JoystkHDir       ; If joystick is left,
+         cmp   #$01
+         bcs   CheckDoorUp
          lda   GVelocityY        ; And vertical velocity is still,
          cmp   #$80
          bne   CheckDoorUp
@@ -1458,16 +1470,17 @@ Worf     sep   #$30
          bpl   ]lp        ; update amount from GVelocityY
          lsr
          and   #$3F
-Smurf    sta   Yaxs
+Smurf    sta   GYVectorRemaining
 
-Boingg  sep   #$30
-         lda   Xaxs       ; check the Xaxs
+MoveGuido = *
+         sep   #$30
+         lda   GXVectorRemaining       ; check the GXVectorRemaining
          bne   HopHop     ; skip if finished
 ]lp      jmp   Larry      ; Long branch to end
 HopHop   cmp   #$80
          bcs   *+5        ; go to second routine if offset positive
          jmp   Stimpy
-         inc   Xaxs
+         inc   GXVectorRemaining
          dec   GPositionXFifth
          dec   GPositionXScreenFifth
          lda   GPositionXFifth
@@ -1536,10 +1549,10 @@ Flesh    inc   GPositionXBlk
          lda   #$80
          sta   GVelocityX
          sta   JoystkHLev
-         stz   Xaxs
+         stz   GXVectorRemaining
          jmp   Larry
 
-Stimpy   dec   Xaxs       ; second routine
+Stimpy   dec   GXVectorRemaining       ; second routine
          inc   GPositionXScreenFifth
          inc   GPositionXFifth
          lda   GPositionXFifth
@@ -1610,15 +1623,15 @@ Drugs    dec   GPositionXScreenFifth
          sta   JoystkHLev
          lda   #$02
          sta   GPositionXFifth
-         stz   Xaxs
+         stz   GXVectorRemaining
 
 Larry    sep   #$30
-         lda   Yaxs       ; check the Yaxs
+         lda   GYVectorRemaining       ; check the GYVectorRemaining
          beq   Freem      ; skip if finished to end.
          cmp   #$80
          bcs   :Br1       ; go to second routine if offset positive
          jmp   Juicy
-:Br1     inc   Yaxs
+:Br1     inc   GYVectorRemaining
          inc   GPositionYSlice
          lda   GPositionYSlice
          cmp   #$10       ; check for edge of block increment
@@ -1681,15 +1694,15 @@ HitSolidAbove  inc   GPositionYSlice
          stx   Itm
          jsr   ChSolid    ; Check for affecting block
          sep   #$20
-         stz   Yaxs
+         stz   GYVectorRemaining
          lda   GVelocityY
          eor   #$FF
          sta   GVelocityY
          inc   GBodyFlg_Tongue ; Tongue out when hitting a brick :)
-         stz   Jcnt       ; Not adding for a jump anymore
+         stz   JumpSustainCounter       ; Not adding for a jump anymore
          jmp   Uranus
 
-Juicy    dec   Yaxs       ; second routine
+Juicy    dec   GYVectorRemaining       ; second routine
          DO    BF_Buttons
          lda   GPositionYSlice
          bne   *+5
@@ -1725,9 +1738,9 @@ Juicy    dec   Yaxs       ; second routine
          bne   Elsa
 NotElsa  inc   GPositionYSlice
          lda   #$01
-         sta   NoFall     ; Obviously not falling anymore
-         stz   Jcnt       ; Not adding for a jump anymore
-         stz   Yaxs
+         sta   GOnSolidGround ; Obviously not falling anymore
+         stz   JumpSustainCounter       ; Not adding for a jump anymore
+         stz   GYVectorRemaining
          lda   GVelocityY
          cmp   #$87
          bcc   NoPress
@@ -1820,16 +1833,16 @@ Panties  lda   #$0F
 Kitties  lda   #$00
          sta   GPositionYSlice
          inc
-         sta   NoFall     ; Obviously not falling anymore
-         stz   Jcnt       ; Not adding for a jump anymore
-         stz   Yaxs
+         sta   GOnSolidGround ; Obviously not falling anymore
+         stz   JumpSustainCounter       ; Not adding for a jump anymore
+         stz   GYVectorRemaining
          lda   #$80       ; Vertical descent stopped
          sta   GVelocityY
 
 Uranus   sep   #$30       ; Go back if both axes are not 0
-         lda   Yaxs
+         lda   GYVectorRemaining
          bne   Beefy
-         lda   Xaxs
+         lda   GXVectorRemaining
          bne   Beefy
 
          lda   GPositionYBlk ; for now, if the asshole falls off,
@@ -1839,7 +1852,7 @@ Uranus   sep   #$30       ; Go back if both axes are not 0
          bcc   Mono1
          jmp   Die        ; Guido death?
 
-Beefy    jmp   Boingg    ; Not finished
+Beefy    jmp   MoveGuido    ; Not finished
 
 Mono1    lda   GPositionXScreenFifth ; Check screen loc.
          cmp   #$34       ; Right border of center range where scrolling doesn't trigger
@@ -1890,6 +1903,9 @@ DirtClod sep   #$30
          ELSE
 UpThere  sep   #$30
          FIN
+
+* Set various animation frames for Guido (run, jump, blink, tongue, etc)
+* Directional modification is not dealt with here. DraTrol does that.
          lda   #$00
          xba              ; Clear out the B reg
          inc   Acnt       ; Increment animation counter
@@ -1921,12 +1937,12 @@ AnimSk4  lda   Acnt
          lda   #GuidoSprId_EyesClosed ; make him blink.
          sta   GCurrentSpr_Eye
 AnimSk2  rep   #$10       ; Guido's walking and belly
-         ldy   #6         ; - directional modification is not
-         lda   NoFall
+         ldy   #6         ; Frame 6 of the animation is for jumping or falling
+         lda   GOnSolidGround
          beq   AnimSk3
          ldy   #0
-         lda   GVelocityX ; dealt with in the animation here,
-         cmp   #$80       ; DraTrol does that.
+         lda   GVelocityX
+         cmp   #$80
          beq   AnimSk3
          lda   Acnt
          and   #$07

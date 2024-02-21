@@ -3,9 +3,9 @@
          lst   off
 
          sep   #$30
-         lda   JoystkBtns01 ; Reset JoyZ if button 0 is up
+         lda   JoystkBtns01 ; Reset Button0Lifted if button 0 is up
          bmi   :KeepZ
-         stz   JoyZ
+         stz   Button0Lifted
 
 :KeepZ   ldx   JoystkHDir
          lda   JoystkHLev        ; Affect JoystkHLev:
