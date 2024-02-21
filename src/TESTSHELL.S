@@ -112,7 +112,7 @@ DMsp     DS    2          ; Right-scroll location in the map Sprite List
 OVRt     DS    2          ; Blox over temp (for sprites)
 DWNt     DS    2          ; Blox down temp (for sprites)
 SizTotal DS    2          ; Total length of PEA field
-SizStack DS    2          ; Initial entry point for stack when blitting
+PEAInitialStackPtr   DS 2 ; Initial entry point for stack when blitting
 GameFlags DS   2          ; Flags for activating in-game extra features (1=twist, 7=NoPole, 8=auto)
 Pal      DS    2          ; QM Palette cycle pointer
 Pal2     DS    2          ; Logo palette cycle pointer

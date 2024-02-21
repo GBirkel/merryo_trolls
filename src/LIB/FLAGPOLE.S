@@ -12,7 +12,7 @@ FlagPole lda   GameFlags    ; Skip all this if the "don't respond to the flagpol
          pha
          lda   SizTotal
          pha
-         lda   SizStack
+         lda   PEAInitialStackPtr
          pha
          jsr   DoorCompute
          lda   #GuidoSprId_ArmCarry
@@ -24,7 +24,7 @@ FlagPole lda   GameFlags    ; Skip all this if the "don't respond to the flagpol
          clc
          adc   #$000f
          sta   WindowedGuido ; DraTrol's PEA field
-         sty   SizStack   ; Screen location
+         sty   PEAInitialStackPtr   ; Screen location
          lda   GPositionYBlk
          dec
          dec
@@ -65,10 +65,10 @@ FlagPole lda   GameFlags    ; Skip all this if the "don't respond to the flagpol
          clc
          adc   #$000f
          sta   WindowedGuido       ; DraTrol's PEA field
-         lda   SizStack   ; Screen position
+         lda   PEAInitialStackPtr   ; Screen position
          clc
          adc   #$0140
-         sta   SizStack
+         sta   PEAInitialStackPtr
          dec   Lupe
          bne   ]lp2
          lda   #$0080
@@ -101,7 +101,7 @@ FlagPole lda   GameFlags    ; Skip all this if the "don't respond to the flagpol
 
          rep   #$20
          pla
-         sta   SizStack
+         sta   PEAInitialStackPtr
          pla
          sta   SizTotal
          pla

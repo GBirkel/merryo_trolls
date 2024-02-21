@@ -108,9 +108,9 @@ Button0Lifted      DS  2  ; Joystick hold-down flag
 JoystkReadX DS 2          ; Joystick X axis read result
 JoystkReadY DS 2          ; Joystick Y axis read result
 
-WindowedPEA   DS 2        ; Windowed blitter routine PEA origin
-WindowedGuido DS 2        ; Windowed blitter routine Guido drawing location
-JoystkBtns01  DS 2        ; Status of buttons 0 and 1 this cycle (bits7,8)
+WindowedPEA        DS 2   ; Windowed blitter routine PEA origin
+WindowedGuido      DS 2   ; Windowed blitter routine Guido drawing location
+JoystkBtns01       DS 2   ; Status of buttons 0 and 1 this cycle (bits7,8)
 
 Lupe     DS    2          ; Minor update loop byte(s)
 Acnt     DS    2          ; Animation flags counter
@@ -137,7 +137,7 @@ DMsp     DS    2          ; Right-scroll location in the map Sprite List
 OVRt     DS    2          ; Blox over temp (for sprites)
 DWNt     DS    2          ; Blox down temp (for sprites)
 SizTotal DS    2          ; Total length of PEA field
-SizStack DS    2          ; Initial entry point for stack when blitting
+PEAInitialStackPtr   DS 2 ; Initial entry point for stack when blitting (Usually #$9cff under normal circumstances.)
 GameFlags DS   2          ; Flags for activating in-game extra features (1=twist, 7=NoPole, 8=auto)
 Pal      DS    2          ; QM Palette cycle pointer
 Pal2     DS    2          ; Logo palette cycle pointer
@@ -720,7 +720,7 @@ NewLoc2  rep   #$30
          lda   #BF_SizLine*$C0 ; x192
          sta   SizTotal
          lda   #$9cff
-         sta   SizStack
+         sta   PEAInitialStackPtr
          sep   #$20
          lda   #$41
          stal  $e1c029    ; Turn off SHR for now
@@ -2447,7 +2447,7 @@ PeaBlit  phb
          DO    BF_HeatWav
          LDA   HeatSync
          clc
-         adc   SizStack
+         adc   PEAInitialStackPtr
          tcs
          lda   HeatCnt
          asl
@@ -2457,7 +2457,7 @@ PeaBlit  phb
          ldx   #$0100
          tsc
          ELSE
-         LDA   SizStack
+         LDA   PEAInitialStackPtr
          tcs
          FIN
          sep   #$21
@@ -2792,6 +2792,8 @@ Chompem  sta   DWNt       ; Store the blox down for safekeeping
 * it, which will naturally clip Guido off at the edge of the
 * space, so it appears he's going down a pipe that's already present
 * on the screen below the space.
+* Note that these calculations currently depend on a fixed PEA scanline length of $F0.
+* Calculations for other lengths will have to be substituted in.
 DoorCompute REP   #$30
          lda   GPositionYBlk ; Vertical block comp. with reversal
          Xba
@@ -2815,15 +2817,15 @@ DoorCompute REP   #$30
          lda   Tmp2
          ASLS  4
          sec
-         sbc   Tmp2       ; Vertical done
-         sta   Tmp2
+         sbc   Tmp2       ; Tmp2 x15, i.e. $F,
+         sta   Tmp2       ; so GPositionYBlk is x $F00 in total, and GPositionYSlice is x$F0
          ldal  PeaJumpPtr
          sec
          sbc   GPositionXScreenFifth
          sec
          sbc   GPositionXScreenFifth
          sec
-         sbc   GPositionXScreenFifth
+         sbc   GPositionXScreenFifth ; Subtracted x3 to count each fifth as a 'PEA #xxxx'.
          clc
          adc   Tmp2
          sec
@@ -2836,8 +2838,8 @@ LSideOut stx   WindowedPEA       ; Frame in PEA field
          txa
          clc
          adc   #$000f
-         sta   WindowedGuido ; DraTrol's in PEA field
-         sty   SizStack   ; Screen location
+         sta   WindowedGuido      ; Corner PEA instruction to draw Guido into
+         sty   PEAInitialStackPtr ; Screen location
          lda   #$0006
          sta   Lupe
 ]lp      jsr   WaitSync
@@ -2858,8 +2860,8 @@ RSideOut stx   WindowedPEA       ; Frame in PEA field
          txa
          clc
          adc   #$000f
-         sta   WindowedGuido       ; DraTrol 's in PEA field
-         sty   SizStack   ; Screen location
+         sta   WindowedGuido       ; Corner PEA instruction to draw Guido into
+         sty   PEAInitialStackPtr  ; Screen location
          lda   #$0006
          sta   Lupe
 ]lp      jsr   WaitSync
@@ -2883,11 +2885,11 @@ DownOut  txa              ; Frame in PEA field
          txa
          clc
          adc   #$000f
-         sta   WindowedGuido       ; DraTrol's in PEA field
+         sta   WindowedGuido       ; Corner PEA instruction to draw Guido into
          tya
          sec
          sbc   #$00A0
-         sta   SizStack   ; Screen location
+         sta   PEAInitialStackPtr   ; Screen location
          tay
          phb
          pea   #>SHR
@@ -2921,13 +2923,15 @@ WindowedBlit sep   #$30
          lda   #>SprGuiTb
 * JSR ahead to the part of this windowing code that draws/erases, to draw Guido.
 * When it returns, we draw the frame and blit it, then run into the same code
-* to erase Guido, where the RTS will return us to the caller. 
+* to erase Guido, where the RTS will return us to the caller.
          jsr   SkipAheadToDraw  ; Jump ahead 
          MX    %00
          lda   WindowedPEA
          stal  PeaJumpPtr
          tax
          ldy   #$0021
+* The $F in "ForeFld+$F,x" and "#$000F" below is the width of 5 PEA instructions,
+* Which currently fixes the width of this "window" to 20 pixels.
 ]lp      lda   #$a0e9       ; Replace PEA instructions
          stal  ForeFld+$F,x ; with some stack pointer math (SBC #$00A0, TCS)
          lda   #$1b00       ; and a BRL to the next line

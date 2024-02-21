@@ -12,7 +12,7 @@ Tmp      DS    2
 ST       DS    2          ; Stack storage
 Lupe     DS    2          ; Minor update loop byte(s)
 SizTotal DS    2          ; Total length of PEA field
-SizStack DS    2          ; Initial entry point for stack when blitting
+PEAInitialStackPtr DS    2          ; Initial entry point for stack when blitting
 FogDork  DS    2
          DEND             ; Nifty, huh?
 
@@ -76,7 +76,7 @@ BackFld  =     $060000    ; Background feild bank
          lda   #BF_SizLine*$C0 ; x192
          sta   SizTotal
          lda   #$9cff
-         sta   SizStack
+         sta   PEAInitialStackPtr
 
          ldx   #$0000
          phb
@@ -177,7 +177,7 @@ PeaBlit  php
          STAL  ForeFld,x
          LDA   #>PeaCR
          STAL  ForeFld+2,x
-         LDA   SizStack
+         LDA   PEAInitialStackPtr
          tcs
          sec
          JML   [PeaJumpPtr]
