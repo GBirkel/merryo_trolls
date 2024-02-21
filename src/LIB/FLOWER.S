@@ -15,7 +15,7 @@ Flower10 sep   #$20
          beq   :Continue
          rts
 :Continue lda   #BlkId_Empty
-         ldx   Itm
+         ldx   ItemCheckerTmp
          sta   MapBl,x    ; Non-activating now
          lda   #$01
          sta   MapVl,x    ; Blank now
@@ -44,7 +44,7 @@ Flower01 sep   #$20
          bne   :Continue
          rts
 :Continue lda   #BlkId_Empty
-         ldx   Itm
+         ldx   ItemCheckerTmp
          sta   MapBl,x    ; Non-activating now
          lda   #$01
          sta   MapVl,x    ; Blank now
@@ -72,7 +72,7 @@ Flower11 sep   #$20
          and   #$01       ; no valid contact.
          bne   Flowr11c
          lda   #BlkId_Sprt1+1
-         ldx   Itm
+         ldx   ItemCheckerTmp
          sta   MapBl,x    ; Different code now
          lda   #$38       ; L-flower block
          sta   MapVl,x    ; Blank now
@@ -92,7 +92,7 @@ Flower11 sep   #$20
 
          MX    %10
 Flowr11c lda   #BlkId_Sprt1
-         ldx   Itm
+         ldx   ItemCheckerTmp
          sta   MapBl,x    ; Different code now
          lda   #$3A       ; R-flower block
          sta   MapVl,x    ; Blank now

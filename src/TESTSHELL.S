@@ -81,8 +81,8 @@ GOnSolidGround  DS    2          ; Block under the moron flag 0=air 1=srfc
 GYVectorRemaining     DS    2          ; Y axis (vertical!!!) offset storage
 GXVectorRemaining     DS    2          ; X axis (Horizontal!) offset storage
 
-Button0Lifted     DS    2          ; Joystick hold-down flag
-JumpSustainCounter     DS    2          ; Joystick from-jump counter
+Button0StillDown      DS    2          ; Joystick hold-down flag
+JumpSustainCounter    DS    2          ; Joystick from-jump counter
 JoystkReadX DS 2          ; Joystick X axis read result
 JoystkReadY DS 2          ; Joystick Y axis read result
 WindowedPEA DS 2          ; Windowed blitter routine PEA origin
@@ -101,8 +101,8 @@ GCurrentSpr_Belly    DS 2 ; Sprite for belly
 GCurrentSpr_Eye      DS 2 ; Sprite for eye
 GBodyFlg_Tongue      DS 2 ; Flag for mouth
 GBodyFlg_Facing      DS 2 ; Bit 1=Troll dir.flag, Bit 7=Scroll dir.flag
-Itm      DS    2          ; Item check temporary holder
-Itm2     DS    2          ; Item check temporary storage 2
+ItemCheckerTmp      DS    2          ; Item check temporary holder
+ItemCheckerTmp2     DS    2          ; Item check temporary storage 2
 SpritesOnScreenCnt     DS    2          ; Number of active on-screen sprites
 SpritesActiveCnt DS 2     ; Number of active sprites
 ErCn     DS    2          ; On-screen sprite currently processing

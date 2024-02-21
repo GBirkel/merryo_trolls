@@ -107,7 +107,7 @@ JoystkReadY        DS  2  ; Joystick Y axis read result
 JoystkHLev         DS  2  ; Horiz joystick level meter (+) = r (-) = l
 JoystkHDir         DS  2  ; Horiz joystick direction (0=Left Full,1=Left,2=Middle,3=Right,4=Right Full)
 JoystkBtns01       DS  2  ; Status of buttons 0 and 1 this cycle (bits7,8)
-Button0Lifted      DS  2  ; Joystick hold-down flag
+Button0StillDown   DS  2  ; Joystick hold-down flag
 
 WindowedPEA        DS  2  ; Windowed blitter routine PEA origin
 WindowedGuido      DS  2  ; Windowed blitter routine Guido drawing location
@@ -124,8 +124,8 @@ GCurrentSpr_LegA   DS  2  ; Sprite for feet
 GCurrentSpr_LegB   DS  2  ; Sprite for body section B
 GBodyFlg_Tongue    DS  2  ; Flag for mouth
 GBodyFlg_Facing    DS  2  ; Bit 1: Guido's body. (1=Facing left)
-Itm      DS    2          ; Item check temporary holder
-Itm2     DS    2          ; Item check temporary storage 2
+ItemCheckerTmp     DS  2  ; Item check temporary holder
+ItemCheckerTmp2    DS  2  ; Item check temporary storage 2
 SpritesOnScreenCnt DS  2  ; Number of active on-screen sprites
 SpritesActiveCnt   DS  2  ; Number of active sprites
 ErCn     DS    2          ; On-screen sprite currently processing
@@ -240,9 +240,9 @@ GuidoWalk_RArm    DB    36,35,36,37,38,39,38,37
 GVelocityHWalking   EQU $82 ; Horizontal movement lower level (walking)
 GVelocityHRunning   EQU $86 ; Horizontal movement upper level (running)
 
-Guido_Gravity       EQU $05 ; Amount to add to Guido's downward velocity each game cycle he is falling
+Guido_Gravity       EQU $06 ; Amount to add to Guido's downward velocity each game cycle he is falling
 Guido_Jump_Velocity EQU $6E ; Initial velocity given to Guido when jump button is pressed
-Guido_Jump_Sustain  EQU $08 ; Number of game cycles to sustain jump velocity if button is held down
+Guido_Jump_Sustain  EQU $09 ; Number of game cycles to sustain jump velocity if button is held down
 
 
 ProgBegn SEC
@@ -500,7 +500,7 @@ TrolPlay sep   #$20
          stz   GPositionXBlk
          stz   GPositionYSlice
          stz   GBodyFlg_Facing
-         stz   Button0Lifted
+         stz   Button0StillDown
          stz   JumpSustainCounter
          stz   JoystkBtns01
          stz   Acnt
@@ -1044,7 +1044,7 @@ SkipJoystickRead = *
          FIN
          sep   #$20
          dec   Time2+3    ; Is timer delay over?
-         bne   DoneTime
+         bne   DoneWithTimer
          lda   #$0A       ; Then check time.
          sta   Time2+3
 
@@ -1079,24 +1079,53 @@ TimeDec  rep   #$10       ; Decrease timer:
 MeepMeep sta   Time1,x
          jsr   TimeDraw
          plb
+DoneWithTimer = *
 
-DoneTime sep   #$20
+* Sets GBodyFlg_Facing 0=Forwards and 1=Backwards, if Guido is not standing still.
+* Otherwise the value is left as-is.
+         sep   #$20
          lda   GVelocityX
-         cmp   #$80       ; this sets GBodyFlg_Facing 0=Forwards
-         beq   :Continue  ; and 1=Backwards, if Guido is not
-         cmp   #$80       ; standing still.  Otherwise the value
-         bcc   :ToLeft    ; is left as-is.
+         cmp   #$80
+         beq   DoneWithFacing
+         cmp   #$80
+         bcc   :ToLeft
          lda   #$01
          trb   GBodyFlg_Facing
-         bra   :Continue
+         bra   DoneWithFacing
 :ToLeft  lda   #$01
          tsb   GBodyFlg_Facing
+DoneWithFacing = *
 
-:Continue rep   #$10       ; Set the anal GXVectorRemaining value
+* Set GXVectorRemaining from GVelocityX in preparation from our movement loop
+         rep   #$10
          lda   GVelocityX
          eor   #$80
          sta   GXVectorRemaining
          sep   #$20       ; check the vertical axis
+
+* Checks to see if the bozo is trying to go off the left border of the screen
+         lda   GXVectorRemaining
+         clc
+         adc   GPositionXScreenFifth
+         dec
+         cmp   #$c0
+         bcc   :CheckRight
+         ldy   #$0080
+         sty   GVelocityX
+]lp      inc   GXVectorRemaining
+         inc
+         bne   ]lp
+         bra   DoneConfining
+* Similar check for the right border
+:CheckRight cmp   #$4b
+         bcc   DoneConfining
+         ldy   #$0080
+         sty   GVelocityX
+]lp      dec   GXVectorRemaining
+         dec
+         cmp   #$4a
+         bne   ]lp
+DoneConfining = *
 
          DO    BF_Slopes
          lda   GPositionYBlk ; if it is above or below the screen
@@ -1260,11 +1289,11 @@ PayUp    =     *          ; normal 'below' check
 OnSolidGround = *
          lda   #$01
          sta   GOnSolidGround
-         lda   Button0Lifted       ; If the button has not been "reset", no jump
+         lda   Button0StillDown  ; If the button has not been "reset", no jump
          bne   Twinkie
          lda   JoystkBtns01
          bpl   Twinkie
-         inc   Button0Lifted
+         inc   Button0StillDown
          lda   #Guido_Jump_Velocity
          sta   GVelocityY
          lda   #Guido_Jump_Sustain
@@ -1288,43 +1317,23 @@ IsFalling = *
          sta   GVelocityY
 
 Twinkie  lda   JumpSustainCounter
-         beq   ConfineToScreen   ; If JumpSustainCounter has a value,
-         lda   Button0Lifted
-         beq   :Br1       ; and the button is down,
-         dec   GVelocityY        ; then we add to Guido's upward velocity,
-         dec   GVelocityY
-         dec   GVelocityY
-         dec   GVelocityY
-:Br1     dec   JumpSustainCounter       ; and decrement JumpSustainCounter.
-         bne   ConfineToScreen
+         beq   DoneWithJump   ; If JumpSustainCounter has a value,
+         lda   Button0StillDown
+         bne   :Br1       ; and the button is down,
+         stz   JumpSustainCounter
+         inc   GVelocityY       ; If it's the last cycle, boost Guido's downward velocity a bit
          inc   GVelocityY
+         inc   GVelocityY
+         bra   DoneWithJump
+:Br1     dec   GVelocityY        ; then we add to Guido's upward velocity,
+         dec   GVelocityY
+         dec   GVelocityY
+         dec   GVelocityY
+         dec   JumpSustainCounter       ; and decrement JumpSustainCounter.
+DoneWithJump = *
 
-* Checks to see if the bozo is trying to go off the left border of the screen
-ConfineToScreen = *
-         lda   GXVectorRemaining
-         clc
-         adc   GPositionXScreenFifth
-         dec
-         cmp   #$c0
-         bcc   :CheckRight
-         ldy   #$0080
-         sty   GVelocityX
-]lp      inc   GXVectorRemaining
-         inc
-         bne   ]lp
-         bra   CheckDoorDown
-
-* Similar check for the right border
-:CheckRight cmp   #$4b
-         bcc   CheckDoorDown
-         ldy   #$0080
-         sty   GVelocityX
-]lp      dec   GXVectorRemaining
-         dec
-         cmp   #$4a
-         bne   ]lp
-
-CheckDoorDown sep   #$20
+* Check for a down doorway
+         sep   #$20
          lda   JoystkReadY       ; If joystick is down,
          cmp   #80
          bcc   CheckDoorRight
@@ -1691,7 +1700,7 @@ Check2nd stx   :SavedMapSpot+1  ; Save original so we don't have to subtract
          jsr   ChItem
 Round    jmp   Uranus
 HitSolidAbove  inc   GPositionYSlice
-         stx   Itm
+         stx   ItemCheckerTmp
          jsr   ChSolid    ; Check for affecting block
          sep   #$20
          stz   GYVectorRemaining
@@ -1744,7 +1753,7 @@ NotElsa  inc   GPositionYSlice
          lda   GVelocityY
          cmp   #$87
          bcc   NoPress
-         stx   Itm
+         stx   ItemCheckerTmp
          stz   MapBl,x
          inc   MapVl,x    ; Compiled blockset only!
          lda   MapVl,x    ; MOD
@@ -1753,15 +1762,15 @@ NotElsa  inc   GPositionYSlice
          jsr   BlokZap    ; replace button
          sep   #$20
          rep   #$10
-         inc   Itm
-         ldx   Itm
+         inc   ItemCheckerTmp
+         ldx   ItemCheckerTmp
          inc   MapVl,x
          lda   MapVl,x    ; MOD
          sta   Tmp3
          jsr   BlokZap    ; replace stand
          sep   #$20
          rep   #$10
-         ldx   Itm        ; Restore the variables
+         ldx   ItemCheckerTmp ; Restore the variables
          lda   #$02       ; Rest of code goes here
          sta   GPositionYSlice
 NoPress  lda   #$80       ; Vertical descent stopped
@@ -2626,8 +2635,8 @@ ChItem   cmp   #BlkId_Sprt8+1    ; If sprite activating:
          bcs   ChItem2
          cmp   #BlkId_Sprt1
          bcc   ChItem2
-         stx   Itm
-         sta   Itm2
+         stx   ItemCheckerTmp
+         sta   ItemCheckerTmp2
          rep   #$30
          and   #$00FF
          sec
@@ -2637,8 +2646,8 @@ ChItem   cmp   #BlkId_Sprt8+1    ; If sprite activating:
          jsr   (ActList,x)
 NonAct   rep   #$10
          sep   #$20
-         ldx   Itm
-         lda   Itm2
+         ldx   ItemCheckerTmp
+         lda   ItemCheckerTmp2
          rts
          MX    %10
 ChItem2  cmp   #BlkId_EmptyDeadly  ; If deadly:
@@ -2647,9 +2656,9 @@ ChItem2  cmp   #BlkId_EmptyDeadly  ; If deadly:
          bcc   Thwonk     ; If takable:
          cmp   #BlkId_FoodB+1
          bcs   Thwonk
-         stx   Itm
-         sta   Itm2       ; Store the variables
-         cmp   #BlkId_CoinB      ; If it's in group II,
+         stx   ItemCheckerTmp
+         sta   ItemCheckerTmp2 ; Store the variables
+         cmp   #BlkId_CoinB    ; If it's in group II,
          bcs   *+6        ; replace with and draw block $01
          lda   #$00       ; instead of $00
          bra   *+4
@@ -2664,7 +2673,7 @@ ChItem2  cmp   #BlkId_EmptyDeadly  ; If deadly:
          sta   Score2+1   ; 50 points awarded
          jsr   ScoreAdd
          sep   #$20
-         lda   Itm2
+         lda   ItemCheckerTmp2
          cmp   #BlkId_CoinA
          beq   Dimwit     ; If it's a consumable item,
          cmp   #BlkId_CoinB      ; Add to the timer as well.
@@ -2674,12 +2683,12 @@ ChItem2  cmp   #BlkId_EmptyDeadly  ; If deadly:
          jsr   TimeAdd
 Dimwit   sep   #$20
 ]lp      rep   #$10
-         ldx   Itm        ; And restore the variables
-         lda   Itm2
+         ldx   ItemCheckerTmp  ; And restore the variables
+         lda   ItemCheckerTmp2
          rts
 
-ClrHurt  stx   Itm        ; Hurt Guido
-         sta   Itm2
+ClrHurt  stx   ItemCheckerTmp ; Hurt Guido
+         sta   ItemCheckerTmp2
          jsr   Verdict    ; Verdict must return with A: 8 bit
          cmp   #$69
          beq   ]lp
@@ -2688,7 +2697,7 @@ ClrHurt  stx   Itm        ; Hurt Guido
          jmp   Die
 
          MX    %00
-         ldx   Itm
+         ldx   ItemCheckerTmp
 BlokZap  rep   #$31
          ldy   #$0000
          txa

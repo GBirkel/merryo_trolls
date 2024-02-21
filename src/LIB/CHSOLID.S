@@ -13,7 +13,7 @@ ChSolid  cmp   #BlkId_SolidActn10+1
          bcs   OutAHere
          cmp   #BlkId_SolidActn1
          bcc   OutAHere
-ChSolid2 sta   Itm2
+ChSolid2 sta   ItemCheckerTmp2
          rep   #$20
          and   #$00FF
          sec
@@ -21,9 +21,9 @@ ChSolid2 sta   Itm2
          asl
          tax
          sep   #$20
-         lda   Itm2
+         lda   ItemCheckerTmp2
          jmp   (SldList,x)
-OutAHere ldx   Itm
+OutAHere ldx   ItemCheckerTmp
          rts
 
 SldList  DA    Bl_Coin,Bl_Mushroom,Bl_Mushroom,Bl_Mushroom,Bl_Mushroom
@@ -37,7 +37,7 @@ Bl_Ladder jmp OutAHere
          lst   off
 
          mx    %10
-Bl_Coin  ldx   Itm
+Bl_Coin  ldx   ItemCheckerTmp
          lda   #BlkId_Solid
          sta   MapBl,x    ; Coin block is solid now
          lda   MapVl,x    ; Get the current coin pic value
@@ -89,7 +89,7 @@ Bl_Coin  ldx   Itm
 
          MX    %10
 Bl_Message rep   #$31
-         lda   Itm
+         lda   ItemCheckerTmp
          tax
          ldy   #$0000
 ]lp      cmp   Connects,y ; Check the list for the message location
@@ -129,7 +129,7 @@ Bl_Message rep   #$31
          plb
 Erotic   ldy   #$0000
 Friction lda   Connects+4,y
-         ldx   Itm
+         ldx   ItemCheckerTmp
          and   #$0001       ; If the connects say so,
          bne   Splergh
 MesagEr  sep   #$20         ; remove this message from the map
@@ -152,7 +152,7 @@ Amused   pha
 * Action-solid 3: Breakable Block v0.05
          lst   off
 
-Bl_Breakable  ldx   Itm
+Bl_Breakable  ldx   ItemCheckerTmp
          stz   MapBl,x    ; Change I.D to clear
          and   #$01       ; Set proper background
          sta   Tmp3
@@ -235,7 +235,7 @@ Bl_Breakable  ldx   Itm
          inc   SpritesActiveCnt ; four new sprites
          inc   SpritesActiveCnt
          inc   SpritesActiveCnt
-         ldx   Itm        ; --Check for coin above--
+         ldx   ItemCheckerTmp   ; --Check for coin above--
          lda   MapBl-1,x
          and   #$FD
          cmp   #BlkId_CoinA
@@ -295,7 +295,7 @@ Bl_Mushroom sec
          sbc   #BlkId_SolidActn1+1
          sta   Parakeet+1
          lda   #BlkId_Solid
-         ldx   Itm
+         ldx   ItemCheckerTmp
          sta   MapBl,x    ; Coin block is solid now
          lda   MapVl,x    ; Get the current coin pic value
          and   #$03
