@@ -8,33 +8,40 @@
          stz   Button0Lifted
 
 :KeepZ   ldx   JoystkHDir
-         lda   JoystkHLev        ; Affect JoystkHLev:
-         cpx   #$04
-         beq   Stick1
-         cmp   #GVelocityHWalking
-         bcc   Stick5     ; Non-FR
-         dec              ; slowdown
-Stick5   cpx   #$03
-         bne   Stick3
-         inc
-         bra   Stick2
-Stick1   cmp   #GVelocityHRunning     ; Fast right inc
-         bcs   Stick2     ; with overflow control
-         inc
-         bra   Stick2
-Stick3   cpx   #$00
-         beq   Stick4
-         cmp   #$100-GVelocityHWalking
-         bcs   Stick6     ; Non-FL
-         inc              ; slowdown
-Stick6   cpx   #$01
-         bne   Stick2
-         dec
-         bra   Stick2
-Stick4   cmp   #$100-GVelocityHRunning
-         bcc   Stick2     ; Fast left dec
-         dec              ; with overflow control
-Stick2   sta   JoystkHLev
+         lda   JoystkHLev
+
+         cpx   #$04               ; Right Full
+         bne   :NotRF
+         cmp   #GVelocityHRunning ; If we're right full,
+         bcs   :Done              ; but Guido is not at running speed to the right,
+         inc                      ; speed him up
+         bra   :Done
+
+:NotRF   cmp   #GVelocityHWalking ; If we're not right full,
+         bcc   *+3                ; but Guido is going right faster than a walk,
+         dec                      ; slow him down
+
+         cpx   #$03               ; Unless we're at Right,
+         bne   :NotR              ; in which case we don't slow him down,
+         inc                      ; but speed him up if he's not walking yet.
+         bra   :Done
+
+:NotR    cpx   #$00                ; Left Full
+         bne   :NotLF
+         cmp   #$100-GVelocityHRunning ; If we're left full,
+         bcc   :Done                   ; but Guido is not at running speed to the left,
+         dec                           ; speed him up
+         bra   :Done
+
+:NotLF   cmp   #$100-GVelocityHWalking ; If we're not left full,
+         bcs   *+3                     ; but Guido is going left faster than a walk,
+         inc                           ; slow him down
+
+         cpx   #$01                ; Unless we're at Left,
+         bne   :Done               ; in which case we don't slow him down,
+         dec                       ; but speed him up if he's not walking yet
+
+:Done    sta   JoystkHLev
 
          tay              ; Affect GVelocityX:
          lda   GVelocityX

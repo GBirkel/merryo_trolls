@@ -315,8 +315,8 @@ Turtle5  rep   #$20
          clc
          adc   #$50*9
          sta   DraW+1,y
-         inc   ErAc
-         inc   ErAc
+         inc   SpritesOnScreenCnt
+         inc   SpritesOnScreenCnt
 Turtle3  sep   #$20
          rts
 
@@ -618,6 +618,6 @@ Shell24  rep   #$20
          adc   Tmp3
          inc
          sta   DraW+1,y
-         inc   ErAc
+         inc   SpritesOnScreenCnt
 Shell25  sep   #$20
          rts

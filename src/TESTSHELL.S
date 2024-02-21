@@ -103,7 +103,7 @@ GBodyFlg_Tongue      DS 2 ; Flag for mouth
 GBodyFlg_Facing      DS 2 ; Bit 1=Troll dir.flag, Bit 7=Scroll dir.flag
 Itm      DS    2          ; Item check temporary holder
 Itm2     DS    2          ; Item check temporary storage 2
-ErAc     DS    2          ; Number of active on-screen sprites
+SpritesOnScreenCnt     DS    2          ; Number of active on-screen sprites
 SpritesActiveCnt DS 2     ; Number of active sprites
 ErCn     DS    2          ; On-screen sprite currently processing
 SpCn     DS    2          ; Active sprite currently processing

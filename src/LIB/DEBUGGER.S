@@ -100,7 +100,7 @@ SpamTabs DA    $205,$285,$305,$385
          DA    $269,$2e9,$369,$3e9
 
 DebugDat ASC   " Super? Merryo Trolls Debug Screen v1.0 "
-         ASC   "FifT:0000 Xvec:0000 ErAc:0000  00000000 "
+         ASC   "FifT:0000 Xvec:0000 SCnt:0000  00000000 "
          ASC   "GSF :0000 Ghed:0000 SizT:0000           "
          DS    8
          ASC   "                                        "

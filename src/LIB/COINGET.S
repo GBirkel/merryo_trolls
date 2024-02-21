@@ -34,7 +34,7 @@ CoinGet  rep   #$20       ; actual entry point
          adc   #$70       ; offset into sprite data
          sta   DraW,y     ; = current sprite
          inc   SprI+1,x
-         inc   ErAc
+         inc   SpritesOnScreenCnt
          inc   SprI+6,x
          inc   SprI+6,x   ; Move up two vertical strips
          lda   SprI+1,x

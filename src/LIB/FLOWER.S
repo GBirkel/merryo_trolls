@@ -170,6 +170,6 @@ SH_Flower rep   #$20       ; actual entry point
          lda   SprI+1,x
          cmp   #$06
          beq   Flower1
-         inc   ErAc       ; Update the animation frame
+         inc   SpritesOnScreenCnt       ; Update the animation frame
          rts
 Flower1  jmp   KillDis

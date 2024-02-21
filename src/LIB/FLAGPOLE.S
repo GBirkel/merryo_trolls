@@ -142,6 +142,6 @@ Flag     sep   #$20       ; actual entry point
          sep   #$20
          lda   #$7F       ; flag sprite
          sta   DraW,y
-         inc   ErAc
+         inc   SpritesOnScreenCnt
          rts
 Flag1    jmp   KillDis

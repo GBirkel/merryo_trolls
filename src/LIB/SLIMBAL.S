@@ -2,17 +2,26 @@
 * Sprite: SlimBal v0.1A
          lst   off
 
+* 1- bits 1-2: 0=active, 1=bug-eyed 2=flat
+*    bit 8: direction (1=backwards)
+* 2- animation stage (1-3)
+* 3- Vertical velocity
+* 4- Map Y in blocks
+* 5- Sub-Block Y 16th (from bottom)
+* 6- Map X in blocks
+* 7- Sub-Block X fifth (from left)
+
 SH_Snail ldx   Tmp
          lda   SprI+2,x
          inc
-         cmp   #$03       ; 1- bit 8=backwards, bits 1-2:
-         bne   :Br1       ;    0=active, 1=bug-eye, 2=flat
-         lda   #$00       ; 2- animation stage (1-3)
-:Br1     sta   SprI+2,x   ; 3- VV
-         rep   #$20       ; 4- VB
-         lda   SprI+6,x   ; 5- VS (1-16)
-         and   #$00FF     ; 6- HB
-         ASLS  2          ; 7- HS (1-5)
+         cmp   #$03
+         bne   :Br1
+         lda   #$00
+:Br1     sta   SprI+2,x
+         rep   #$20
+         lda   SprI+6,x
+         and   #$00FF
+         ASLS  2
          sta   Tmp2
          asl              ; map location in Tmp3
          adc   Tmp2
@@ -334,6 +343,6 @@ SlimBal5 rep   #$21
          sec
          adc   Tmp3
          sta   DraW+1,y
-         inc   ErAc
+         inc   SpritesOnScreenCnt
 SlimBal3 sep   #$20
          rts

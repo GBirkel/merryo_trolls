@@ -259,7 +259,7 @@ Mushey24 rep   #$20
          adc   Tmp3       ;  that! Like I ever even want to hear from YOU!"
          inc              ; <click>
          sta   DraW+1,y   ; "Awww, maaaan...
-         inc   ErAc       ;
+         inc   SpritesOnScreenCnt ;
 Mushey25 sep   #$20       ; -Garote & Andy's dubbed version of
          rts              ;  Pink Floyd's "Nobody Home"
 

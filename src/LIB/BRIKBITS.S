@@ -91,5 +91,5 @@ AnBrik6  inc   SprI+1,x
          bne   AnBrik7
          lda   #$01
          sta   SprI+1,x
-AnBrik7  inc   ErAc
+AnBrik7  inc   SpritesOnScreenCnt
 AnBrik5  rts

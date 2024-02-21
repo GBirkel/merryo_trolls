@@ -85,9 +85,9 @@ Tmp3     DS    2          ; Even more
 Tmp4     DS    2          ; Yet more!
 DCnt     DS    2          ; Update quantity reg counter
 
-WinXEdgeBlk      DS    2  ; Play window _right_edge_ X position on level map, in blocks
-WinXBlkIDsPtr    DS    2  ; WinXEdgeBlk x12, used as a pointer into the level map IDs
-WinXEdgeBlkFifth DS    2  ; Play window _right_edge_ X offset into one block, in fifths (0-4)
+WinXEdgeBlk        DS  2  ; Play window _right_edge_ X position on level map, in blocks
+WinXBlkIDsPtr      DS  2  ; WinXEdgeBlk x12, used as a pointer into the level map IDs
+WinXEdgeBlkFifth   DS  2  ; Play window _right_edge_ X offset into one block, in fifths (0-4)
 WinXEdgeTotalFifths DS 2  ; WinXEdgeBlk x 5 plus WinXEdgeBlkFifth, for sprites
 
 GPositionXScreenFifth DS 2 ; Number of block fifths Guido is from the left edge of the _screen_
@@ -102,32 +102,32 @@ GYVectorRemaining  DS  2  ; Y axis (vertical!!!) offset storage
 GXVectorRemaining  DS  2  ; X axis (Horizontal!) offset storage
 JumpSustainCounter DS  2  ; Countdown for sustaining jump velocity boost
 
+JoystkReadX        DS  2  ; Joystick X axis read result
+JoystkReadY        DS  2  ; Joystick Y axis read result
 JoystkHLev         DS  2  ; Horiz joystick level meter (+) = r (-) = l
 JoystkHDir         DS  2  ; Horiz joystick direction (0=Left Full,1=Left,2=Middle,3=Right,4=Right Full)
+JoystkBtns01       DS  2  ; Status of buttons 0 and 1 this cycle (bits7,8)
 Button0Lifted      DS  2  ; Joystick hold-down flag
-JoystkReadX DS 2          ; Joystick X axis read result
-JoystkReadY DS 2          ; Joystick Y axis read result
 
-WindowedPEA        DS 2   ; Windowed blitter routine PEA origin
-WindowedGuido      DS 2   ; Windowed blitter routine Guido drawing location
-JoystkBtns01       DS 2   ; Status of buttons 0 and 1 this cycle (bits7,8)
+WindowedPEA        DS  2  ; Windowed blitter routine PEA origin
+WindowedGuido      DS  2  ; Windowed blitter routine Guido drawing location
 
 Lupe     DS    2          ; Minor update loop byte(s)
 Acnt     DS    2          ; Animation flags counter
-GCurrentSpr_Head     DS 2 ; Sprite for head
-GCurrentSpr_Mouth    DS 2 ; Sprite for mouth
-GCurrentSpr_Eye      DS 2 ; Sprite for eye
-GCurrentSpr_RArm     DS 2 ; Sprite for right arm
-GCurrentSpr_LArm     DS 2 ; Sprite for left arm
-GCurrentSpr_Belly    DS 2 ; Sprite for belly
-GCurrentSpr_LegA     DS 2 ; Sprite for feet
-GCurrentSpr_LegB     DS 2 ; Sprite for body section B
-GBodyFlg_Tongue   DS    2 ; Flag for mouth
-GBodyFlg_Facing   DS    2 ; Bit 1: Guido's body. (1=Facing left)
+GCurrentSpr_Head   DS  2  ; Sprite for head
+GCurrentSpr_Mouth  DS  2  ; Sprite for mouth
+GCurrentSpr_Eye    DS  2  ; Sprite for eye
+GCurrentSpr_RArm   DS  2  ; Sprite for right arm
+GCurrentSpr_LArm   DS  2  ; Sprite for left arm
+GCurrentSpr_Belly  DS  2  ; Sprite for belly
+GCurrentSpr_LegA   DS  2  ; Sprite for feet
+GCurrentSpr_LegB   DS  2  ; Sprite for body section B
+GBodyFlg_Tongue    DS  2  ; Flag for mouth
+GBodyFlg_Facing    DS  2  ; Bit 1: Guido's body. (1=Facing left)
 Itm      DS    2          ; Item check temporary holder
 Itm2     DS    2          ; Item check temporary storage 2
-ErAc     DS    2          ; Number of active on-screen sprites
-SpritesActiveCnt DS 2     ; Number of active sprites
+SpritesOnScreenCnt DS  2  ; Number of active on-screen sprites
+SpritesActiveCnt   DS  2  ; Number of active sprites
 ErCn     DS    2          ; On-screen sprite currently processing
 SpCn     DS    2          ; Active sprite currently processing
 IMsp     DS    2          ; Left-scroll location in the map Sprite List
@@ -180,8 +180,6 @@ EsqC            EQU $01C03C  ; Ensoniq Control reg
 EsqD            EQU $01C03D  ; Ensoniq Data reg
 
 PalNum            EQU $10  ; Standard number of palletes to fade.
-GVelocityHWalking EQU $82  ; Horizontal movement lower level (walking)
-GVelocityHRunning EQU $86  ; Horizontal movement upper level (running)
 
 * A key for interpreting the block IDs in the level map
 
@@ -239,8 +237,12 @@ GuidoWalk_LegA    DB    00,01,02,03,04,05,06,07
 GuidoWalk_LegB    DB    16,17,18,19,20,21,22,23
 GuidoWalk_RArm    DB    36,35,36,37,38,39,38,37
 
-Guido_Jump_Velocity EQU $71 ; Initial velocity given to Guido when jump button is pressed
-Guido_Jump_Sustain  EQU $07 ; Number of game cycles to sustain jump velocity if button is held down
+GVelocityHWalking   EQU $82 ; Horizontal movement lower level (walking)
+GVelocityHRunning   EQU $86 ; Horizontal movement upper level (running)
+
+Guido_Gravity       EQU $05 ; Amount to add to Guido's downward velocity each game cycle he is falling
+Guido_Jump_Velocity EQU $6E ; Initial velocity given to Guido when jump button is pressed
+Guido_Jump_Sustain  EQU $08 ; Number of game cycles to sustain jump velocity if button is held down
 
 
 ProgBegn SEC
@@ -768,7 +770,7 @@ NewLoc2  rep   #$30
          sta   WinXEdgeTotalFifths
 
          stz   SpritesActiveCnt ; Kill all sprites
-         stz   ErAc
+         stz   SpritesOnScreenCnt
          stz   IMsp       ; This takes the WinXEdgeBlk value
          ldx   #$0000
 ]lp      lda   MapSpr,x   ; And runs through the sprite list
@@ -856,7 +858,7 @@ Bonk     stz   Lupe
          lda   SpritesActiveCnt ; if there were any sprites,
          beq   *+5
          jsr   SprUp      ; Update them once
-         lda   ErAc
+         lda   SpritesOnScreenCnt
          beq   *+5
          JSR   DraEm      ; draw active sprites
          JSR   PeaBlit    ; then blit to shr
@@ -890,7 +892,7 @@ MainPlayLoop rep   #$20
          bne   *+7
          jsr   DraTrol    ; draw the skumbucket (unless flashing)
          rep   #$20
-         lda   ErAc
+         lda   SpritesOnScreenCnt
          beq   *+5
          JSR   DraEm      ; Draw active sprites, if any
          DO    BF_HeatWav
@@ -911,7 +913,7 @@ MainPlayLoop rep   #$20
 :Br1     jsr   DraTrol    ; draw the skumbucket
          jsr   ZapTrol    ; Erase Guido, now that we've blitted
          rep   #$20
-         lda   ErAc
+         lda   SpritesOnScreenCnt
          beq   *+5
          JSR   ZapEm      ; Erase sprites, if any
 
@@ -1281,11 +1283,9 @@ OnSolidGround = *
 
 IsFalling = *
          stz   GOnSolidGround
-         inc   GVelocityY
-         inc   GVelocityY
-         inc   GVelocityY
-         inc   GVelocityY
-         inc   GVelocityY
+         lda   GVelocityY
+         adc   #Guido_Gravity
+         sta   GVelocityY
 
 Twinkie  lda   JumpSustainCounter
          beq   ConfineToScreen   ; If JumpSustainCounter has a value,
@@ -2499,7 +2499,7 @@ ZapEm    rep   #$31
 Bouncy   sta   DaSpot+1
          inc
          sta   DaSpotB+1
-         lda   ErAc
+         lda   SpritesOnScreenCnt
 Earlobe  dec
          sta   ErCn
          asl
@@ -3134,15 +3134,15 @@ ActList  =     *
 SprUp    rep   #$30
          lda   SpritesActiveCnt
          sta   SpCn
-         stz   ErAc
+         stz   SpritesOnScreenCnt
 TopSpr   dec   SpCn
          lda   SpCn
          ASLS  3          ; sprite current x9
          adc   SpCn
          tax
-         lda   ErAc
+         lda   SpritesOnScreenCnt
          asl
-         adc   ErAc       ; Onscreen current x3
+         adc   SpritesOnScreenCnt ; Onscreen current x3
          tay
          lda   SprI,x
          stx   Tmp        ; Temporarily save X-

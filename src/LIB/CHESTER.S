@@ -36,7 +36,7 @@ SH_Chester sep   #$20       ; actual entry point
          lsr
          adc   #$16       ; offset into sprite data
          sta   DraW,y     ; = current sprite
-         inc   ErAc       ; Update the animation frame
+         inc   SpritesOnScreenCnt ; Update the animation frame
          inc   SprI+1,x
          lda   SprI+3,x
          eor   #$80
