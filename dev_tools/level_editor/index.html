@@ -693,6 +693,23 @@ function connectSetOriginXY() {
 }
 
 
+function connectSetDestinationWindowX() {
+
+    if (document.mapSelection.isEmpty()) {
+        return;
+    }
+    const upperLeft = document.mapSelection.getUpperLeftCorner();
+
+    const connects = document.levelData.getDoorConnects(document.levelNumber);
+    const selectedConnectData = connects[document.selectedConnect];
+
+    selectedConnectData.destinationWindowX = upperLeft.x;
+    document.levelData.writeDoorConnect(document.levelNumber, document.selectedConnect, selectedConnectData);
+    redrawConnectsPanel();
+    redrawSpriteCanvas();
+}
+
+
 function connectSetDestinationXY() {
 
     if (document.mapSelection.isEmpty()) {
@@ -1663,7 +1680,7 @@ function pressedSaveButton(event) {
                                     <option value="15">16 / p</option>
                                 </select>
                             </div>
-                            <div><input type="button" value="Set X Of Screen Left Edge" /></div>
+                            <div><input type="button" value="Set X Of Screen Left Edge" onclick="connectSetDestinationWindowX(event);" /></div>
                         </div>
                         <div class="connectsEditingRow">
                             <div><input type="button" value="Set X/Y" onclick="connectSetDestinationXY(event);" /></div>
