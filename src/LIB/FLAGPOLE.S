@@ -10,6 +10,10 @@ FlagPole lda   GameFlags    ; Skip all this if the "don't respond to the flagpol
          rts
 :Br1     lda   PEAInitialStackPtr
          pha
+         ldal  PeaJumpPtr ; Save vital values
+         pha
+         lda   SizTotal
+         pha
          jsr   DoorCompute
          lda   #GuidoSprId_ArmCarry
          sta   GCurrentSpr_RArm       ; "Carry" arm for grabbing flag
@@ -31,13 +35,10 @@ FlagPole lda   GameFlags    ; Skip all this if the "don't respond to the flagpol
          inc              ; Just in case we have a zero-high flag slide
          sta   Lupe
 ]lp2     jsr   WaitSync
-         jsr   DrawWindowedPeaFrameAndBlit
-         jsr   RemoveWindowedPeaFrame
+         jsr   DrawWindowedGuidoAndBlit
          lda   WindowedPEA
          sec
-         sbc   #BF_SizLine   ; Guido position
-         sec
-         sbc   #BF_SizLine
+         sbc   #BF_SizLine*2    ; Moving Guido two scanlines at a time
          sta   WindowedPEA
          clc
          adc   #$000f
@@ -78,6 +79,10 @@ FlagPole lda   GameFlags    ; Skip all this if the "don't respond to the flagpol
                           ; sta SprI+8,x ; M: Sets non-level I.D.
 
          rep   #$20
+         pla
+         sta   SizTotal
+         pla
+         stal  PeaJumpPtr ; Save vital values
          pla
          sta   PEAInitialStackPtr
          RTS

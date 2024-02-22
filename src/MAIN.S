@@ -2796,7 +2796,11 @@ Chompem  sta   DWNt       ; Store the blox down for safekeeping
          PUT   LIB/WINDOWEDPEA
 
          MX    %00
-LSideOut stx   WindowedPEA       ; Frame in PEA field
+LSideOut ldal  PeaJumpPtr ; Save vital values
+         pha
+         lda   SizTotal
+         pha
+         stx   WindowedPEA       ; Frame in PEA field
          txa
          clc
          adc   #$000f
@@ -2807,7 +2811,7 @@ LSideOut stx   WindowedPEA       ; Frame in PEA field
 ]lp      jsr   WaitSync
          jsr   WaitSync
          jsr   WaitSync
-         jsr   DrawWindowedPeaFrameAndBlit
+         jsr   DrawWindowedGuidoAndBlit
          lda   WindowedGuido
          inc
          inc
@@ -2816,9 +2820,17 @@ LSideOut stx   WindowedPEA       ; Frame in PEA field
          dec   Lupe
          bne   ]lp
          stz   WindowedPEA
+         pla                    ; Restore vital values
+         sta   SizTotal
+         pla
+         stal  PeaJumpPtr
          rts
 
-RSideOut stx   WindowedPEA       ; Frame in PEA field
+RSideOut ldal  PeaJumpPtr ; Save vital values
+         pha
+         lda   SizTotal
+         pha
+         stx   WindowedPEA       ; Frame in PEA field
          txa
          clc
          adc   #$000f
@@ -2829,7 +2841,7 @@ RSideOut stx   WindowedPEA       ; Frame in PEA field
 ]lp      jsr   WaitSync
          jsr   WaitSync
          jsr   WaitSync
-         jsr   DrawWindowedPeaFrameAndBlit
+         jsr   DrawWindowedGuidoAndBlit
          lda   WindowedGuido
          dec
          dec
@@ -2838,9 +2850,17 @@ RSideOut stx   WindowedPEA       ; Frame in PEA field
          dec   Lupe
          bne   ]lp
          stz   WindowedPEA
+         pla                    ; Restore vital values
+         sta   SizTotal
+         pla
+         stal  PeaJumpPtr
          rts
 
-DownOut  txa              ; Frame in PEA field
+DownOut  ldal  PeaJumpPtr ; Save vital values
+         pha
+         lda   SizTotal
+         pha
+         txa              ; Frame in PEA field
          clc
          adc   #BF_SizLine
          sta   WindowedPEA
@@ -2871,7 +2891,7 @@ DownOut  txa              ; Frame in PEA field
          lda   #$001f
          sta   Lupe
 ]lp      jsr   WaitSync
-         jsr   DrawWindowedPeaFrameAndBlit
+         jsr   DrawWindowedGuidoAndBlit
          lda   WindowedGuido
          sec
          sbc   #BF_SizLine
@@ -2879,6 +2899,10 @@ DownOut  txa              ; Frame in PEA field
          dec   Lupe
          bne   ]lp
          stz   WindowedPEA
+         pla                    ; Restore vital values
+         sta   SizTotal
+         pla
+         stal  PeaJumpPtr
          rts
 
 DoorGo =     *
