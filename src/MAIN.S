@@ -109,8 +109,8 @@ JoystkHDir         DS  2  ; Horiz joystick direction (0=Left Full,1=Left,2=Middl
 JoystkBtns01       DS  2  ; Status of buttons 0 and 1 this cycle (bits7,8)
 Button0StillDown   DS  2  ; Joystick hold-down flag
 
-WindowedPEA        DS  2  ; Windowed blitter routine PEA origin
-WindowedGuido      DS  2  ; Windowed blitter routine Guido drawing location
+WindowedPEA        DS  2  ; Windowed PEA routine PEA field start pointer
+WindowedGuido      DS  2  ; Windowed PEA routine PEA field Guido drawing location
 
 Lupe     DS    2          ; Minor update loop byte(s)
 Acnt     DS    2          ; Animation flags counter
@@ -1842,8 +1842,8 @@ Panties  lda   #$0F
 Kitties  lda   #$00
          sta   GPositionYSlice
          inc
-         sta   GOnSolidGround ; Obviously not falling anymore
-         stz   JumpSustainCounter       ; Not adding for a jump anymore
+         sta   GOnSolidGround     ; Obviously not falling anymore
+         stz   JumpSustainCounter ; Not adding for a jump anymore
          stz   GYVectorRemaining
          lda   #$80       ; Vertical descent stopped
          sta   GVelocityY
@@ -2792,55 +2792,8 @@ Chompem  sta   DWNt       ; Store the blox down for safekeeping
          FIN
          sep   #$20       ; Back the way you found it!
          rts
-
-* Calculate a location in the screen memory (and place in y)
-* Calculate a location in the PEA field (and place in x)
-* These locations correspond to a corner of where Guido is standing,
-* and can be used to perform animations in a contained space,
-* e.g. moving Guido vertically down in the space until he's outside
-* it, which will naturally clip Guido off at the edge of the
-* space, so it appears he's going down a pipe that's already present
-* on the screen below the space.
-* Note that these calculations currently depend on a fixed PEA scanline length of $F0.
-* Calculations for other lengths will have to be substituted in.
-DoorCompute REP   #$30
-         lda   GPositionYBlk ; Vertical block comp. with reversal
-         Xba
-         and   #$0F00
-         sta   Tmp2
-         lda   GPositionYSlice
-         ASLS  4
-         adc   Tmp2
-         sta   Tmp2       ; Saved for later
-         eor   #$0FFF     ; just like subtracting it from $BF0
-         sec
-         sbc   #$040F
-         sta   Tmp3
-         ASLS  2
-         adc   Tmp3
-         clc              ; xA, plus screen offset x2
-         adc   GPositionXScreenFifth
-         asl
-         adc   #SHR+$A7   ; MOD 3 less than location for left-overlap
-         tay              ; =SHR screen location
-         lda   Tmp2
-         ASLS  4
-         sec
-         sbc   Tmp2       ; Tmp2 x15, i.e. $F,
-         sta   Tmp2       ; so GPositionYBlk is x $F00 in total, and GPositionYSlice is x$F0
-         ldal  PeaJumpPtr
-         sec
-         sbc   GPositionXScreenFifth
-         sec
-         sbc   GPositionXScreenFifth
-         sec
-         sbc   GPositionXScreenFifth ; Subtracted x3 to count each fifth as a 'PEA #xxxx'.
-         clc
-         adc   Tmp2
-         sec
-         sbc   #$000c     ; Subtract 13 bytes- that is, 4 PEAs
-         tax              ; (including left edge overlap for Guido)
-         rts
+        
+         PUT   LIB/WINDOWEDPEA
 
          MX    %00
 LSideOut stx   WindowedPEA       ; Frame in PEA field
@@ -2854,7 +2807,7 @@ LSideOut stx   WindowedPEA       ; Frame in PEA field
 ]lp      jsr   WaitSync
          jsr   WaitSync
          jsr   WaitSync
-         jsr   WindowedBlit
+         jsr   DrawWindowedPeaFrameAndBlit
          lda   WindowedGuido
          inc
          inc
@@ -2876,7 +2829,7 @@ RSideOut stx   WindowedPEA       ; Frame in PEA field
 ]lp      jsr   WaitSync
          jsr   WaitSync
          jsr   WaitSync
-         jsr   WindowedBlit
+         jsr   DrawWindowedPeaFrameAndBlit
          lda   WindowedGuido
          dec
          dec
@@ -2918,7 +2871,7 @@ DownOut  txa              ; Frame in PEA field
          lda   #$001f
          sta   Lupe
 ]lp      jsr   WaitSync
-         jsr   WindowedBlit
+         jsr   DrawWindowedPeaFrameAndBlit
          lda   WindowedGuido
          sec
          sbc   #BF_SizLine
@@ -2927,58 +2880,6 @@ DownOut  txa              ; Frame in PEA field
          bne   ]lp
          stz   WindowedPEA
          rts
-
-WindowedBlit sep   #$30
-         lda   #>GuidoSpriteJumpTable
-* JSR ahead to the part of this windowing code that draws/erases, to draw Guido.
-* When it returns, we draw the frame and blit it, then run into the same code
-* to erase Guido, where the RTS will return us to the caller.
-         jsr   SkipAheadToDraw  ; Jump ahead 
-         MX    %00
-         lda   WindowedPEA
-         stal  PeaJumpPtr
-         tax
-         ldy   #$0021
-* The $F in "ForegPeaField+$F,x" and "#$000F" below is the width of 5 PEA instructions,
-* Which currently fixes the width of this "window" to 20 pixels.
-]lp      lda   #$a0e9       ; Replace PEA instructions
-         stal  ForegPeaField+$F,x ; with some stack pointer math (SBC #$00A0, TCS)
-         lda   #$1b00       ; and a BRL to the next line
-         stal  ForegPeaField+$11,x
-         lda   #BF_SizLine-$16*$100+$82
-         stal  ForegPeaField+$13,x ; Establish frame
-         lda   #$0000
-         stal  ForegPeaField+$15,x
-         txa
-         clc
-         adc   #BF_SizLine
-         tax
-         dey
-         bne   ]lp
-         clc
-         adc   #$000F
-         sec
-         sbcl  PeaJumpPtr
-         sta   SizTotal
-         jsr   PeaBlit    ; Blit frame
-         sep   #$30
-         lda   #>GuidoEraserJumpTable ; Erase him
-
-SkipAheadToDraw sta   DaSpot+2
-         sta   DaSpotB+2
-         ldx   #GuidoSpriteJumpTable
-         lda   GBodyFlg_Facing
-         and   #$01
-         beq   :Br1
-         ldx   #GuidoSpriteJumpTable+$C0
-:Br1     txa
-         sta   DaSpot+1
-         inc
-         sta   DaSpotB+1
-         rep   #$30
-         lda   WindowedGuido
-         inc
-         jmp   DrawGuidoHere
 
 DoorGo =     *
          DO    BF_DeRezz

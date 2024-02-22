@@ -8,11 +8,7 @@ FlagPole lda   GameFlags    ; Skip all this if the "don't respond to the flagpol
          and   #$0040
          beq   :Br1
          rts
-:Br1     ldal  PeaJumpPtr ; Push vital values
-         pha
-         lda   SizTotal
-         pha
-         lda   PEAInitialStackPtr
+:Br1     lda   PEAInitialStackPtr
          pha
          jsr   DoorCompute
          lda   #GuidoSprId_ArmCarry
@@ -20,10 +16,10 @@ FlagPole lda   GameFlags    ; Skip all this if the "don't respond to the flagpol
          txa
          clc
          adc   #BF_SizLine
-         sta   WindowedPEA ; Window's PEA field
+         sta   WindowedPEA          ; Window's PEA field
          clc
          adc   #$000f
-         sta   WindowedGuido ; DraTrol's PEA field
+         sta   WindowedGuido        ; Corner PEA instruction to draw Guido into
          sty   PEAInitialStackPtr   ; Screen location
          lda   GPositionYBlk
          dec
@@ -35,27 +31,8 @@ FlagPole lda   GameFlags    ; Skip all this if the "don't respond to the flagpol
          inc              ; Just in case we have a zero-high flag slide
          sta   Lupe
 ]lp2     jsr   WaitSync
-         jsr   WindowedBlit
-         ldx   WindowedPEA
-         ldy   #$0021
-]lp      ldal  BackgPeaField+$F,x
-         stal  ForegPeaField+$F,x
-         ldal  BackgPeaField+$11,x
-         stal  ForegPeaField+$11,x
-         ldal  BackgPeaField+$13,x
-         stal  ForegPeaField+$13,x ; Erase frame
-         ldal  BackgPeaField+$15,x
-         stal  ForegPeaField+$15,x
-         txa
-         clc
-         adc   #BF_SizLine
-         tax
-         dey
-         bne   ]lp
-         ldal  BackgPeaField+$F,x ; Erase return jump
-         stal  ForegPeaField+$F,x
-         ldal  BackgPeaField+$11,x
-         stal  ForegPeaField+$11,x
+         jsr   DrawWindowedPeaFrameAndBlit
+         jsr   RemoveWindowedPeaFrame
          lda   WindowedPEA
          sec
          sbc   #BF_SizLine   ; Guido position
@@ -65,14 +42,15 @@ FlagPole lda   GameFlags    ; Skip all this if the "don't respond to the flagpol
          clc
          adc   #$000f
          sta   WindowedGuido       ; DraTrol's PEA field
-         lda   PEAInitialStackPtr   ; Screen position
+         lda   PEAInitialStackPtr  ; Screen position
          clc
-         adc   #$0140
+         adc   #$0140              ; Two scanlines down on the screen
          sta   PEAInitialStackPtr
          dec   Lupe
          bne   ]lp2
          lda   #$0080
          sta   GVelocityY
+         sta   JoystkHLev
          sta   GVelocityX ; Set Guido's position to bottom of flag, which is always 2 blocks up,
          lda   #$0002     ; and zero velocity.
          sta   GPositionYBlk
@@ -102,10 +80,6 @@ FlagPole lda   GameFlags    ; Skip all this if the "don't respond to the flagpol
          rep   #$20
          pla
          sta   PEAInitialStackPtr
-         pla
-         sta   SizTotal
-         pla
-         stal  PeaJumpPtr
          RTS
 
 
