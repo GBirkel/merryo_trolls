@@ -20,7 +20,7 @@ You can use this code as a starting point for your own work.  I cannot conceive 
 
 Meanwhile, you should know that in the process of stitching the levels from 1994 together into something playable, I wrote and included a set of modern game editing tools that run in any WebKit-based browser.
 
-
+![Super Merryo Trolls Editor Video](https://github.com/GBirkel/merryo_trolls/assets/17415530/b63ca07d-a836-4533-9f75-61eb7410f18e)
 
 They work directly on the various crude binary file formats that the game uses natively, and may be a good reference for similar forensics tools in other projects.
 
