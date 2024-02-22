@@ -2,6 +2,8 @@
 
 **An Adventure From The Days Before VRAM**
 
+![Super Merryo Trolls Reference Gameplay Video](reference_gameplay_video.mp4)
+
 It's the year 1991. You're a teenage computer geek. You've just upgraded to your first "16-bit" computer, and the possibilities are dazzling. To relieve the crushing boredom of your High School coursework, you and your friends embark on the computer geek equivalent of forming a heavy metal band: You create your own video game.
 
 You meet on the benches during lunch hour, and pass around crude plans scribbled on graph paper. You assign each other impressive titles like "Master Programmer", "Sound Designer", and "Area Data Input". You draw circles and arrows all over fuzzy dot-matrix printouts of code, and argue over them between episodes of "Ren and Stimpy". You swap 3.5" disks around like furtive secret agents. You consume incredible quantities of soda. Your parents look at your owlish eyes - and possibly your slipping grades - and wonder aloud if you're "on drugs".
