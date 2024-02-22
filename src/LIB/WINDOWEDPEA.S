@@ -2,7 +2,6 @@
 * Windowed PEA routines v0.2
          lst   off
 
-
 * Calculate a location in the screen memory (and place in y)
 * Calculate a location in the PEA field (and place in x)
 * These locations correspond to a corner of where Guido is standing,
@@ -13,31 +12,18 @@
 * on the screen below the space.
 * Note that these calculations currently depend on a fixed PEA scanline length of $F0.
 * Calculations for other lengths will have to be substituted in.
-DoorCompute REP   #$30
-         lda   GPositionYBlk ; Vertical block comp. with reversal
-         Xba
-         and   #$0F00
+DoorCompute = *
+         REP   #$30
+         lda   GPositionYBlk
+         and   #$000F           ; Just in case
+         jsr   MultiplyNybbleBySizLine
+         ASLS  4
          sta   Tmp2
          lda   GPositionYSlice
-         ASLS  4
+         jsr   MultiplyNybbleBySizLine
+         clc
          adc   Tmp2
-         sta   Tmp2       ; Saved for later
-         eor   #$0FFF     ; just like subtracting it from $BF0
-         sec
-         sbc   #$040F
-         sta   Tmp3
-         ASLS  2
-         adc   Tmp3
-         clc              ; xA, plus screen offset x2
-         adc   GPositionXScreenFifth
-         asl
-         adc   #SHR+$A7   ; MOD 3 less than location for left-overlap
-         tay              ; =SHR screen location
-         lda   Tmp2
-         ASLS  4
-         sec
-         sbc   Tmp2       ; Tmp2 x15, i.e. $F,
-         sta   Tmp2       ; so GPositionYBlk is x $F00 in total, and GPositionYSlice is x$F0
+         sta   Tmp2
          ldal  PeaJumpPtr
          sec
          sbc   GPositionXScreenFifth
@@ -50,6 +36,24 @@ DoorCompute REP   #$30
          sec
          sbc   #$000c     ; Subtract 13 bytes- that is, 4 PEAs
          tax              ; (including left edge overlap for Guido)
+         lda   GPositionYBlk ; Vertical block comp. with reversal
+         Xba
+         and   #$0F00
+         sta   Tmp2
+         lda   GPositionYSlice
+         ASLS  4
+         adc   Tmp2
+         eor   #$0FFF     ; just like subtracting it from $BF0
+         sec
+         sbc   #$040F
+         sta   Tmp3
+         ASLS  2
+         adc   Tmp3
+         clc              ; xA, plus screen offset x2
+         adc   GPositionXScreenFifth
+         asl
+         adc   #SHR+$A7   ; MOD 3 less than location for left-overlap
+         tay              ; =SHR screen location
          rts
 
 
@@ -75,6 +79,9 @@ DrawWindowedPeaFrameAndBlit = *
          stal  ForegPeaField+$F,x ; with some stack pointer math (SBC #$00A0, TCS)
          lda   #$1b00       ; and a BRL to the next line
          stal  ForegPeaField+$11,x
+* Relative branch amount.
+* Size of a PEA line, minus $F in PEA instructions
+* and 7 bytes for "SBC xxxx, TCS, BRL xxxx" (total $16)
          lda   #BF_SizLine-$16*$100+$82
          stal  ForegPeaField+$13,x ; Establish frame
          lda   #$0000
@@ -101,7 +108,7 @@ DrawWindowedPeaFrameAndBlit = *
          stal  PeaJumpPtr
          rts
 
-
+         MX    %11
 DrawOrEraseGuido = *
          sta   DaSpot+2
          sta   DaSpotB+2
@@ -120,6 +127,7 @@ DrawOrEraseGuido = *
          jmp   DrawGuidoHere
 
 
+         MX    %00
 RemoveWindowedPeaFrame = *
          ldx   WindowedPEA
          ldy   #$0021
@@ -142,3 +150,27 @@ RemoveWindowedPeaFrame = *
          ldal  BackgPeaField+$11,x
          stal  ForegPeaField+$11,x
          rts
+
+* Brute-force way to multiply any 4-bit value by the
+* size of a scanline in the PEA field.
+MultiplyNybbleBySizLine = *
+         asl
+         tax
+         lda :Muls,x
+         rts
+:Muls   DW 0
+        DW BF_SizLine
+        DW BF_SizLine*2
+        DW BF_SizLine*3
+        DW BF_SizLine*4
+        DW BF_SizLine*5
+        DW BF_SizLine*6
+        DW BF_SizLine*7
+        DW BF_SizLine*8
+        DW BF_SizLine*9
+        DW BF_SizLine*10
+        DW BF_SizLine*11
+        DW BF_SizLine*12
+        DW BF_SizLine*13
+        DW BF_SizLine*14
+        DW BF_SizLine*15

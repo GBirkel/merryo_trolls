@@ -2173,14 +2173,14 @@ TwistSk  clc
 ]lp      =     BF_SizLine-BF_SizCode
 ]lp2     =     0
          LUP   #128
-         lda   #]lp2*$100+$e5 ; sbc ##
+         lda   #]lp2*$100+$e5 ; sbc ## (Direct page)
          sta   ForegPeaField+]lp,y
 ]lp      =     ]lp+BF_SizLine
 ]lp2     =     ]lp2+2
          --^
 ]lp2     =     0
          LUP   #62
-         lda   #]lp2*$100+$f5 ; sbc ##,x    Using X to reach beyond the direct page
+         lda   #]lp2*$100+$f5 ; sbc ##,x (Using X to reach extra values beyond the direct page)
          sta   ForegPeaField+]lp,y
 ]lp      =     ]lp+BF_SizLine
 ]lp2     =     ]lp2+2

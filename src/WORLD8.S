@@ -20,6 +20,13 @@ BF_Slopes   =     0
 BF_VrtFunk  =     0
 BF_ScrlLft  =     0
 BF_HeatWav  =     0
+
+* The size of one scanline's worth of PEA data in the PEA field.
+* Usually 320 pixels / 2 = 160 bytes, grouped into 80 words each with a PEA instruction,
+* for a total of 160+80 bytes = 240 bytes ($F0).
+* Additional code can be appended to the PEA chain for per-line effects,
+* for example "SBC $00,x" "TCS" for the heat wave effect in World 6,
+* which adds three bytes to each line for a total of $F3.
 BF_SizLine  =     $F0
 BF_SizCode  =     $00
 
