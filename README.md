@@ -2,7 +2,7 @@
 
 **An Adventure From The Days Before VRAM**
 
-![Super Merryo Trolls Reference Gameplay Video](reference_gameplay_video.mp4)
+![Super Merryo Trolls Reference Gameplay Video](https://github.com/GBirkel/merryo_trolls/assets/17415530/0af357f1-59d1-4956-b599-1de9066f85e2)
 
 It's the year 1991. You're a teenage computer geek. You've just upgraded to your first "16-bit" computer, and the possibilities are dazzling. To relieve the crushing boredom of your High School coursework, you and your friends embark on the computer geek equivalent of forming a heavy metal band: You create your own video game.
 
