@@ -30,7 +30,9 @@ Meanwhile, you should know that in the process of stitching the levels from 1994
 
 They work directly on the various crude binary file formats that the game uses natively, and may be a good reference for similar forensics tools in other projects.
 
-## Building the from source ##
+## Building the game from source ##
+
+A build script is included that compiles all the assembly files, creates a disk image, and copies all the game assets onto the disk image, resulting in something immediately playable.
 
 You need two external tools to make this work:
 
@@ -43,5 +45,6 @@ Download and install these tools somewhere near your checked-out copy of this re
 
 Note that on MacOS you may need to de-quarantine them before the build script can launch them, by going into their folders and running `sudo xattr -r -d com.apple.quarantine *` .
 
+With the right tools, you can take the resulting disk image and write it to an 800k 3.5-inch disk, and play the game on a stock Apple IIgs.
 
 [^1]: But really, who knows what's possible? There's currently a land war in Asia going on.
