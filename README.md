@@ -32,7 +32,7 @@ They work directly on the various crude binary file formats that the game uses n
 
 ## Building the game from source ##
 
-A build script is included that compiles all the assembly files, creates a disk image, and copies all the game assets onto the disk image, resulting in something immediately playable.
+A build script is included that compiles all the assembly files, then copies all the assets onto a bootable disk image, resulting in something immediately playable.
 
 You need two external tools to make this work:
 
