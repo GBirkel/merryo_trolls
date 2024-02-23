@@ -14,9 +14,15 @@ If that sounds familiar to you, then this project will be amusing.  It's the App
 
 For a lot more background, and a tour through the bizarre code shenanigans we employed to make a console-style game playable on the notoriously slow Apple IIgs hardware, check out [this expanded writeup](http://garote.bdmonkeys.net/merryo_trolls/index.html).
 
+## Giving it a whirl ##
+
+2024 is a unique year to be resurrecting this game, and not just because it's the 30th anniversary of its death.  This year has seen the release of [Crossrunner](https://www.crossrunner.gs/), the very first <i>cycle accurate</i> emulator for the Apple IIgs.  Up until this point, Super Merryo Trolls either didn't launch at all in emulators, or was unplayably fast.  At long last you can now play this game in its original screen-tearing single-digit frames-per-second glory.
+
+All you need is the pre-built disk image from this repo, and some kind of joystick device.  (The Apple IIgs supports analog joysticks but you can play it just fine with something simple like the <b>8Bitdo Zero 2 Mini Bluetooth Gamepad</b>.)  Double-click on the disk and Crossrunner will boot and launch the game.  At the title screen, hit "1" to start World 1.
+
 ## Further development ##
 
-You can use this code as a starting point for your own work.  I cannot conceive of any commercial use it may have here in the crazy future of 2024, but if you find an angle, get in touch with me so I can congratulate you and mention it to my other two "co-developers" and we can all have a good laugh.
+You can use this code as a starting point for your own work.  For me, any commercial use it may have here in the crazy future of 2024 is frankly <i>inconceivable</i>[^1], but if you find an angle, get in touch with me so I can congratulate you and mention it to my other two "co-developers" and we can all have a good laugh.
 
 Meanwhile, you should know that in the process of stitching the levels from 1994 together into something playable, I wrote and included a set of modern game editing tools that run in any WebKit-based browser.
 
@@ -24,7 +30,9 @@ Meanwhile, you should know that in the process of stitching the levels from 1994
 
 They work directly on the various crude binary file formats that the game uses natively, and may be a good reference for similar forensics tools in other projects.
 
-## Building the from source ##
+## Building the game from source ##
+
+A build script is included that compiles all the assembly files, creates a disk image, and copies all the game assets onto the disk image, resulting in something immediately playable.
 
 You need two external tools to make this work:
 
@@ -37,3 +45,6 @@ Download and install these tools somewhere near your checked-out copy of this re
 
 Note that on MacOS you may need to de-quarantine them before the build script can launch them, by going into their folders and running `sudo xattr -r -d com.apple.quarantine *` .
 
+With the right tools, you can take the resulting disk image and write it to an 800k 3.5-inch disk, and play the game on a stock Apple IIgs.
+
+[^1]: But really, who knows what's possible? There's currently a land war in Asia going on.
