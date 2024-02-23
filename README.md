@@ -43,7 +43,7 @@ Both of these have Windows and Mac versions, and the build script that drives th
 
 Download and install these tools somewhere near your checked-out copy of this repo, then modify the paths in `build.sh` to point to them.
 
-Note that on MacOS you may need to de-quarantine them before the build script can launch them, by going into their folders and running `sudo xattr -r -d com.apple.quarantine *` .
+Note that on MacOS you may need to de-quarantine them first, by going into their folders and running `sudo xattr -r -d com.apple.quarantine *` .
 
 With the right tools, you can take the resulting disk image and write it to an 800k 3.5-inch disk, and play the game on a stock Apple IIgs.
 
