@@ -18,7 +18,7 @@ For a lot more background, and a tour through the bizarre code shenanigans we em
 
 2024 is a unique year to be resurrecting this game, and not just because it's the 30th anniversary of its death.  This year has seen the release of [Crossrunner](https://www.crossrunner.gs/), the very first <i>cycle accurate</i> emulator for the Apple IIgs.  Up until this point, Super Merryo Trolls either didn't launch at all in emulators, or was unplayably fast.  At long last you can now play this game in its original screen-tearing single-digit frames-per-second glory.
 
-All you need is the pre-built disk image from this repo, and some kind of joystick device.  (The Apple IIgs supports analog joysticks but you can play it just fine with something simple like the <b>8Bitdo Zero 2 Mini Bluetooth Gamepad</b>.)  Double-click on the disk and Crossrunner will boot and launch the game.  At the title screen, hit "1" to start World 1.
+All you need is the [pre-built disk image](Merryo_Trolls.2mg) from this repo, and some kind of joystick device.  (The Apple IIgs supports analog joysticks but you can play it just fine with something simple like the <b>8Bitdo Zero 2 Mini Bluetooth Gamepad</b>.)  Double-click on the disk and Crossrunner will boot and launch the game.  At the title screen, hit "1" to start World 1.
 
 ## Further development ##
 
@@ -32,7 +32,7 @@ They work directly on the various crude binary file formats that the game uses n
 
 ## Building the game from source ##
 
-A build script is included that compiles all the assembly files, creates a disk image, and copies all the game assets onto the disk image, resulting in something immediately playable.
+A build script is included that compiles all the assembly files, then copies all the assets onto a bootable disk image, resulting in something immediately playable.
 
 You need two external tools to make this work:
 
@@ -43,7 +43,7 @@ Both of these have Windows and Mac versions, and the build script that drives th
 
 Download and install these tools somewhere near your checked-out copy of this repo, then modify the paths in `build.sh` to point to them.
 
-Note that on MacOS you may need to de-quarantine them before the build script can launch them, by going into their folders and running `sudo xattr -r -d com.apple.quarantine *` .
+Note that on MacOS you may need to de-quarantine them first, by going into their folders and running `sudo xattr -r -d com.apple.quarantine *` .
 
 With the right tools, you can take the resulting disk image and write it to an 800k 3.5-inch disk, and play the game on a stock Apple IIgs.
 
