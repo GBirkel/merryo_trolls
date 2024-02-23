@@ -2800,13 +2800,35 @@ LSideOut ldal  PeaJumpPtr ; Save vital values
          pha
          lda   SizTotal
          pha
-         stx   WindowedPEA       ; Frame in PEA field
-         txa
+         txa    ; Save a copy of the original WindowedPEA calculated by DoorCompute
+         pha
          clc
-         adc   #$000f
-         sta   WindowedGuido      ; Corner PEA instruction to draw Guido into
-         sty   PEAInitialStackPtr ; Screen location
-         lda   #$0006
+         adc   #$000c               ; 16 pixels to the left (4 PEAs at 3 bytes each)
+         sta   WindowedPEA
+         tya    ; Save a copy of PEAInitialStackPtr from DoorCompute
+         pha
+         sec
+         sbc   #$0008               ; 16 pixels to the left
+         sta   PEAInitialStackPtr
+         ldx   #$0003               ; Our first blit will be 1 PEA wide
+         ldy   #$0021               ; And tall enough to erase the part
+         jsr   DrawWindowedPeaFrameAndBlit ;  of Guido that overlaps the pipe.
+         ldx   #$0003               ; Then we remove this 1 PEA frame
+         ldy   #$0021               ; to make room for the pipe-in transition.
+         jsr   RemoveWindowedPeaFrame
+         pla                        ; Restore PEAInitialStackPtr
+         inc                        ; Move the window off the pipe
+         inc                        ; by shifting the screen pointer forward 4 pixels,
+         sta   PEAInitialStackPtr   ; and the PEA pointer forward one instruction.
+         pla
+         dec
+         dec
+         dec
+         sta   WindowedPEA
+         clc
+         adc   #$0012               ; 24 pixels to the left (6 PEAs at 3 bytes each)
+         sta   WindowedGuido
+         lda   #$0006               ; Six frames is enough to make him slide out of the window
          sta   Lupe
 ]lp      jsr   WaitSync
          jsr   WaitSync
@@ -2830,20 +2852,36 @@ RSideOut ldal  PeaJumpPtr ; Save vital values
          pha
          lda   SizTotal
          pha
-         stx   WindowedPEA       ; Frame in PEA field
-         txa
+
+         stx   WindowedPEA          ; Frame in PEA field
+         sty   PEAInitialStackPtr   ; Screen location
+         ldx   #$0003               ; Our first blit will be 1 PEA wide
+         ldy   #$0021               ; And tall enough to erase the part
+         jsr   DrawWindowedPeaFrameAndBlit ;  of Guido that overlaps the pipe.
+         ldx   #$0003               ; Then we remove this 1 PEA frame
+         ldy   #$0021               ; to make room for the pipe-in transition.
+         jsr   RemoveWindowedPeaFrame
+
+         lda   PEAInitialStackPtr   ; Move the window off the pipe
+         dec                        ; by shifting the screen pointer back 4 pixels,
+         dec
+         sta   PEAInitialStackPtr   ; and the PEA pointer forward one instruction.
+         lda   WindowedPEA
+         inc
+         inc
+         inc
+         sta   WindowedPEA
          clc
-         adc   #$000f
-         sta   WindowedGuido       ; Corner PEA instruction to draw Guido into
-         sty   PEAInitialStackPtr  ; Screen location
-         lda   #$0006
+         adc   #$000c               ; 16 pixels to the left (4 PEAs at 3 bytes each)
+         sta   WindowedGuido
+         lda   #$0006               ; Six frames is enough to make him slide out of the window
          sta   Lupe
 ]lp      jsr   WaitSync
          jsr   WaitSync
          jsr   WaitSync
          jsr   DrawWindowedGuidoAndBlit
          lda   WindowedGuido
-         dec
+         dec                        ; 1 PEA over
          dec
          dec
          sta   WindowedGuido
