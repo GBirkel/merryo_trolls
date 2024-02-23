@@ -1437,16 +1437,16 @@ CheckDoorLeft sep   #$20
 CheckDoorUp sep   #$20
          lda   JoystkReadY       ; If joystick is up,
          cmp   #23
-         bcs   Wralf
+         bcs   DoneWithDoors
          lda   GVelocityX        ; And horiz velocity is still,
          cmp   #$80
-         bne   Wralf
+         bne   DoneWithDoors
          lda   GVelocityY        ; And vertical velocity is still,
          cmp   #$80
-         bne   Wralf
+         bne   DoneWithDoors
          lda   GPositionXFifth ; And horiz strip=1 (block-aligned visually)
          dec
-         bne   Wralf
+         bne   DoneWithDoors
          rep   #$31       ; map loc in X...
          lda   GPositionXBlk
          asl
@@ -1460,26 +1460,24 @@ CheckDoorUp sep   #$20
          lda   MapBl,x
          and   #$00FF
          cmp   #BlkId_Door      ; And there is a door behind Merry-Man,
-         beq   *+5
-Wralf    jmp   Worf
-         lda   GPositionYBlk ; VANISH HIS ASS!! 8)
+         bne   DoneWithDoors
+         lda   GPositionYBlk    ; VANISH HIS ASS!! 8)
          cmp   #$000c
-         bcs   *+8        ; If vertical is off map, no vanish :(
+         bcs   DoneWithDoors    ; If vertical is off map, no vanish :(
          jsr   DoorCompute
          jsr   DownOut
          jmp   DoorGo
+DoneWithDoors = *
 
-         MX    %11
-]lp      lsr
-         ora   #$C0
-         bra   Smurf
-
-Worf     sep   #$30
+         sep   #$30
          lda   GVelocityY ; Define this cycle's vertical
-         bpl   ]lp        ; update amount from GVelocityY
+         bpl   :Capup        ; update amount from GVelocityY
          lsr
          and   #$3F
-Smurf    sta   GYVectorRemaining
+         bra   :Capped
+:Capup   lsr
+         ora   #$C0
+:Capped  sta   GYVectorRemaining
 
 MoveGuido = *
          sep   #$30

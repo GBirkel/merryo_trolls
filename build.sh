@@ -179,7 +179,7 @@ def main(argv):
 		'cdi',						# Create disk image
 		'--overwrite',				# Overwrite any existing one
 		'"' + path_to_disk + '"',	# 2mg extension means it will make a 2mg image
-		'800k',						# 800k disk
+		'4m',						# Could be '800k' for a 3.5" disk
 		'ProDOS'					# ProDOS format		
 	]
 	create_cmd = ciderpress + " " + ' '.join(ciderpress_args)

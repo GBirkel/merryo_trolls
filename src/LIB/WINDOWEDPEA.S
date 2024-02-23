@@ -3,6 +3,59 @@
          lst   off
 
 
+* y: Horizontal location in block fifths (4 pixel intervals)
+* x: Vertical location in lines from the bottom of the screen
+* Using these, return their corresponding memory locations for:
+* x: the location in the PEA field
+* y: the location in screen memory
+         MX    %00
+ComputeBlitLocations = *
+         sty   Tmp
+         txa
+         pha
+         sta   Tmp2
+         and   #$000F
+         jsr   MultiplyNybbleBySizLine
+         sta   Tmp3
+         pla
+         and   #$00F0
+         LSRS  4
+         jsr   MultiplyNybbleBySizLine
+         ASLS  4
+         clc
+         adc   Tmp3
+         sec
+         sbc   Tmp
+         sec
+         sbc   Tmp
+         sec
+         sbc   Tmp ; Subtracted x3 to count each fifth as a 'PEA #xxxx'.
+         sta   Tmp3
+         ldal  PeaJumpPtr
+         clc
+         adc   Tmp3
+         tax
+* Since we're calculating from the bottom of the screen, we want to subtract
+* the vertical location from the beginning of the last scanline in memory
+* (160 bytes x 191 = 0x7760).
+* Since we need to multiply the vertical location by A0 as well, we'll
+* combine those operations.
+         lda   Tmp2
+         ASLS  4            ; Multiply by the 0x10 part of 0xA0.
+         eor   #$0FFF       ; Inverting all these bits is just like subtracting
+         sec                ; the value from 0xFFF.
+         sbc   #$040F       ; Subtract the difference between 0xFFF and 0xBF0.
+         sta   Tmp3
+         ASLS  2
+         adc   Tmp3         ; Multiply by 5, for 0x50.  Almost there.
+         clc                
+         adc   Tmp          ; Add horizontal block fifth offset.
+         asl                ; Bring vertical multiplier to 0xA0 and horizontal to 2.
+         adc   #SHR         ; Add in the SHR screen location
+         tay
+         rts
+
+
 * Calculate a location in the screen memory (and place in y)
 * Calculate a location in the PEA field (and place in x)
 * These locations correspond to a corner of where Guido is standing,
@@ -11,50 +64,23 @@
 * it, which will naturally clip Guido off at the edge of the
 * space, so it appears he's going down a pipe that's already present
 * on the screen below the space.
-* Note that these calculations currently depend on a fixed PEA scanline length of $F0.
-* Calculations for other lengths will have to be substituted in.
 DoorCompute = *
          REP   #$30
          lda   GPositionYBlk
-         and   #$000F           ; Just in case
-         jsr   MultiplyNybbleBySizLine
          ASLS  4
-         sta   Tmp2
-         lda   GPositionYSlice
-         jsr   MultiplyNybbleBySizLine
          clc
-         adc   Tmp2
-         sta   Tmp2
-         ldal  PeaJumpPtr
-         sec
-         sbc   GPositionXScreenFifth
-         sec
-         sbc   GPositionXScreenFifth
-         sec
-         sbc   GPositionXScreenFifth ; Subtracted x3 to count each fifth as a 'PEA #xxxx'.
-         clc
-         adc   Tmp2
+         adc   GPositionYSlice
+         tax
+         ldy   GPositionXScreenFifth
+         jsr   ComputeBlitLocations
+         txa
          sec
          sbc   #$000c     ; Subtract 13 bytes- that is, 4 PEAs
          tax              ; (including left edge overlap for Guido)
-         lda   GPositionYBlk ; Vertical block comp. with reversal
-         Xba
-         and   #$0F00
-         sta   Tmp2
-         lda   GPositionYSlice
-         ASLS  4
-         adc   Tmp2
-         eor   #$0FFF     ; just like subtracting it from $BF0
-         sec
-         sbc   #$040F
-         sta   Tmp3
-         ASLS  2
-         adc   Tmp3
-         clc              ; xA, plus screen offset x2
-         adc   GPositionXScreenFifth
-         asl
-         adc   #SHR+$A7   ; MOD 3 less than location for left-overlap
-         tay              ; =SHR screen location
+         tya
+         clc
+         adc   #$00a7
+         tay
          rts
 
 

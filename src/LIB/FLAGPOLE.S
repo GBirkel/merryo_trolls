@@ -38,7 +38,7 @@ FlagPole lda   GameFlags    ; Skip all this if the "don't respond to the flagpol
          jsr   DrawWindowedGuidoAndBlit
          lda   WindowedPEA
          sec
-         sbc   #BF_SizLine*2    ; Moving Guido two scanlines at a time
+         sbc   #BF_SizLine*2       ; Moving Guido and the window two scanlines at a time
          sta   WindowedPEA
          clc
          adc   #$000f
