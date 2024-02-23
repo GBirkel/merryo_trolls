@@ -18,7 +18,7 @@ For a lot more background, and a tour through the bizarre code shenanigans we em
 
 2024 is a unique year to be resurrecting this game, and not just because it's the 30th anniversary of its death.  This year has seen the release of [Crossrunner](https://www.crossrunner.gs/), the very first <i>cycle accurate</i> emulator for the Apple IIgs.  Up until this point, Super Merryo Trolls either didn't launch at all in emulators, or was unplayably fast.  At long last you can now play this game in its original screen-tearing single-digit frames-per-second glory.
 
-All you need is the pre-built disk image from this repo, and some kind of joystick device.  (The Apple IIgs supports analog joysticks but you can play it just fine with something simple like the <b>8Bitdo Zero 2 Mini Bluetooth Gamepad</b>.)  Double-click on the disk and Crossrunner will boot and launch the game.  At the title screen, hit "1" to start World 1.
+All you need is the [pre-built disk image](Merryo_Trolls.2mg) from this repo, and some kind of joystick device.  (The Apple IIgs supports analog joysticks but you can play it just fine with something simple like the <b>8Bitdo Zero 2 Mini Bluetooth Gamepad</b>.)  Double-click on the disk and Crossrunner will boot and launch the game.  At the title screen, hit "1" to start World 1.
 
 ## Further development ##
 
