@@ -99,34 +99,34 @@ SpamTabs DA    $205,$285,$305,$385
          DA    $069,$0e9,$169,$1e9
          DA    $269,$2e9,$369,$3e9
 
-DebugDat ASC   " Super? Merryo Trolls Debug Screen v1.0 "
-         ASC   "FifT:0000 Xvec:0000 SCnt:0000  00000000 "
-         ASC   "GSF :0000 Ghed:0000 SizT:0000           "
+DebugDat ASC   " Super? Merryo Trolls Debug Screen v1.0 " ; 0
+         ASC   "Tmp3:0000 JHlv:0000 SCnt:0000  00000000 " ; 8
+         ASC   "GXBk:0000 SprH:0000 SizT:0000           " ; 16
          DS    8
-         ASC   "                                        "
-         ASC   "MIdx:0000 Bt0L:0000 SCnt:0000  00000000 "
-         ASC   "PXB :0000 Glrm:0000 SizS:0000           "
+         ASC   "                                        " ; 1
+         ASC   "Tmp4:0000 JHdr:0000 SAnt:0000  00000000 " ; 9
+         ASC   "GXf :0000 SprM:0000 SizS:0000           " ; 17
          DS    8
-         ASC   "If anything's fucked up, it's your fault"
-         ASC   "Tmp :0000 Jsus:0000 ErCn:0000 Time1:    "
-         ASC   "PXF :0000 Glgb:0000 ExSt:0000           "
+         ASC   "If anything's fucked up, it's your fault" ; 2
+         ASC   "DCnt:0000 JB01:0000 ErCn:0000 Time1:    " ; 10
+         ASC   "GYBk:0000 SprE:0000 ExSt:0000           " ; 18
          DS    8
-         ASC   "                                        "
-         ASC   "Tmp2:0000 WPEA:0000 SpCn:0000  000000   "
-         ASC   "JHL :0000 Grrm:0000 Pal :0000           "
+         ASC   "                                        " ; 3
+         ASC   "WXEB:0000 B0Dn:0000 SpCn:0000  000000   " ; 11
+         ASC   "GYSl:0000 SprR:0000 Pal :0000           " ; 19
          DS    8
-         ASC   "ST  :0000 GVY :0000 AblC:0000 Score1:   "
-         ASC   "Tmp3:0000 WING:0000 IMsp:0000 Time2:    "
-         ASC   "JHD :0000 Glga:0000 Pal2:0000           "
+         ASC   "ST  :0000 GYVR:0000 FlgT:0000 Score1:   " ; 4
+         ASC   "WXBI:0000 WPEA:0000 IMsp:0000 Time2:    " ; 12
+         ASC   "GVX :0000 SprL:0000 Pal2:0000           " ; 20
          DS    8
-         ASC   "WinX:0000 BFfc:0000 Geye:0000  00000000 "
-         ASC   "Tmp4:0000 Bt01:0000 DMsp:0000  00000000 "
-         ASC   "GVX :0000 Gmth:0000                     "
+         ASC   "MapI:0000 JMPS:0000 FlgF:0000  00000000 " ; 5
+         ASC   "WXBF:0000 WGui:0000 DMsp:0000  00000000 " ; 13
+         ASC   "GVY :0000 SprB:0000                     " ; 21
          DS    8
-         ASC   "WBCl:0000 NoFl:0000 Itm :0000  00000000 "
-         ASC   "DCnt:0000 Lupe:0000 OVRt:0000           "
-         ASC   "PYB :0000 Gbly:0000                     "
+         ASC   "Tmp :0000 JRdX:0000 Itm :0000  00000000 " ; 6
+         ASC   "WXTF:0000 Lupe:0000 OVRt:0000           " ; 14
+         ASC   "GSld:0000 SpLA:0000                     " ; 22
          DS    8
-         ASC   "WSbB:0000 Yvec:0000 Itm2:0000 Score2:   "
-         ASC   "DCsl:0000 Acnr:0000 DWNt:0000           "
-         ASC   "PYS :0000 GBFt:0000                     "
+         ASC   "Tmp2:0000 JRdY:0000 Itm2:0000 Score2:   " ; 7
+         ASC   "GXSF:0000 Acnt:0000 DWNt:0000           " ; 15
+         ASC   "GXVR:0000 SpLB:0000                     " ; 23
