@@ -14,23 +14,40 @@ FlagPole lda   GameFlags    ; Skip all this if the "don't respond to the flagpol
          pha
          lda   SizTotal
          pha
-         jsr   DoorCompute
          lda   #GuidoSprId_ArmCarry
          sta   GCurrentSpr_RArm       ; "Carry" arm for grabbing flag
+* This code here aims to erase any lingering scrap of Guido on the screen
+* from rendering the previous frame, when he was in his previous position
+         ldx   #$0020   ; Two blocks up from the bottom of the screen, in slices.
+         ldy   GPositionXScreenFifth
+         dey
+         jsr   ComputeBlitLocations
+         stx   WindowedPEA
+         sty   PEAInitialStackPtr   ; Our blit will be 3 PEAs wide to cover
+         ldx   #$0009               ; the case of Guido jumping and moving at a run,
+         ldy   #$009C               ; and tall enough to erase a region
+         jsr   DrawWindowedPeaFrameAndBlit ; as tall as the flagpole.
+         ldx   #$0009
+         ldy   #$009C
+         jsr   RemoveWindowedPeaFrame
+* Now compute Guido's PEA and screen location the usual way and prepare to
+* draw him in a frame.
+         jsr   DoorCompute
          txa
-         clc
-         adc   #BF_SizLine
-         sta   WindowedPEA          ; Window's PEA field
-         clc
-         adc   #$000f
          sta   WindowedGuido        ; Corner PEA instruction to draw Guido into
-         sty   PEAInitialStackPtr   ; Screen location
+         sec
+         sbc   #$000f
+         sta   WindowedPEA          ; Window's PEA field
+         tya
+         clc
+         adc   #$000a
+         sta   PEAInitialStackPtr   ; Screen location
          lda   GPositionYBlk
          dec
          dec
          and   #$000F
          ASLS  4
-         adc   GPositionXFifth
+         adc   GPositionYSlice
          lsr
          inc              ; Just in case we have a zero-high flag slide
          sta   Lupe

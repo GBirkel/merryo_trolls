@@ -12,28 +12,30 @@
 ComputeBlitLocations = *
          sty   Tmp
          txa
-         pha
          sta   Tmp2
          and   #$000F
          jsr   MultiplyNybbleBySizLine
          sta   Tmp3
-         pla
+         lda   Tmp2
          and   #$00F0
          LSRS  4
          jsr   MultiplyNybbleBySizLine
          ASLS  4
          clc
          adc   Tmp3
+         clc
+* Move ahead one full PEA line minus the bumper code (if any)
+* since the bottom left edge of the screen is actually one full PEA line into
+* the field.  We subtract the horizontal offset to come back the other way.
+         adc   #BF_SizLine-BF_SizCode-3
          sec
          sbc   Tmp
          sec
          sbc   Tmp
          sec
          sbc   Tmp ; Subtracted x3 to count each fifth as a 'PEA #xxxx'.
-         sta   Tmp3
-         ldal  PeaJumpPtr
          clc
-         adc   Tmp3
+         adcl  PeaJumpPtr
          tax
 * Since we're calculating from the bottom of the screen, we want to subtract
 * the vertical location from the beginning of the last scanline in memory
@@ -51,9 +53,9 @@ ComputeBlitLocations = *
          clc                
          adc   Tmp          ; Add horizontal block fifth offset.
          asl                ; Bring vertical multiplier to 0xA0 and horizontal to 2.
-         adc   #SHR         ; Add in the SHR screen location
-         tay
-         rts
+         adc   #SHR+1       ; Add in the SHR screen location, plus one byte because we're
+         tay                ; referencing a location that will be used as a stack pointer,
+         rts                ; and a PEA will push two bytes, so we start at the high byte.
 
 
 * Calculate a location in the screen memory (and place in y)
@@ -70,16 +72,17 @@ DoorCompute = *
          ASLS  4
          clc
          adc   GPositionYSlice
-         tax
+         dec            ; Guido is always drawn one line down from his actual
+         tax            ; map location, so he overlaps the ground.
          ldy   GPositionXScreenFifth
          jsr   ComputeBlitLocations
          txa
-         sec
-         sbc   #$000c     ; Subtract 13 bytes- that is, 4 PEAs
-         tax              ; (including left edge overlap for Guido)
-         tya
          clc
-         adc   #$00a7
+         adc   #$0006   ; Add one PEA
+         tax            ; This is done because Guido is always drawn four pixels
+         tya            ; left of his actual sprite edge, so he overlaps
+         sec            ; the block on his left slightly.
+         sbc   #$0004
          tay
          rts
 
@@ -165,17 +168,17 @@ RemoveWindowedPeaFrame = *
 
          MX    %11
 DrawOrEraseGuido = *
-         sta   DaSpot+2
-         sta   DaSpotB+2
+         sta   TableRef+2
+         sta   TableRefB+2
          ldx   #GuidoSpriteJumpTable
          lda   GBodyFlg_Facing
          and   #$01
          beq   :Br1
          ldx   #GuidoSpriteJumpTable+$C0
 :Br1     txa
-         sta   DaSpot+1
+         sta   TableRef+1
          inc
-         sta   DaSpotB+1
+         sta   TableRefB+1
          rep   #$30
          lda   WindowedGuido
          inc

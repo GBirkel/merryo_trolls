@@ -304,8 +304,7 @@ Turtle5  rep   #$20
          and   #$000F     ; Cookies on one side-
          adc   Tmp2       ; Frosting on the other.
          dec              ; Creamy taste'll drive ya WIIILD
-         dec              ; "LET'S HAVE ANOTHER!"
-         sta   Tmp2
+         sta   Tmp2       ; "LET'S HAVE ANOTHER!"
          ASLS  2          ; Dunk-a-rooz,
          adc   Tmp2       ; Dunk-a-rooz,
          ASLS  4          ; Ya don't just eat-

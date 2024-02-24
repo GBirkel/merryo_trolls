@@ -1,6 +1,6 @@
          LST   ON
 *  Merryo Trolls loader v1.31n
-*  Merryo Trolls player v1.8
+*  Merryo Trolls player v1.81
 *       (c) Garote '2024
 *
          LST   OFF
@@ -2503,9 +2503,9 @@ DraEm    rep   #$30
 
 ZapEm    rep   #$31
          lda   #LevelEraserJumpTable
-Bouncy   sta   DaSpot+1
+Bouncy   sta   TableRef+1
          inc
-         sta   DaSpotB+1
+         sta   TableRefB+1
          lda   SpritesOnScreenCnt
 Earlobe  dec
          sta   ErCn
@@ -2517,15 +2517,15 @@ Earlobe  dec
          adc   DraW+1,x
          sec
          adcl  PeaJumpPtr
-         sta   Tmp
+         tay                ; Destination in PEA field, used in CallSpriteDraw 
          lda   DraW,x
          and   #$00FF
-         tay
+         tax
          phb
          pea   #>ForegPeaField
          plb
          plb
-         jsr   FukinDra
+         jsr   CallSpriteDraw
          plb
          rep   #$31
          lda   ErCn
@@ -2538,32 +2538,32 @@ ZapTrol  sep   #$30
 
 DraTrol  sep   #$30
          lda   #>GuidoSpriteJumpTable
-Organism sta   DaSpot+2
-         sta   DaSpotB+2
+Organism sta   TableRef+2
+         sta   TableRefB+2
          ldx   #GuidoSpriteJumpTable
          lda   GBodyFlg_Facing
          and   #$01
          beq   Toad
          ldx   #GuidoSpriteJumpTable+$C0 ; second sprite set
 Toad     txa
-         sta   DaSpot+1
+         sta   TableRef+1
          inc
-         sta   DaSpotB+1
+         sta   TableRefB+1
          lda   GPositionYBlk
          cmp   #$0c
          bcs   Whoah      ; If vertical is off map, no draw
          REP   #$30
+
          lda   GPositionYBlk ; Vertical block comp. with reversal
-         Xba
-         and   #$0F00
+         and   #$000F
+         jsr   MultiplyNybbleBySizLine
+         ASLS  4
          sta   Tmp2
          lda   GPositionYSlice
-         ASLS  4
+         and   #$000F
+         jsr   MultiplyNybbleBySizLine
+         clc
          adc   Tmp2
-         sta   Tmp2       ; Saved for later
-         ASLS  4
-         sec
-         sbc   Tmp2       ; Vertical computed
          sec
          sbc   GPositionXScreenFifth
          sec
@@ -2572,56 +2572,79 @@ Toad     txa
          sbc   GPositionXScreenFifth
          sec              ; adds 1 as well
          adcl  PeaJumpPtr ; (i.e. no this is not a mistake!)
-         inc
-         inc              ; in one slice for left overlap
-         inc
+* The previous subtract brought us back into the previous line, so we need to
+* also subtract any bumper code.
+         sec
+         sbc   #BF_SizCode
+* We should also move ahead one PEA instruction, because Guido is always drawn
+* with an offset in order to slightly overlap a wall he may be next to.
+         clc
+         adc   #$0003 ; Results in +1 PEA for left overlap
 
-DrawGuidoHere sec
-         sbc   #BF_SizLine   ; Down 1 line
+DrawGuidoHere = *
          sta   Tmp        ; Horitontal computed
+         tay
          phb              ; (entry point for pipes)
          pea   #>ForegPeaField
          plb
          plb
-         ldy   GCurrentSpr_LArm       ; The bastard's left arm
-         beq   Dinkle
-         jsr   FukinDra
-Dinkle   ldy   GCurrentSpr_LegA       ; The bastard's leg A
-         jsr   FukinDra
-         ldy   GCurrentSpr_LegB       ; The bastard's leg B
-         jsr   FukinDra
-         ldy   GCurrentSpr_Belly      ; The bastard's belly
-         jsr   FukinDra
-         ldy   GCurrentSpr_RArm       ; The bastard's right arm
-         jsr   FukinDra
-         lda   #$0f00
+         ldx   GCurrentSpr_LArm       ; The bastard's left arm
+         beq   :Skip
+         jsr   CallSpriteDraw
+         ldy   Tmp
+:Skip    ldx   GCurrentSpr_LegA       ; The bastard's leg A
+         jsr   CallSpriteDraw
+         ldx   GCurrentSpr_LegB       ; The bastard's leg B
+         ldy   Tmp
+         jsr   CallSpriteDraw
+         ldx   GCurrentSpr_Belly      ; The bastard's belly
+         ldy   Tmp
+         jsr   CallSpriteDraw
+         ldx   GCurrentSpr_RArm       ; The bastard's right arm
+         ldy   Tmp
+         jsr   CallSpriteDraw
+         lda   #BF_SizLine*16
          clc
          adc   Tmp        ; up one full block
          sta   Tmp
-         ldy   GCurrentSpr_Head       ; The bastard's head
-         jsr   FukinDra
-         ldy   GCurrentSpr_Mouth       ; The bastard's mouth
-         jsr   FukinDra
-         ldy   GCurrentSpr_Eye       ; The bastard's eyes
-         jsr   FukinDra
+         tay
+         ldx   GCurrentSpr_Head       ; The bastard's head
+         jsr   CallSpriteDraw
+         ldx   GCurrentSpr_Mouth       ; The bastard's mouth
+         ldy   Tmp
+         jsr   CallSpriteDraw
+         ldx   GCurrentSpr_Eye       ; The bastard's eyes
+         ldy   Tmp
+         jsr   CallSpriteDraw
          plb
          rts
 
+* x: sprite ID
+* y: Memory address to draw sprite
          MX    %00
-FukinDra tya
+CallSpriteDraw = *
+         txa        ; Turn sprite ID into a three-byte address
          sta   Tmp2
          asl
          adc   Tmp2
          tax
-DaSpot   ldal  GuidoSpriteJumpTable,x
-         stal  FukDra+1
-DaSpotB  ldal  GuidoSpriteJumpTable+1,x
+TableRef ldal  GuidoSpriteJumpTable,x
+         stal  DrawCall+1
+TableRefB ldal  GuidoSpriteJumpTable+1,x
          AND   #$0FFf
-         stal  FukDra+2
-         ldx   Tmp
-FukDra   jsl   $080000
+         stal  DrawCall+2
+* Sprites are always drawn using a pointer that's back by one PEA line, because they're
+* always compiled to write forward one line.  The is so that the pointer can be at the
+* lower left of the sprite.  If we didn't compile them with an offset like this,
+* sprites couldn't be oriented to draw starting on the left, because they couldn't make
+* a relative reference lower than 0000,x .  With the corner at BF_SizLine,x they can do so.
+         tya
+         sec
+         sbc   #BF_SizLine
+         tax
+DrawCall jsl   $080000
          rep   #$30       ; Set things back from possible 8-bit
-Thwonk   rts              ; sprite drawing
+         rts              ; sprite drawing
 
          lst   on
 *
@@ -2629,16 +2652,16 @@ Thwonk   rts              ; sprite drawing
          lst   off
 
          MX    %10
-ChItem   cmp   #BlkId_Sprt8+1    ; If sprite activating:
+ChItem   cmp   #BlkId_Sprt8+1    
          bcs   ChItem2
          cmp   #BlkId_Sprt1
          bcc   ChItem2
          stx   ItemCheckerTmp
          sta   ItemCheckerTmp2
-         rep   #$30
+         rep   #$30             ; If sprite activating:
          and   #$00FF
          sec
-         sbc   #BlkId_Sprt1
+         sbc   #BlkId_Sprt1     
          asl
          tax
          jsr   (ActList,x)
@@ -2649,11 +2672,21 @@ NonAct   rep   #$10
          rts
          MX    %10
 ChItem2  cmp   #BlkId_EmptyDeadly  ; If deadly:
-         beq   ClrHurt
-         cmp   #BlkId_CoinA
-         bcc   Thwonk     ; If takable:
+         bne   :NotDeadly
+         stx   ItemCheckerTmp   ; Hurt Guido
+         sta   ItemCheckerTmp2
+         jsr   Verdict          ; Verdict must return with A: 8 bit
+         cmp   #$69
+         beq   :Done
+         pla
+         pla
+         jmp   Die
+:NotDeadly cmp   #BlkId_CoinA ; If takable:
+         bcs   *+3
+         rts
          cmp   #BlkId_FoodB+1
-         bcs   Thwonk
+         bcc   *+3
+         rts
          stx   ItemCheckerTmp
          sta   ItemCheckerTmp2 ; Store the variables
          cmp   #BlkId_CoinB    ; If it's in group II,
@@ -2673,26 +2706,17 @@ ChItem2  cmp   #BlkId_EmptyDeadly  ; If deadly:
          sep   #$20
          lda   ItemCheckerTmp2
          cmp   #BlkId_CoinA
-         beq   Dimwit     ; If it's a consumable item,
+         beq   :NoTime     ; If it's a consumable item,
          cmp   #BlkId_CoinB      ; Add to the timer as well.
-         beq   Dimwit
+         beq   :NoTime
          lda   #$01
          sta   Time2+1
          jsr   TimeAdd
-Dimwit   sep   #$20
-]lp      rep   #$10
+:NoTime  sep   #$20
+:Done    rep   #$10
          ldx   ItemCheckerTmp  ; And restore the variables
          lda   ItemCheckerTmp2
          rts
-
-ClrHurt  stx   ItemCheckerTmp ; Hurt Guido
-         sta   ItemCheckerTmp2
-         jsr   Verdict    ; Verdict must return with A: 8 bit
-         cmp   #$69
-         beq   ]lp
-         pla
-         pla
-         jmp   Die
 
          MX    %00
          ldx   ItemCheckerTmp
@@ -2798,34 +2822,30 @@ LSideOut ldal  PeaJumpPtr ; Save vital values
          pha
          lda   SizTotal
          pha
-         txa    ; Save a copy of the original WindowedPEA calculated by DoorCompute
-         pha
-         clc
-         adc   #$000c               ; 16 pixels to the left (4 PEAs at 3 bytes each)
+         txa
+         sta   WindowedGuido
+         dec
+         dec
+         dec
          sta   WindowedPEA
-         tya    ; Save a copy of PEAInitialStackPtr from DoorCompute
-         pha
-         sec
-         sbc   #$0008               ; 16 pixels to the left
-         sta   PEAInitialStackPtr
+         tya
+         inc
+         inc
+         sta   PEAInitialStackPtr   ; Screen location: 20 pixels over
          ldx   #$0003               ; Our first blit will be 1 PEA wide
          ldy   #$0021               ; And tall enough to erase the part
          jsr   DrawWindowedPeaFrameAndBlit ;  of Guido that overlaps the pipe.
          ldx   #$0003               ; Then we remove this 1 PEA frame
          ldy   #$0021               ; to make room for the pipe-in transition.
          jsr   RemoveWindowedPeaFrame
-         pla                        ; Restore PEAInitialStackPtr
-         inc                        ; Move the window off the pipe
-         inc                        ; by shifting the screen pointer forward 4 pixels,
-         sta   PEAInitialStackPtr   ; and the PEA pointer forward one instruction.
-         pla
-         dec
-         dec
-         dec
+         lda   PEAInitialStackPtr   ; Restore PEAInitialStackPtr
+         clc                        ; Move the window off the pipe
+         adc   #$000a               ; by shifting the screen pointer forward 20 pixels,
+         sta   PEAInitialStackPtr   ; and the PEA pointer forward 5 instructions.
+         lda   WindowedPEA
+         sec
+         sbc   #$000f
          sta   WindowedPEA
-         clc
-         adc   #$0012               ; 24 pixels to the left (6 PEAs at 3 bytes each)
-         sta   WindowedGuido
          lda   #$0006               ; Six frames is enough to make him slide out of the window
          sta   Lupe
 ]lp      jsr   WaitSync
@@ -2850,9 +2870,18 @@ RSideOut ldal  PeaJumpPtr ; Save vital values
          pha
          lda   SizTotal
          pha
-
-         stx   WindowedPEA          ; Frame in PEA field
-         sty   PEAInitialStackPtr   ; Screen location
+         txa
+         dec
+         dec
+         dec
+         sta   WindowedGuido
+         sec
+         sbc   #$000c       ; 16 pixels to the left (4 PEAs at 3 bytes each)
+         sta   WindowedPEA          ; Frame in PEA field
+         tya
+         clc
+         adc   #$000A
+         sta   PEAInitialStackPtr   ; Screen location: 20 pixels over
          ldx   #$0003               ; Our first blit will be 1 PEA wide
          ldy   #$0021               ; And tall enough to erase the part
          jsr   DrawWindowedPeaFrameAndBlit ;  of Guido that overlaps the pipe.
@@ -2860,18 +2889,14 @@ RSideOut ldal  PeaJumpPtr ; Save vital values
          ldy   #$0021               ; to make room for the pipe-in transition.
          jsr   RemoveWindowedPeaFrame
 
-         lda   PEAInitialStackPtr   ; Move the window off the pipe
-         dec                        ; by shifting the screen pointer back 4 pixels,
-         dec
-         sta   PEAInitialStackPtr   ; and the PEA pointer forward one instruction.
-         lda   WindowedPEA
+         dec   PEAInitialStackPtr   ; Move the window off the pipe
+         dec   PEAInitialStackPtr   ; by shifting the screen pointer back 4 pixels,
+         lda   WindowedPEA          ; and the PEA pointer forward one instruction.
          inc
          inc
          inc
          sta   WindowedPEA
          clc
-         adc   #$000c               ; 16 pixels to the left (4 PEAs at 3 bytes each)
-         sta   WindowedGuido
          lda   #$0006               ; Six frames is enough to make him slide out of the window
          sta   Lupe
 ]lp      jsr   WaitSync
@@ -2896,34 +2921,31 @@ DownOut  ldal  PeaJumpPtr ; Save vital values
          pha
          lda   SizTotal
          pha
-         txa              ; Frame in PEA field
+         txa                    ; Standard Guido width
+         sta   WindowedGuido
+         sec
+* Our blitting window will be 20 pixels in so we can cover his full width.
+* First we will just blit a single line, without drawing Guido, to erase his
+* feet that were overlapping the pipe.
+         sbc   #$000F
+         sta   WindowedPEA
+         tya
          clc
+         adc   #$000A
+         sta   PEAInitialStackPtr
+         ldx   #$000f               ; 5 PEAs wide
+         ldy   #$0001               ; And one row should be enough to erase his feet.
+         jsr   DrawWindowedPeaFrameAndBlit
+         lda   WindowedPEA
+         clc
+* Our Guido blitting window will be up one line,
+* avoiding the part where he overlaps the pipe.
          adc   #BF_SizLine
          sta   WindowedPEA
-         txa
-         clc
-         adc   #$000f
-         sta   WindowedGuido       ; Corner PEA instruction to draw Guido into
-         tya
-         sec
-         sbc   #$00A0
-         sta   PEAInitialStackPtr   ; Screen location
-         tay
-         phb
-         pea   #>SHR
-         plb
-         plb
-         ldal  ForegPeaField+1,x ; Erase Guido's feet, which would otherwise remain outside the window,
-         sta   $009F,y     ; because when Guido is standing on a block, he is drawn with his feet
-         ldal  ForegPeaField+4,x ; overlapping the block below by 1 pixel.
-         sta   $009D,y
-         ldal  ForegPeaField+7,x
-         sta   $009B,y
-         ldal  ForegPeaField+10,x
-         sta   $0099,y
-         ldal  ForegPeaField+13,x
-         sta   $0097,y
-         plb
+         lda   PEAInitialStackPtr
+         sec                    
+         sbc   #$00a0
+         sta   PEAInitialStackPtr
          lda   #$001f
          sta   Lupe
 ]lp      jsr   WaitSync

@@ -335,7 +335,6 @@ SlimBal5 rep   #$21
          and   #$000F     ; Cruxified and left in isolation
          adc   Tmp2       ; This is how I lost morality
          dec              ; Scarecrow
-         dec              ; Scarecrow
          sta   Tmp2       ; Eyeless stares invite his own damnation
          ASLS  2          ; Rotting corpse of inhumanity
          adc   Tmp2       ; Scarecorw

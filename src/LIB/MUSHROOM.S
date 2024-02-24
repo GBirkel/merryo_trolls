@@ -227,10 +227,10 @@ Mushey24 rep   #$20
          sta   Tmp2
          ASLS  2
          adc   Tmp2
-         adc   Tmp        ; Slice in map now in A
+         adc   Tmp
          sta   Tmp
          cmp   WinXEdgeTotalFifths
-         bcs   Mushey25   ; Not on screen, but still in area
+         bcs   Mushey25
          lda   WinXEdgeTotalFifths ; Also left behind- kill!
          sec
          sbc   Tmp        ; In a city where crooks are all roamin',
@@ -247,8 +247,7 @@ Mushey24 rep   #$20
          lda   SprI+5,x   ; And me and my neighbor's cat, we got in a fight.
          and   #$000F     ; And I got a broken light, needs replacin',
          clc              ; Really sucks... went right out, aww maan...
-         adc   Tmp2       ;
-         dec              ; And I have to go,
+         adc   Tmp2       ; And I have to go,
          dec              ; To the store to get one new,
          sta   Tmp2       ; But man, when I wanna telephone you,
          ASLS  2          ; Well...  I always get that damn answering machine!
