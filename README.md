@@ -2,7 +2,7 @@
 
 **An Adventure From The Days Before VRAM**
 
-![Super Merryo Trolls Reference Gameplay Video](https://github.com/GBirkel/merryo_trolls/assets/17415530/0af357f1-59d1-4956-b599-1de9066f85e2)
+![Super Merryo Trolls Reference Gameplay Video](https://github.com/GBirkel/merryo_trolls/assets/17415530/a30f06a0-7da0-4ea0-ad07-75be8d3ec65e)
 
 It's the year 1991. You're a teenage computer geek.
 
