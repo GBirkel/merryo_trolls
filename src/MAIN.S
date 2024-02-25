@@ -1515,7 +1515,7 @@ HopHop   cmp   #$80
 :Br1     lda   MapBl,x
          cmp   #BlkId_PipeDown ; Solid?
          bcs   Flesh
-         jsr   ChItem     ; Check the block directly in front.
+         jsr   BlockActivityCheck     ; Check the block directly in front.
          lda   GPositionYBlk ; If off screen, branch
          cmp   #$0a
          beq   Smooth
@@ -1523,7 +1523,7 @@ HopHop   cmp   #$80
          lda   MapBl,x
          cmp   #BlkId_PipeDown ; If this block is solid, do one more
          bcs   Laffer     ; special check before giving up.
-         jsr   ChItem
+         jsr   BlockActivityCheck
          lda   GPositionYSlice
          cmp   #$04       ; If bozorina is not near the bottom,
          bcc   Smooth     ; Check the third block
@@ -1535,7 +1535,7 @@ HopHop   cmp   #$80
          lda   MapBl,x
          cmp   #BlkId_PipeDown
          bcs   Flesh
-         jsr   ChItem
+         jsr   BlockActivityCheck
 Smooth   lda   #$04
          sta   GPositionXFifth
          jmp   Larry
@@ -1591,7 +1591,7 @@ Poopy    rep   #$31
 :Br1     lda   MapBl,x
          cmp   #BlkId_PipeDown
          bcs   Drugs
-         jsr   ChItem     ; Second up block:
+         jsr   BlockActivityCheck     ; Second up block:
          lda   GPositionYBlk ; If off screen, branch
          cmp   #$0a
          bcs   Larry
@@ -1599,7 +1599,7 @@ Poopy    rep   #$31
          lda   MapBl,x
          cmp   #BlkId_PipeDown
          bcs   Godflesh
-         jsr   ChItem
+         jsr   BlockActivityCheck
          lda   GPositionYSlice ; If the bloated sack is not near
          cmp   #$04       ; the bottom, check the 3rd block
          bcc   Larry
@@ -1611,7 +1611,7 @@ Poopy    rep   #$31
          lda   MapBl,x
          cmp   #BlkId_PipeDown
          bcs   Drugs
-         jsr   ChItem
+         jsr   BlockActivityCheck
          bra   Larry
 Godflesh lda   GPositionYSlice
          cmp   #$0f
@@ -1646,7 +1646,7 @@ Larry    sep   #$30
          lda   #$00
          sta   GPositionYSlice
          inc   GPositionYBlk
-Freem    jmp   Uranus
+Freem    jmp   NextVectorStep
 Lips     cmp   #$02       ; MORE space!!
          bne   Freem
          lda   GPositionYBlk ; If he's offscreen, no check
@@ -1670,7 +1670,7 @@ Lips     cmp   #$02       ; MORE space!!
          bcs   HitSolidAbove
          cmp   #BlkId_RevPltfm
          beq   HitSolidAbove ; Or if reverse platform...
-         jsr   ChItem
+         jsr   BlockActivityCheck
          lda   GPositionXFifth ; Does GPositionXFifth = 0>2?
          cmp   #$03
          bcc   Round      ; If so, we only need to check 1 block
@@ -1685,7 +1685,7 @@ Check2nd stx   :SavedMapSpot+1  ; Save original so we don't have to subtract
          bcs   HitSolidAbove
          cmp   #BlkId_RevPltfm
          beq   HitSolidAbove ; Or if reverse platform...
-         jsr   ChItem
+         jsr   BlockActivityCheck
          lda   GPositionXFifth
          cmp   #$03       ; was 2
          bcc   Round
@@ -1695,8 +1695,8 @@ Check2nd stx   :SavedMapSpot+1  ; Save original so we don't have to subtract
          bcs   HitSolidAbove
          cmp   #BlkId_RevPltfm
          beq   HitSolidAbove ; Or if reverse platform...
-         jsr   ChItem
-Round    jmp   Uranus
+         jsr   BlockActivityCheck
+Round    jmp   NextVectorStep
 HitSolidAbove  inc   GPositionYSlice
          stx   ItemCheckerTmp
          jsr   ChSolid    ; Check for affecting block
@@ -1707,18 +1707,19 @@ HitSolidAbove  inc   GPositionYSlice
          sta   GVelocityY
          inc   GBodyFlg_Tongue ; Tongue out when hitting a brick :)
          stz   JumpSustainCounter       ; Not adding for a jump anymore
-         jmp   Uranus
+         jmp   NextVectorStep
 
 Juicy    dec   GYVectorRemaining       ; second routine
+
          DO    BF_Buttons
          lda   GPositionYSlice
          bne   *+5
-         jmp   TopHat
+         jmp   OnBottomOfBlock
          cmp   #$08       ; Step 8 half-height button check
-         bne   Elsa
+         bne   NotHittingAButton
          lda   GPositionYBlk
          cmp   #$0d
-         bcs   Elsa
+         bcs   NotHittingAButton
          rep   #$31
          lda   GPositionXBlk ; get map location
          asl
@@ -1731,10 +1732,10 @@ Juicy    dec   GYVectorRemaining       ; second routine
          sep   #$20
          lda   MapBl,x
          cmp   #BlkId_ButtonHalf
-         beq   NotElsa
+         beq   CheckRightForButton
          lda   GPositionXFifth ; GPositionXFifth = 0>2?
          cmp   #$03
-         bcc   Elsa
+         bcc   NotHittingAButton
          rep   #$21
          txa
          adc   #$000c
@@ -1742,8 +1743,9 @@ Juicy    dec   GYVectorRemaining       ; second routine
          sep   #$20
          lda   MapBl,x
          cmp   #BlkId_ButtonHalf   ; Next block over
-         bne   Elsa
-NotElsa  inc   GPositionYSlice
+         bne   NotHittingAButton
+CheckRightForButton = *
+         inc   GPositionYSlice
          lda   #$01
          sta   GOnSolidGround ; Obviously not falling anymore
          stz   JumpSustainCounter       ; Not adding for a jump anymore
@@ -1773,17 +1775,19 @@ NotElsa  inc   GPositionYSlice
          sta   GPositionYSlice
 NoPress  lda   #$80       ; Vertical descent stopped
          sta   GVelocityY
-Elsa     =     *
          ELSE
          lda   GPositionYSlice
-         beq   TopHat
-         FIN
+         beq   OnBottomOfBlock
+         FIN    ; FIN BF_Buttons
+
+NotHittingAButton = *
          dec   GPositionYSlice
-         bra   Uranus
-TopHat   lda   GPositionYBlk ; Bastard-offscreen check
-         beq   Panties
+         bra   NextVectorStep
+OnBottomOfBlock = *
+         lda   GPositionYBlk ; Bastard-offscreen check
+         beq   DoneCheckingBelow
          cmp   #$0d
-         bcs   Panties
+         bcs   DoneCheckingBelow
          rep   #$31
          lda   GPositionXBlk ; get map location
          asl
@@ -1798,24 +1802,18 @@ TopHat   lda   GPositionYBlk ; Bastard-offscreen check
 
          DO    BF_Buttons
          cmp   #BlkId_ButtonHalf
-         beq   Br1
-         cmp   #BlkId_PipeDown
-         bcs   Kitties
-         cmp   #BlkId_Pltfm
-         beq   Kitties
-         jsr   ChItem
-Br1      =     *
-         ELSE
-         cmp   #BlkId_PipeDown
-         bcs   Kitties
-         cmp   #BlkId_Pltfm
-         beq   Kitties
-         jsr   ChItem
+         beq   IsButtonBelowA
          FIN
 
+         cmp   #BlkId_PipeDown
+         bcs   BelowIsSolid
+         cmp   #BlkId_Pltfm
+         beq   BelowIsSolid
+         jsr   BlockActivityCheck
+IsButtonBelowA =    *
          lda   GPositionXFifth ; GPositionXFifth = 0>2?
          cmp   #$03
-         bcc   Panties
+         bcc   DoneCheckingBelow
          rep   #$21
          txa
          adc   #$000c
@@ -1825,19 +1823,21 @@ Br1      =     *
 
          DO    BF_Buttons
          cmp   #BlkId_ButtonHalf
-         beq   Panties
+         beq   DoneCheckingBelow
          FIN
 
          cmp   #BlkId_PipeDown      ; Next block over
-         bcs   Kitties
+         bcs   BelowIsSolid
          cmp   #BlkId_Pltfm
-         beq   Kitties
-         jsr   ChItem
-Panties  lda   #$0F
+         beq   BelowIsSolid
+         jsr   BlockActivityCheck
+DoneCheckingBelow =    *
+         lda   #$0F
          sta   GPositionYSlice
          dec   GPositionYBlk
-         bra   Uranus
-Kitties  lda   #$00
+         bra   NextVectorStep
+BelowIsSolid = *
+         lda   #$00
          sta   GPositionYSlice
          inc
          sta   GOnSolidGround     ; Obviously not falling anymore
@@ -1845,71 +1845,72 @@ Kitties  lda   #$00
          stz   GYVectorRemaining
          lda   #$80       ; Vertical descent stopped
          sta   GVelocityY
-
-Uranus   sep   #$30       ; Go back if both axes are not 0
+NextVectorStep = *
+         sep   #$30       ; Go back if both axes are not 0
          lda   GYVectorRemaining
-         bne   Beefy
+         bne   KeepMovingGuido
          lda   GXVectorRemaining
-         bne   Beefy
+         bne   KeepMovingGuido
 
          lda   GPositionYBlk ; for now, if the asshole falls off,
          cmp   #$FE       ; we go straight to death.
-         bcs   Mono1
+         bcs   CheckAndMoveWindowForward
          cmp   #$F8       ; Two blocks off, then the dead zone.
-         bcc   Mono1
+         bcc   CheckAndMoveWindowForward
          jmp   Die        ; Guido death?
 
-Beefy    jmp   MoveGuido    ; Not finished
+KeepMovingGuido jmp   MoveGuido    ; Not finished
 
-Mono1    lda   GPositionXScreenFifth ; Check screen loc.
+CheckAndMoveWindowForward = *
+         lda   GPositionXScreenFifth ; Check screen loc.
          cmp   #$34       ; Right border of center range where scrolling doesn't trigger
-         bcc   UpThere
+         bcc   DoneCheckingWindowForward
          sbc   #$33       ; Right border -1
          sta   DCnt
-Nested   ldx   WinXEdgeBlk
+]lp      ldx   WinXEdgeBlk
          lda   ClmInfo,x
          and   #$80
-         bpl   UpDwn      ; If column no-scroll-left flag is set, stop
+         bpl   :NoScrollL      ; If column no-scroll-left flag is set, stop
          lda   WinXEdgeBlkFifth
          cmp   #$04
-         beq   UpHere
-UpDwn    JSR   PeaInc
+         beq   :DoneL
+:NoScrollL JSR   PeaInc
          sep   #$20
          dec   DCnt
-         bne   Nested
-UpHere   lda   #$33       ; Right border -1
+         bne   ]lp
+:DoneL   lda   #$33       ; Right border -1
          clc
          adc   DCnt
          sta   GPositionXScreenFifth
+DoneCheckingWindowForward = *
 
          DO    BF_ScrlLft
 UpThere  lda   GPositionXScreenFifth ; Check screen loc.
          cmp   #$1C       ; Left border of center range where scrolling doesn't trigger
-         bcs   DirtClod
+         bcs   DoneCheckingWindow
          lda   #$1C
          sec
          sbc   GPositionXScreenFifth ; Left border
          sta   DCnt
-Chuck    ldx   WinXEdgeBlk
+]lp      ldx   WinXEdgeBlk
          lda   ClmInfo-15,x
          and   #$40
-         beq   Babe       ; If column no-scroll-right flag is set, stop
+         beq   :NoScrollR       ; If column no-scroll-right flag is set, stop
          lda   WinXEdgeBlkFifth
          cmp   #$04
-         beq   Eediot
-Babe     JSR   PeaDec
+         beq   :DoneR
+:NoScrollR JSR   PeaDec
          sep   #$20
          dec   DCnt
-         bne   Chuck
-Eediot   lda   #$1C       ; Left border
+         bne   ]lp
+:DoneR   lda   #$1C       ; Left border
          sec
          sbc   DCnt
          sta   GPositionXScreenFifth
+         FIN    ; FIN BF_ScrlLft
 
-DirtClod sep   #$30
-         ELSE
-UpThere  sep   #$30
-         FIN
+DoneCheckingWindow = *
+         sep   #$30
 
 * Set various animation frames for Guido (run, jump, blink, tongue, etc)
 * Directional modification is not dealt with here. DraTrol does that.
@@ -2652,10 +2653,11 @@ DrawCall jsl   $080000
          lst   off
 
          MX    %10
-ChItem   cmp   #BlkId_Sprt8+1    
-         bcs   ChItem2
+BlockActivityCheck = *
+         cmp   #BlkId_Sprt8+1    
+         bcs   KeepChecking
          cmp   #BlkId_Sprt1
-         bcc   ChItem2
+         bcc   KeepChecking
          stx   ItemCheckerTmp
          sta   ItemCheckerTmp2
          rep   #$30             ; If sprite activating:
@@ -2671,7 +2673,8 @@ NonAct   rep   #$10
          lda   ItemCheckerTmp2
          rts
          MX    %10
-ChItem2  cmp   #BlkId_EmptyDeadly  ; If deadly:
+KeepChecking = *
+         cmp   #BlkId_EmptyDeadly  ; If deadly:
          bne   :NotDeadly
          stx   ItemCheckerTmp   ; Hurt Guido
          sta   ItemCheckerTmp2
