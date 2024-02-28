@@ -167,8 +167,9 @@ def main(argv):
 	# Phase 2: Invoke builds
 
 	run_build('TROLL.SYSTEM.S')
-	# Currently just building World 1 for demo purposes
+	# Currently just building a few worlds for demo purposes
 	run_build('WORLD1.S')
+	run_build('WORLD8.S')
 
 	#
 	# Phase 3: Make a new blank disk image
@@ -198,6 +199,7 @@ def main(argv):
 
 	add_obj_file_to_image('', 'TROLL.SYSTEM', '0xFF', '0x2000')
 	add_obj_file_to_image('', 'WORLD1', '0x06', '0x0000')
+	add_obj_file_to_image('', 'WORLD8', '0x06', '0x0000')
 
 	#
 	# Phase 6: Add the library files
@@ -209,11 +211,14 @@ def main(argv):
 
 	add_obj_file_to_image('SPR', 'SPR1', '0xC1', '0x0000')
 	add_obj_file_to_image('SPR', 'SPR1G', '0x06', '0x1000')
+	add_obj_file_to_image('SPR', 'SPR8G', '0x06', '0x1000')
 
 	add_obj_file_to_image('BLKS', 'WD11', '0x06', '0x1000')
 	add_obj_file_to_image('BLKS', 'WD11T', '0x06', '0x2000')
+	add_obj_file_to_image('BLKS', 'WD81', '0x06', '0x1000')
 
 	add_obj_file_to_image('SPEC', 'ACIDPT', '0x06', '0x2000')
+	add_obj_file_to_image('KQD', 'SCENE1', '0x06', '0x1000')
 
 	add_obj_file_to_image('SFX', 'HADOU', '0x06', '0x0000')
 
@@ -223,8 +228,10 @@ def main(argv):
 	# Phase 7: Clean up
 	#
 
+	os.remove(os.path.join(src_folder, "TROLL.SYSTEM"))
 	os.remove(os.path.join(src_folder, "TROLL.SYSTEM_Output.txt"))
 
+	os.remove(os.path.join(src_folder, "WORLD1"))
 	os.remove(os.path.join(src_folder, "WORLD1.S"))
 	os.remove(os.path.join(src_folder, "WORLD1_Output.txt"))
 
@@ -235,8 +242,10 @@ def main(argv):
 	os.remove(os.path.join(src_folder, "WORLD6.S"))
 	os.remove(os.path.join(src_folder, "WORLD7.S"))
 
-	print("Done.")
+	os.remove(os.path.join(src_folder, "WORLD8"))
+	os.remove(os.path.join(src_folder, "WORLD8_Output.txt"))
 
+	print("Done.")
 
 
 if __name__ == "__main__":
