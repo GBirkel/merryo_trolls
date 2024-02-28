@@ -53,25 +53,39 @@ MMaxXv   =     312        ; mouse window
 MMinYv   =     8
 MMaxYv   =     176
 
-PeaJumpPtr =     $000800    ; Long jump location (Important)
+* Bank 00 -----------------------------------------------------
+
+PeaJumpPtr =   $000800    ; Long jump location (Important)
 ShelPage =     $001000    ; Shell/loader zero page
 Zpl      =     $001000    ; Using same zero page for "play mode" in World 8
 Loader   =     $009000
 
+* Bank 01 -----------------------------------------------------
+
+FadeDat  =     $010800
+FadeWork =     $010a00
+FadeVals =     $010d00
 SHR      =     $012500    ; ShrA start of PEA window (standard)
 ShrA     =     $012000
 
+* Bank 02 -----------------------------------------------------
+
 ThisProg =     $020000
 Char     =     $025000    ; Character set
-FadeDat  =     $02FE00    ; Fader data
 
-ForegPeaField  =     $030000    ; Storage slot for scene
-RawSCB   =     $037D00    ; Scene SCB
-RawPal   =     $037E00    ; Scene pallete
-BackgPeaField  =     $038000    ; Screen attributes field area
-OverVals =     $03E400    ; background plane overlay values
+* Bank 03 -----------------------------------------------------
+
+ForegPeaField  = $030000    ; Storage slot for scene
+RawSCB         = $037D00    ; Scene SCB
+RawPal         = $037E00    ; Scene pallete
+BackgPeaField  = $038000    ; Screen attributes field area
+OverVals       = $03E400    ; background plane overlay values
+
+* Bank 04 -----------------------------------------------------
 
 SprGuido =     $040000
+
+* Bank E1 -----------------------------------------------------
 
 ShrB     =     $E12000
 
@@ -87,9 +101,9 @@ WldIndx  DS    2          ; Map index # (0-3)
 LevLet   DS    2          ; Level letter
 LevSect  DS    2          ; Level section letter
 WldLives DS    2          ; Initial lives
-WldScore ds    8          ; Initial score
-WldCondt ds    2          ; Initial condition (0-3)
-WldStats ds    2          ; Initial status (form)
+WldScore DS    8          ; Initial score
+WldCondt DS    2          ; Initial condition (0-3)
+WldStats DS    2          ; Initial status (form)
 TmpB     DS    2
 ]ZPSys      =     *
          DEND
@@ -97,30 +111,30 @@ TmpB     DS    2
          PUT   LIB/MOUSE
 
          DUM   ]ZPSys
-Tmp      DS    2          ; Temporary storage
-Tmp2     DS    2          ; More Temporary storage
-Tmp3     DS    2          ; Even more
-Tmp4     DS    2          ; Shit, that's a lot...
-Tmp5     ds    2          ; ...Or is it?
-Tmp6     ds    2          ; Might be...
-BackMask ds    2          ; Data mask storage
-Pal2     DS    2          ; Logo palette cycle pointer
-Score1   DS    8          ; Current score
-Score2   DS    8          ; Amount to add to score
-Time1    DS    3          ; Current time
-Time2    DS    4          ; Amount to add to time + delay counter
-AnimHed  DS    2          ; Status of head
-AnimLeg  ds    2          ; Animation stage for leg
-Face     DS    2          ; Current direction Guido faces
-JoystkReadX     ds    2          ; Raw joystick X read
-JoystkReadY     ds    2          ; Raw joystick Y read
-FunkX    DS    2          ; Location of Guido on map X
-FunkY    DS    2          ; Location of Guido on map Y
-NewX     ds    2          ; Potential new Guido X location
-NewY     ds    2          ; Potential new Guido Y location
-FlagX    ds    2          ; Guido X location change flag
-FlagY    ds    2          ; Guido Y location change flag
-ColrStat ds    16         ; Flags for color transparency
+Tmp         DS    2          ; Temporary storage
+Tmp2        DS    2          ; More Temporary storage
+Tmp3        DS    2          ; Even more
+Tmp4        DS    2          ; Shit, that's a lot...
+Tmp5        DS    2          ; ...Or is it?
+Tmp6        DS    2          ; Might be...
+BackMask    DS    2          ; Data mask storage
+Pal2        DS    2          ; Logo palette cycle pointer
+Score1      DS    8          ; Current score
+Score2      DS    8          ; Amount to add to score
+Time1       DS    3          ; Current time
+Time2       DS    4          ; Amount to add to time + delay counter
+AnimHed     DS    2          ; Status of head
+AnimLeg     DS    2          ; Animation stage for leg
+Face        DS    2          ; Current direction Guido faces
+JoystkReadX DS    2          ; Raw joystick X read
+JoystkReadY DS    2          ; Raw joystick Y read
+FunkX       DS    2          ; Location of Guido on map X
+FunkY       DS    2          ; Location of Guido on map Y
+NewX        DS    2          ; Potential new Guido X location
+NewY        DS    2          ; Potential new Guido Y location
+FlagX       DS    2          ; Guido X location change flag
+FlagY       DS    2          ; Guido Y location change flag
+ColrStat    DS    16         ; Flags for color transparency
 ]ZPSys      =     *
 ]ZPPlay     =     *
          DEND             ; Nifty, huh?
@@ -229,23 +243,23 @@ TrolPlay clc
          rep   #$30
          lda   #Zpl
          tcd
-         ldx   #$00FE
-]lp      stz   $00,x      ; Clear the whole damn Zero Page
-         dex
-         dex
-         bpl   ]lp
+;         ldx   #$00FE
+;]lp      stz   $00,x      ; Clear the whole damn Zero Page
+;         dex
+;         dex
+;         bpl   ]lp
          lda   #$0A
          sta   Time2+3    ; Set timer delay
          lda   #MMinXv    ; Mouse setup
-         sta   MMinX
+;         sta   MMinX
          sta   MouseX
-         lda   #MMaxXv
-         sta   MMaxX
+;         lda   #MMaxXv
+;         sta   MMaxX
          lda   #MMinYv
-         sta   MMinY
+;         sta   MMinY
          sta   MouseY
-         lda   #MMaxYv
-         sta   MMaxY
+;         lda   #MMaxYv
+;         sta   MMaxY
          stz   Button
          lda   #$A0*MMinYv+MMinXv
          sta   OldMIndx
@@ -299,9 +313,9 @@ TrolPlay clc
          bpl   ]lp
 
          lda   #$41       ; Pre-set SHR
-         stal  #$E1C029
+         stal  $E1C029
          lda   #$00
-         stal  #$E1C035
+         stal  $E1C035
 
          sep   #$20
          lda   #$01
@@ -354,20 +368,20 @@ LevelM   HEX   8283       ; "##" (2)
          rep   #$30
          ldx   #$01BE     ; Move in pallete data
 ]lp      ldal  RawPal,x   ; For picture
-         sta   FadeDat,x
+         stal   FadeDat,x
          dex
          dex
          bpl   ]lp
 
          ldx   #$0018     ; Make palette data
 ]lp      lda   #$0000         ; for font
-         sta   FadeDat+$1e0,x
+         stal   FadeDat+$1e0,x
          lda   #$0555
-         sta   FadeDat+$1e2,x
+         stal   FadeDat+$1e2,x
          lda   #$0AAA
-         sta   FadeDat+$1e4,x
+         stal   FadeDat+$1e4,x
          lda   #$0FFF
-         sta   FadeDat+$1e6,x
+         stal   FadeDat+$1e6,x
          txa
          sec
          sbc   #$0008
@@ -395,7 +409,7 @@ LevelM   HEX   8283       ; "##" (2)
          bpl   ]lp
 
          lda   #$C1       ; Turn on SHR
-         stal  #$E1C029
+         stal  $E1C029
          jsr   FadeLoop
 
          rep   #$30
@@ -422,6 +436,7 @@ LevelM   HEX   8283       ; "##" (2)
 ]lp      jsr   JoyCrit    ; Update joystick, animation, & draw
          jsr   DoMouse
          jsr   PalUp
+
          rep   #$30
          lda   NewX
          sta   FunkX      ; Change movement

@@ -2,7 +2,7 @@
 
 * Bank 00 -----------------------------------------------------
 
-PeaJumpPtr =     $000800    ; Long jump location (Important)
+PeaJumpPtr =   $000800    ; Long jump location (Important)
 ShelPage =     $001000    ; Zero page for title/loader mode
 Zpl      =     $001100    ; Zero page location for play mode
          DO    BF_HeatWav

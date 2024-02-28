@@ -586,7 +586,7 @@ FileList DIR   'BLKS/WD11';Blox ; Wd1 Blocks             00
          DIR   'MAPS/WD7B';Slots ; Wd7 Map block B          2E
          DIR   'MAPS/WD9A';Slots ; Secret World Map block A 2F
 
-         DIR   'KQD/KQ.PIC1';KQVSlot ; Wd8 Beginnig scene block 30
+         DIR   'KQD/SCENE1';KQVSlot ; Wd8 Beginnig scene block 30
          DIR   'ERROR';0  ; Empty slot                          31
          DIR   'ERROR';0  ; Empty slot 32
          DIR   'ERROR';0  ; Empty slot 33
@@ -628,8 +628,8 @@ FileList DIR   'BLKS/WD11';Blox ; Wd1 Blocks             00
          DIR   'WORLD5';ThisProg ; Main Prog 54
          DIR   'WORLD6';ThisProg ; Main Prog 55
          DIR   'WORLD7';ThisProg ; Main Prog 56
-* DIR 'WORLD8';ThisProg ; Main Prog 57
-         DIR   'CREDITS';ThisProg ; Main Prog 57 (test)
+         DIR   'WORLD8';ThisProg ; Main Prog 57
+         DIR   'CREDITS';ThisProg ; Main Prog 58
 
          DS    \
 OpenBuf  =     *
