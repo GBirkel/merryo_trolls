@@ -295,7 +295,7 @@ NoKeyFnd dex
 
 DrLetter ASC   "SsCcIiTt12345678"
 
-ButtnJmp DA    Start,Start,Continue,Continue,Info,Info,Settings,Settings
+ButtnJmp DA    Start,Start,Credits,Credits,Info,Info,Settings,Settings
          DA    Run1,Run2,Run3,Run4,Run5,Run6,Run7,Run8
 
 Run8     inc
@@ -308,7 +308,6 @@ Run2     inc
 Run1     inc
          bra   RunBran
 
-Continue =     *
 Info     =     *
 Settings =     *
 Start    =     *
@@ -340,6 +339,11 @@ RunBran  sta   WldNumb
          adc   WldNumb
          jsl   Loader     ; Main Prog
 
+         JML   ThisProg   ; And run it!
+
+Credits =     *
+         lda   #$0044
+         jsl   Loader     ; Main Prog
          JML   ThisProg   ; And run it!
 
 *------------------------------------------------------------------------
@@ -608,8 +612,8 @@ FileList DIR   'BLKS/WD11';Blox ; Wd1 Blocks             00
          DIR   'PX/CHARSET';Char ; Chracter set      42
          DIR   'PX/TITLE';TitleStr ; Title page      43
          DIR   'CREDITS';ThisProg ; Main Prog    44
-         DIR   'SPEC/CRDF1';$024000 ; Credits font 1 45
-         DIR   'SPEC/CRDF1';$028000 ; Credits font 2 46
+         DIR   'SPEC/CREDF1';$024000 ; Credits font 1 45
+         DIR   'SPEC/CREDF1';$028000 ; Credits font 2 46
          DIR   'ERROR';0  ; Empty slot 47
 
          DIR   'SFX/HADOU';SFXdata ; Sound effects for world 1 48
@@ -629,7 +633,6 @@ FileList DIR   'BLKS/WD11';Blox ; Wd1 Blocks             00
          DIR   'WORLD6';ThisProg ; Main Prog 55
          DIR   'WORLD7';ThisProg ; Main Prog 56
          DIR   'WORLD8';ThisProg ; Main Prog 57
-         DIR   'CREDITS';ThisProg ; Main Prog 58
 
          DS    \
 OpenBuf  =     *

@@ -494,54 +494,54 @@ MirorTbl HEX   A0000000E001C0FE200380FD600440FC
          HEX   A073008DE074C08B2076808A60774089
          HEX   A0780088E079C086207B8085607C4084
 
-Message  BIG   4A4B,242B,2425,2425,2021,2663;0;12; Merryo
+Message  BIG   4A4B,242B,2425,2425,2021,2663;0;12 ; Merryo
          BIG   5A5B,3A3B,5657,5657,5E5F,362C;0;12
          EMP   8
-         BIG   4243,2425,2663,4849,4849,6667;0;12; Trolls
+         BIG   4243,2425,2663,4849,4849,6667;0;12 ; Trolls
          BIG   7879,5657,362C,5859,5859,7677;0;12
          EMP   32
          LIT   'MASTER';7;6
          LIT   'PROGRAMMER';7;10
-         BIG   2667,2223,2425,2663,4243,242B;5;12; Garote
+         BIG   2667,2223,2425,2663,4243,242B;5;12 ; Garote
          BIG   363f,3233,5657,362C,7879,3A3B;5;12
          EMP   16
          LIT   'MUZAK';4;5
          LIT   'PROGRAMMER';4;10
-         BIG   2223,2627,242B;6;6; Ace
+         BIG   2223,2627,242B;6;6 ; Ace
          BIG   3233,3637,3A3B;6;6
          EMP   16
          LIT   'MUZAK@BY';7;8
-         BIG   5C5D,2663,2667;5;6; Zog
+         BIG   5C5D,2663,2667;5;6 ; Zog
          BIG   6C6D,362C,363F;5;6
          LIT   'AND';7;3
-         BIG   2667,2223,2425,2663,4243,242B;5;12; Garote
+         BIG   2667,2223,2425,2663,4243,242B;5;12 ; Garote
          BIG   363f,3233,5657,362C,7879,3A3B;5;12
          EMP   16
          LIT   'GRAFIX';2;6
          LIT   'PROGRAMMER';2;10
-         BIG   2667,2223,2425,2663,4243,242B;5;12; Garote
+         BIG   2667,2223,2425,2663,4243,242B;5;12 ; Garote
          BIG   363f,3233,5657,362C,7879,3A3B;5;12
          EMP   16
          LIT   'GRAFIX@BY';6;9
-         BIG   2223,2627,242B;6;6; Ace
+         BIG   2223,2627,242B;6;6 ; Ace
          BIG   3233,3637,3A3B;6;6
          LIT   'AND';6;3
-         BIG   2667,2223,2425,2663,4243,242B;5;12; Garote
+         BIG   2667,2223,2425,2663,4243,242B;5;12 ; Garote
          BIG   363f,3233,5657,362C,7879,3A3B;5;12
          EMP   16
          LIT   'SOUND';2;5
          LIT   'PROGRAMMER';2;10
-         BIG   2223,2627,242B;6;6; Ace
+         BIG   2223,2627,242B;6;6 ; Ace
          BIG   3233,3637,3A3B;6;6
          EMP   16
          LIT   'SPRITE';2;6
          LIT   'PROGRAMMER';2;10
-         BIG   2667,2223,2425,2663,4243,242B;5;12; Garote
+         BIG   2667,2223,2425,2663,4243,242B;5;12 ; Garote
          BIG   363f,3233,5657,362C,7879,3A3B;5;12
          EMP   16
          LIT   'SPRITE';2;6
          LIT   'FORMAT@BY';2;9
-         BIG   2223,2627,242B;6;6; Ace
+         BIG   2223,2627,242B;6;6 ; Ace
          BIG   3233,3637,3A3B;6;6
          EMP   16
          LIT   'THE@ORIGINAL';7;12
@@ -552,7 +552,7 @@ Message  BIG   4A4B,242B,2425,2425,2021,2663;0;12; Merryo
          LIT   'STORY@THAT@WAS';12;14
          LIT   'WRITTEN@AND';13;11
          LIT   'RESIDES@ON@THE';14;14
-         BIG   2663,4A4B,4C4D,4243,0000,2425,2425,6667;0;16; Omni BBS
+         BIG   2663,4A4B,4C4D,4243,0000,2425,2425,6667;0;16 ; Omni BBS
          BIG   362C,5A5B,5A5B,5253,0000,3435,3435,7677;0;16
          LIT   'IN@SANTA@CRUZ';1;13
          DW    16
@@ -599,7 +599,7 @@ P2       sbc   #$0010
          PEI   $DA
          PEI   $D8
          PEI   $D6
-         PEI   $54        Skip ahead 1
+         PEI   $54        ; Skip ahead 1
          PEI   $52
          PEI   $50
          PEI   $4E
@@ -1764,10 +1764,10 @@ PG       sbc   #$001F
          sbc   #$0003
          tcs
          PEI   $FA        ; 63/1=63 interleave: (31,1,31)
-         PEI   $78        , 63 divisions= 64 in, 32 per side
+         PEI   $78        ; 63 divisions= 64 in, 32 per side
          sbc   #$0003
          tcs
-         PEI   $F6        , =16 bytes, no in-shift
+         PEI   $F6        ; =16 bytes, no in-shift
          PEI   $74
          sbc   #$0003
          tcs

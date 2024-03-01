@@ -170,6 +170,7 @@ def main(argv):
 	# Currently just building a few worlds for demo purposes
 	run_build('WORLD1.S')
 	run_build('WORLD8.S')
+	run_build('CREDITS.S')
 
 	#
 	# Phase 3: Make a new blank disk image
@@ -200,6 +201,7 @@ def main(argv):
 	add_obj_file_to_image('', 'TROLL.SYSTEM', '0xFF', '0x2000')
 	add_obj_file_to_image('', 'WORLD1', '0x06', '0x0000')
 	add_obj_file_to_image('', 'WORLD8', '0x06', '0x0000')
+	add_obj_file_to_image('', 'CREDITS', '0x06', '0x0000')
 
 	#
 	# Phase 6: Add the library files
@@ -208,6 +210,8 @@ def main(argv):
 	add_obj_file_to_image('PX', 'SPLASH.Z', '0x06', '0x0000')
 	add_obj_file_to_image('PX', 'TITLE', '0x06', '0x0000')
 	add_obj_file_to_image('PX', 'CHARSET', '0x06', '0x2000')
+
+	add_obj_file_to_image('MAPS', 'WD1A', '0x06', '0x3000')
 
 	add_obj_file_to_image('SPR', 'SPR1', '0xC1', '0x0000')
 	add_obj_file_to_image('SPR', 'SPR1G', '0x06', '0x1000')
@@ -218,11 +222,10 @@ def main(argv):
 	add_obj_file_to_image('BLKS', 'WD81', '0x06', '0x1000')
 
 	add_obj_file_to_image('SPEC', 'ACIDPT', '0x06', '0x2000')
-	add_obj_file_to_image('KQD', 'SCENE1', '0x06', '0x1000')
+	add_obj_file_to_image('SPEC', 'CREDF1', '0x06', '0x2000')
+	add_obj_file_to_image('SPEC', 'CREDF2', '0x06', '0x2000')
 
 	add_obj_file_to_image('SFX', 'HADOU', '0x06', '0x0000')
-
-	add_obj_file_to_image('MAPS', 'WD1A', '0x06', '0x3000')
 
 	#
 	# Phase 7: Clean up
@@ -244,6 +247,8 @@ def main(argv):
 
 	os.remove(os.path.join(src_folder, "WORLD8"))
 	os.remove(os.path.join(src_folder, "WORLD8_Output.txt"))
+	os.remove(os.path.join(src_folder, "CREDITS"))
+	os.remove(os.path.join(src_folder, "CREDITS_Output.txt"))
 
 	print("Done.")
 
