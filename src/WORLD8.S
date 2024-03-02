@@ -243,23 +243,12 @@ TrolPlay clc
          rep   #$30
          lda   #Zpl
          tcd
-;         ldx   #$00FE
-;]lp      stz   $00,x      ; Clear the whole damn Zero Page
-;         dex
-;         dex
-;         bpl   ]lp
          lda   #$0A
          sta   Time2+3    ; Set timer delay
          lda   #MMinXv    ; Mouse setup
-;         sta   MMinX
          sta   MouseX
-;         lda   #MMaxXv
-;         sta   MMaxX
          lda   #MMinYv
-;         sta   MMinY
          sta   MouseY
-;         lda   #MMaxYv
-;         sta   MMaxY
          stz   Button
          lda   #$A0*MMinYv+MMinXv
          sta   OldMIndx
