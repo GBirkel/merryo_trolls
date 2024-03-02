@@ -538,14 +538,14 @@ CloseRef DFB   0
 FileListDA DA    FileList
          DS    */$10+1*$10-*     ; Make a gap to the nearest $10 in memory
 
-FileList DIR   'BLKS/WD11';Blox ; Wd1 Blocks             00
-         DIR   'BLKS/WD21';Blok ; Wd2 Blocks             01
-         DIR   'BLKS/WD31';Blox ; Wd3 Blocks             02
-         DIR   'BLKS/WD41';Blok ; Wd4 Blocks             03
-         DIR   'BLKS/WD51';Blox ; Wd5 Blocks             04
-         DIR   'BLKS/WD61';Blox ; Wd6 Blocks             05
-         DIR   'BLKS/WD71';Blok ; Wd7 Blocks             06
-         DIR   'BLKS/WD91';Blok ; Special World Blocks   07
+FileList DIR   'BLKS/WD11';Blox ; Wd1 Blocks            00
+         DIR   'BLKS/WD21';Blok ; Wd2 Blocks            01
+         DIR   'BLKS/WD31';Blox ; Wd3 Blocks            02
+         DIR   'BLKS/WD41';Blok ; Wd4 Blocks            03
+         DIR   'BLKS/WD51';Blox ; Wd5 Blocks            04
+         DIR   'BLKS/WD61';Blox ; Wd6 Blocks            05
+         DIR   'BLKS/WD71';Blok ; Wd7 Blocks            06
+         DIR   'BLKS/WD91';Blok ; Special World Blocks  07
 
          DIR   'BLKS/WD11t';Table ; Wd1 Blockmaker table 08
          DIR   'ERROR';0  ; Empty slot                   09
@@ -555,43 +555,43 @@ FileList DIR   'BLKS/WD11';Blox ; Wd1 Blocks             00
          DIR   'BLKS/WD61t';Table ; Wd6 Blockmaker table 0D
          DIR   'ERROR';0  ; Empty slot                   0E
 
-         DIR   'SPR/SPR1';SpriRaw ; Wd1 Level sprites    0F
-         DIR   'SPR/SPR1G';SpriRaw ; Wd1 Guido sprites   10
-         DIR   'SPR/SPR2';SpriRaw ; Wd2 Level sprites    11
-         DIR   'SPR/SPR2G';SpriRaw ; Wd2 Guido sprites   12
-         DIR   'SPR/SPR3';SpriRaw ; Wd3 Level sprites    13
-         DIR   'SPR/SPR3G';SpriRaw ; Wd3 Guido sprites   14
-         DIR   'SPR/SPR4';SpriRaw ; Wd4 Level sprites    15
-         DIR   'SPR/SPR4G';SpriRaw ; Wd4 Guido sprites   16
-         DIR   'SPR/SPR5';SpriRaw ; Wd5 Level sprites    17
-         DIR   'SPR/SPR5G';SpriRaw ; Wd5 Guido sprites   18
-         DIR   'SPR/SPR6';SpriRaw ; Wd6 Level sprites    19
-         DIR   'SPR/SPR6G';SpriRaw ; Wd6 Guido sprites   1A
-         DIR   'SPR/SPR7';SpriRaw ; Wd7 Level sprites    1B
-         DIR   'SPR/SPR7G';SpriRaw ; Wd7 Guido sprites           1C
-         DIR   'SPR/SPR9';SpriRaw ; Special World Level sprites  1D
-         DIR   'SPR/SPR9G';SpriRaw ; Special World Guido sprites 1E
-         DIR   'SPR/SPR1';SpriRaw ; Wd8 Level sprites (so far)   1F
-         DIR   'BLKS/WD81';KQVDirec ; Wd8 Guido sprites          20
+         DIR   'SPR/SPR1';SpriRaw ; Wd1 Level sprites   0F
+         DIR   'SPR/SPR1G';SpriRaw ; Wd1 Guido sprites  10
+         DIR   'SPR/SPR2';SpriRaw ; Wd2 Level sprites   11
+         DIR   'SPR/SPR2G';SpriRaw ; Wd2 Guido sprites  12
+         DIR   'SPR/SPR3';SpriRaw ; Wd3 Level sprites   13
+         DIR   'SPR/SPR3G';SpriRaw ; Wd3 Guido sprites  14
+         DIR   'SPR/SPR4';SpriRaw ; Wd4 Level sprites   15
+         DIR   'SPR/SPR4G';SpriRaw ; Wd4 Guido sprites  16
+         DIR   'SPR/SPR5';SpriRaw ; Wd5 Level sprites   17
+         DIR   'SPR/SPR5G';SpriRaw ; Wd5 Guido sprites  18
+         DIR   'SPR/SPR6';SpriRaw ; Wd6 Level sprites   19
+         DIR   'SPR/SPR6G';SpriRaw ; Wd6 Guido sprites  1A
+         DIR   'SPR/SPR7';SpriRaw ; Wd7 Level sprites   1B
+         DIR   'SPR/SPR7G';SpriRaw ; Wd7 Guido sprites  1C
+         DIR   'ERROR';0  ; Empty slot                  1D
+         DIR   'ERROR';0  ; Empty slot                  1E
+         DIR   'SPR/SPR1';SpriRaw ; Wd8 Level sprites (so far) 1F
+         DIR   'SPR/SPR8G';KQVDirec ; Wd8 Guido sprites 20
 
-         DIR   'MAPS/WD1A';Slots ; Wd1 Map block A 21
-         DIR   'MAPS/WD1B';Slots ; Wd1 Map block B 22
-         DIR   'MAPS/WD2A';Slots ; Wd2 Map block A 23
-         DIR   'MAPS/WD2B';Slots ; Wd2 Map block B 24
-         DIR   'MAPS/WD3A';Slots ; Wd3 Map block A 25
-         DIR   'MAPS/WD3B';Slots ; Wd3 Map block B 26
-         DIR   'MAPS/WD4A';Slots ; Wd4 Map block A 27
-         DIR   'MAPS/WD4B';Slots ; Wd4 Map block B 28
-         DIR   'MAPS/WD5A';Slots ; Wd5 Map block A 29
-         DIR   'MAPS/WD5B';Slots ; Wd5 Map block B 2A
-         DIR   'MAPS/WD6A';Slots ; Wd6 Map block A 2B
-         DIR   'MAPS/WD6B';Slots ; Wd6 Map block B 2C
-         DIR   'MAPS/WD7A';Slots ; Wd7 Map block A 2D
-         DIR   'MAPS/WD7B';Slots ; Wd7 Map block B          2E
+         DIR   'MAPS/WD1A';Slots ; Wd1 Map block A  21
+         DIR   'MAPS/WD1B';Slots ; Wd1 Map block B  22
+         DIR   'MAPS/WD2A';Slots ; Wd2 Map block A  23
+         DIR   'MAPS/WD2B';Slots ; Wd2 Map block B  24
+         DIR   'MAPS/WD3A';Slots ; Wd3 Map block A  25
+         DIR   'MAPS/WD3B';Slots ; Wd3 Map block B  26
+         DIR   'MAPS/WD4A';Slots ; Wd4 Map block A  27
+         DIR   'MAPS/WD4B';Slots ; Wd4 Map block B  28
+         DIR   'MAPS/WD5A';Slots ; Wd5 Map block A  29
+         DIR   'MAPS/WD5B';Slots ; Wd5 Map block B  2A
+         DIR   'MAPS/WD6A';Slots ; Wd6 Map block A  2B
+         DIR   'MAPS/WD6B';Slots ; Wd6 Map block B  2C
+         DIR   'MAPS/WD7A';Slots ; Wd7 Map block A  2D
+         DIR   'MAPS/WD7B';Slots ; Wd7 Map block B  2E
          DIR   'MAPS/WD9A';Slots ; Secret World Map block A 2F
 
          DIR   'KQD/SCENE1';KQVSlot ; Wd8 Beginnig scene block 30
-         DIR   'ERROR';0  ; Empty slot                          31
+         DIR   'ERROR';0  ; Empty slot 31
          DIR   'ERROR';0  ; Empty slot 32
          DIR   'ERROR';0  ; Empty slot 33
          DIR   'ERROR';0  ; Empty slot 34
@@ -608,10 +608,10 @@ FileList DIR   'BLKS/WD11';Blox ; Wd1 Blocks             00
          DIR   'ERROR';0  ; Empty slot 3F
 
          DIR   'SPEC/ACIDPT';AcidPtrn ; Acid land wave patterns 40
-         DIR   'PX/SPLASH.Z';ShrA ; Splash screen    41
-         DIR   'PX/CHARSET';Char ; Chracter set      42
-         DIR   'PX/TITLE';TitleStr ; Title page      43
-         DIR   'CREDITS';ThisProg ; Main Prog    44
+         DIR   'PX/SPLASH.Z';ShrA ; Splash screen     41
+         DIR   'PX/CHARSET';Char ; Chracter set       42
+         DIR   'PX/TITLE';TitleStr ; Title page       43
+         DIR   'CREDITS';ThisProg ; Credits Program   44
          DIR   'SPEC/CREDF1';$024000 ; Credits font 1 45
          DIR   'SPEC/CREDF1';$028000 ; Credits font 2 46
          DIR   'ERROR';0  ; Empty slot 47

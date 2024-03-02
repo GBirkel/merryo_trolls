@@ -219,7 +219,6 @@ def main(argv):
 
 	add_obj_file_to_image('BLKS', 'WD11', '0x06', '0x1000')
 	add_obj_file_to_image('BLKS', 'WD11T', '0x06', '0x2000')
-	add_obj_file_to_image('BLKS', 'WD81', '0x06', '0x1000')
 
 	add_obj_file_to_image('SPEC', 'ACIDPT', '0x06', '0x2000')
 	add_obj_file_to_image('SPEC', 'CREDF1', '0x06', '0x2000')
