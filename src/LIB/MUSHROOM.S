@@ -13,15 +13,15 @@
 
          MX    %10
 Mushey   ldx   Tmp
-         lda   #$78
+         lda   #$78     ; Offset of mushroom types in sprite table
          clc
          adc   SprI+2,x
-         sta   DraW,y     ; Set up the picture
+         sta   DraW,y
          lda   SprI+1,x
-         and   #$0F
-         beq   :NotFrozen    ; update freeze counter
+         and   #$0F     ; Countdown to not being frozen in place
+         beq   :NotFrozen
          dec   SprI+1,x
-         jmp   Mushey24
+         jmp   MushroomDoneWithGrabbedCheck
 :NotFrozen rep   #$20
          lda   SprI+6,x
          and   #$00FF
@@ -42,7 +42,7 @@ Mushey   ldx   Tmp
          lda   SprI+1,x
          and   #$f0
          bne   Mushey6    ; If heading back, go to other routine.
-         lda   SprI+7,x   ; if slice = 0, check for obstacle
+         lda   SprI+7,x   ; if slice = 0, check for obstacles
          beq   Mushey4
          inc
          cmp   #$05
@@ -54,7 +54,7 @@ Mushey   ldx   Tmp
          sta   Tmp3
          sep   #$20
          lda   #$00
-:NotOnEdge BRA   Mushey8
+:NotOnEdge bra   MushroomDoneWithLRCheck
 Mushey4  ldx   Tmp3
          lda   MapBl+$C,x
          ldx   Tmp
@@ -63,12 +63,12 @@ Mushey4  ldx   Tmp3
          lda   #$80       ; Reverse direction
          sta   SprI+1,x
          lda   #$00
-         bra   Mushey8
+         bra   MushroomDoneWithLRCheck
 Mushey5  lda   #$01
-         bra   Mushey8
+         bra   MushroomDoneWithLRCheck
 Mushey6  lda   SprI+7,x
          dec
-         bpl   Mushey8
+         bpl   MushroomDoneWithLRCheck
          ldx   Tmp3
          lda   MapBl-$C,x
          ldx   Tmp
@@ -76,7 +76,7 @@ Mushey6  lda   SprI+7,x
          bcc   Mushey7
          lda   #$00
          sta   SprI+1,x
-         bra   Mushey8
+         bra   MushroomDoneWithLRCheck
 Mushey7  dec   SprI+6,x
          rep   #$20
          lda   Tmp3
@@ -85,26 +85,28 @@ Mushey7  dec   SprI+6,x
          sta   Tmp3
          sep   #$20
          lda   #$04
-Mushey8  sta   SprI+7,x   ; underside check:
-         inc   SprI+3,x
-         lda   SprI+5,x
-         bne   Mushey10   ; if the vertical slice isn't 0, he falls
-         ldx   Tmp3       ; if it IS 0, we check for the block under
+MushroomDoneWithLRCheck = *
+         sta   SprI+7,x
+         inc   SprI+3,x     ; Increase downward velocity by default
+         lda   SprI+5,x     ; if the vertical slice isn't 0, he falls
+         bne   MushroomDoneWithBelowCheck
+         ldx   Tmp3         ; if it IS 0, we check the block under
          lda   MapBl+1,x
          ldx   Tmp
          cmp   #BlkId_Pltfm
-         bcs   Mushey9    ; If it's not solid, don't reset the Vv
-         lda   SprI+7,x   ; If mushey is not on a
-         beq   Mushey10   ; single block, check the block "in front"
+         bcs   :OnSolid      ; If it's not solid, don't reset the vertical velocity
+         lda   SprI+7,x     ; If he's not on just one block, check the adjacent one
+         beq   MushroomDoneWithBelowCheck
          ldx   Tmp3
          lda   MapBl+$D,x
          ldx   Tmp
          cmp   #BlkId_Pltfm
-         Bcc   Mushey10
-Mushey9  lda   #$80       ; Okay, now we've checked for a drop
-         sta   SprI+3,x   ; and incremented the Vv.
+         bcc   MushroomDoneWithBelowCheck
+:OnSolid lda   #$80       ; If his velocity is neutral,
+         sta   SprI+3,x   ; We skip the vertical position update.
 Mushey11 jmp   Mushey16
-Mushey10 lda   SprI+3,x   ; Next we need to update it to the location.
+MushroomDoneWithBelowCheck = *
+         lda   SprI+3,x   ; Next we need to update it to the location.
          cmp   #$80       ; If the speed is neutral,
          beq   Mushey11   ; don't bother to update
          eor   #$80
@@ -117,10 +119,7 @@ Mushey10 lda   SprI+3,x   ; Next we need to update it to the location.
          and   #$0F
          sta   SprI+5,x   ; number of sections up
          lda   Tmp2
-         lsr
-         lsr
-         lsr
-         lsr
+         LSRS  4
          clc
          adc   SprI+4,x   ; number of blocks up
          sta   SprI+4,x
@@ -158,12 +157,12 @@ Mushey15 lda   Tmp2
 Mushey16 lda   SprI+6,x
          inc
          cmp   GPositionXBlk
-         bcc   Mushey24   ; Too far before the freak
+         bcc   MushroomDoneWithGrabbedCheck   ; Too far before the freak
          dec
          dec
          dec
          cmp   GPositionXBlk
-         bcs   Mushey24   ; Too far after the bozo
+         bcs   MushroomDoneWithGrabbedCheck   ; Too far after the bozo
          lda   SprI+6,x
          cmp   GPositionXBlk
          beq   Mushey18   ; If on the same block, contact.
@@ -172,29 +171,39 @@ Mushey16 lda   SprI+6,x
          dec
          cmp   GPositionXFifth
          bcs   Mushey18   ; Not within boundary? No grab.
-         bra   Mushey24
+         bra   MushroomDoneWithGrabbedCheck
 Mushey17 lda   SprI+7,x
          cmp   GPositionXFifth
-         bcs   Mushey24
+         bcs   MushroomDoneWithGrabbedCheck
 Mushey18 lda   GPositionYBlk
          inc
          inc
          cmp   SprI+4,x
-         bcc   Mushey24   ; V check above
+         bcc   MushroomDoneWithGrabbedCheck   ; V check above
          lda   SprI+4,x
          inc
          cmp   GPositionYBlk ; V check below
-         bcc   Mushey24
+         bcc   MushroomDoneWithGrabbedCheck
          lda   SprI+4,x   ; Both on same block?
          cmp   GPositionYBlk
-         beq   Mushey23   ; Then the mushroom is definitely in reach
+         beq   MushroomGrabbed  ; Then the mushroom is definitely in reach
          inc
          cmp   GPositionYBlk ; Is shroom one below?
-         bne   Mushey22
+         bne   :NotOneBelow
          lda   SprI+5,x
          cmp   GPositionYSlice ; Either it's nabbed, or no contact.
-         bcc   Mushey24
-Mushey23 rep   #$20
+         bcc   MushroomDoneWithGrabbedCheck
+         bra   MushroomGrabbed
+:NotOneBelow lda   GPositionYBlk
+         inc              ; Avoid 0 wrap!
+         inc
+         cmp   SprI+4,x   ; Is Guido 2 below?
+         bne   MushroomGrabbed
+         lda   SprI+5,x
+         cmp   GPositionYSlice ; Then it's a contest check
+         bcs   MushroomDoneWithGrabbedCheck
+MushroomGrabbed = *
+         rep   #$20
          lda   SprI+2,x   ; Yipee! Guido gets a mushroom!
          and   #$000F
          phy
@@ -210,15 +219,8 @@ Mushey23 rep   #$20
          plx
          ply
          jmp   KillDis    ; Kill the mushroom
-Mushey22 lda   GPositionYBlk
-         inc              ; Avoid 0 wrap!
-         inc
-         cmp   SprI+4,x   ; Is Guido 2 below?
-         bne   Mushey23
-         lda   SprI+5,x
-         cmp   GPositionYSlice ; Then it's a contest check
-         bcc   Mushey23
-Mushey24 rep   #$20
+MushroomDoneWithGrabbedCheck = *
+         rep   #$20
          lda   SprI+7,x
          and   #$00FF
          sta   Tmp
@@ -230,37 +232,38 @@ Mushey24 rep   #$20
          adc   Tmp
          sta   Tmp
          cmp   WinXEdgeTotalFifths
-         bcs   Mushey25
+         bcs   MushrmDone
          lda   WinXEdgeTotalFifths ; Also left behind- kill!
          sec
-         sbc   Tmp        ; In a city where crooks are all roamin',
-         cmp   #$004d     ; Got a dirty old rental I made my home in,
-         bcc   :Br1       ; And I once had a dog, but he went out
-         cmp   #$0068     ; on the highway and got his head bashed in, aww man
-         bcc   Mushey25   ;
-         jmp   KillDis    ; I got a case of beer to booze on,
-:Br1     sta   Tmp3       ; Got a wife --who's a flooze,
-         lda   SprI+4,x   ; I got ten trillion channels of reruns,
-         and   #$000F     ; on cable to choose from.
-         ASLS  4          ;
-         sta   Tmp2       ; Man, I'm afraid of heights...
-         lda   SprI+5,x   ; And me and my neighbor's cat, we got in a fight.
-         and   #$000F     ; And I got a broken light, needs replacin',
-         clc              ; Really sucks... went right out, aww maan...
-         adc   Tmp2       ; And I have to go,
-         dec              ; To the store to get one new,
-         sta   Tmp2       ; But man, when I wanna telephone you,
-         ASLS  2          ; Well...  I always get that damn answering machine!
-         clc              ;
-         adc   Tmp2       ; <click> "hello?"
-         ASLS  4          ; "Uh, yeah, I'd like to speak to-"
-         clc              ; "HAH! Fooled you!  I don't beleive ya fell for
-         adc   Tmp3       ;  that! Like I ever even want to hear from YOU!"
-         inc              ; <click>
-         sta   DraW+1,y   ; "Awww, maaaan...
-         inc   SpritesOnScreenCnt ;
-Mushey25 sep   #$20       ; -Garote & Andy's dubbed version of
-         rts              ;  Pink Floyd's "Nobody Home"
+         sbc   Tmp
+         cmp   #$004d
+         bcc   :DrawIt
+         cmp   #$0068   ; Too far away from Guido; remove it
+         bcc   MushrmDone
+         jmp   KillDis
+:DrawIt  sta   Tmp3
+         lda   SprI+4,x
+         and   #$000F
+         ASLS  4
+         sta   Tmp2
+         lda   SprI+5,x
+         and   #$000F
+         clc
+         adc   Tmp2
+         dec
+         sta   Tmp2
+         ASLS  2
+         clc
+         adc   Tmp2
+         ASLS  4
+         clc
+         adc   Tmp3
+         inc
+         sta   DraW+1,y
+         inc   SpritesOnScreenCnt
+MushrmDone = *
+         sep   #$20      
+         rts             
 
 Mushey69 DA    Mushey70,Mushey71,Mushey72,Mushey73,Mushey74
 
@@ -277,13 +280,42 @@ Mushey70 ldal  WldCndtn+ShelPage ; Guido life
          stal  $0121e0+129,x
          stal  $012280+129,x
 AlrdyFul rts
-Mushey71 lda   #GuidoSprId_Horns        ; Horns
+Mushey71 lda   #GuidoSprId_Horns    ; Horns
          sta   GCurrentSpr_Head
          rts
-Mushey72 lda   #GuidoSprId_Beanie        ; Beanie
+Mushey72 lda   #GuidoSprId_Beanie   ; Beanie
          sta   GCurrentSpr_Head
          rts
-Mushey73 lda   #GuidoSprId_Shades        ; Shades
+Mushey73 lda   #GuidoSprId_Shades   ; Shades
          sta   GCurrentSpr_Eye
          rts
 Mushey74 jmp   LivesInc   ; Extra life
+
+; In a city where crooks are all roamin',
+; Got a dirty old rental I made my home in,
+; And I once had a dog, but he went out
+; on the highway and got his head bashed in, aww man
+;
+; I got a case of beer to booze on,
+; Got a wife --who's a flooze,
+; I got ten trillion channels of reruns,
+; on cable to choose from.
+;
+; Man, I'm afraid of heights...
+; And me and my neighbor's cat, we got in a fight.
+; And I got a broken light, needs replacin',
+; Really sucks... went right out, aww maan...
+; And I have to go,
+; To the store to get one new,
+; But man, when I wanna telephone you,
+; Well...  I always get that damn answering machine!
+;
+; <click> "hello?"
+; "Uh, yeah, I'd like to speak to-"
+; "HAH! Fooled you!  I don't beleive ya fell for
+;  that! Like I ever even want to hear from YOU!"
+; <click>
+; "Awww, maaaan...
+;
+; -Garote & Android's dubbed version of
+;  Pink Floyd's "Nobody Home"

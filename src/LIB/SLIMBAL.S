@@ -13,7 +13,7 @@
 
 SH_Snail ldx   Tmp
          lda   SprI+2,x
-         inc
+         inc              ; Update animation frame
          cmp   #$03
          bne   :Br1
          lda   #$00
