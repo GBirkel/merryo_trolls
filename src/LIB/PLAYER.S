@@ -2,7 +2,16 @@
 * Sprite: Player v0.06
          lst   off
 
-SH_Player   sep   #$20       ; actual entry point
+* 1,2- Offset into script data (starts at 0)
+* 3- Current controls state
+*    bits 1-4: JoystkHDir
+*    bits 5-8: JoystkBtns01
+* 4- Remaining cycles for current state
+* 5- If #$69, sprite is in startup mode
+* 6- Script number assigned to sprite on creation
+
+SH_Player = *
+         sep   #$20
          rep   #$10
          ldx   Tmp
          lda   SprI+5,x
@@ -25,11 +34,12 @@ Player5  rep   #$20
          asl
          tay
          lda   Skriptz,y  ; Set skript location index
-         sta   Player4+1
+         sta   PlayerScriptPointer+1
 Player1  rep   #$20
          lda   SprI+1,x
          tay
-Player4  lda   EndLevA,y  ; Get new status & index
+PlayerScriptPointer = *
+         lda   EndLevA,y  ; Get new status & index
          cmp   #$6969     ; "Return control" ending
          beq   Player2
          cmp   #$7734     ; "Enter door" ending
