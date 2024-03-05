@@ -1,0 +1,100 @@
+<HTML>
+<HEAD>
+<TITLE>Super Merryo Trolls - Fog Effect Detail</TITLE>
+<link rel="stylesheet" href="styles.css" type="text/css" media="screen">
+</HEAD>
+<BODY>
+
+<div class="centering"><H1>Super Merryo Trolls</H1></div>
+
+<div class="centering"><H2>The Fog Register Size Dilemma</H2></div>
+
+<div class="codepages"><div>
+
+<div>LDY $pea_field,x</div>
+<div>LDA $color_table,y</div>
+<div>STA $pea_field,x</div>
+
+</div></div>
+
+<P>
+In theory, this is everything we need to make cheap animated fog on the Apple IIgs. However, our final step - adding the X register - has actually introduced a huge problem. 
+</P><P>
+In the Apple IIgs, the registers can be set to work with one-byte values or with two-byte values. Depending on what mode you're in, a LDA will load one byte or two, a STA will store one byte or two, et cetera. Same with LDY and STY for the Y register, and LDX and STX for the X register, and any other command involving a register.
+</P><P>
+In the code above, we want the first command (LDY) to load just one byte, so that we use only two pixels as the index into the color table.  In the next command (LDA) we want just one byte out of the table, and in the last step (STA) we only want to write one byte back into the PEA field.  To do this, the A and Y registers need to be in 8-bit mode.  By contrast, the X register needs to be in 16-bit mode, because we're using it as an index into the whole PEA field, which will move around in memory as Guido scrolls around the level.  To summarize, for this code to work we need an 8-bit A register, an 8-bit Y register, and a 16-bit X register. 
+</P><P>
+Guess what! That combination of modes is impossible on the Apple IIgs. Hooray! Everything's ruined! 
+</P><P>
+The problem is, the sizes of the X and Y registers always have to match. They can both be 8-bit or they can both be 16-bit, but you can't mix them. We've got to have a 16-bit index, and it has to be either X or Y. (We can't make the A register 16-bit and then use it as the index because there are no assembly language commands that use the A register that way.) 
+</P><P>
+It's true that we have a variety of other commands and methods we could use to get around this problem.  Without going into detail, here's a short list of solutions we considered while programming the "fog effect" for Gothic Land.  To restate the problem:  The X and Y registers have to match in size.  They can both be 16-bit, or both be 8-bit, but no other combinations.
+</P>
+
+<OL>
+<li>
+
+We could set everything to 16-bit mode, and shoehorn the 8-bit values into the 16-bit registers by masking off the "high byte", with an elaborate set of commands like:
+
+<div class="codepages"><div>
+
+<div>LDA $pea_field,x</div>
+<div>AND #$00FF</div>
+<div>TAY</div>
+<div>LDA $pea_field,x</div>
+<div>AND #$FF00</div>
+<div>STA $00</div>
+<div>LDA $color_table,y</div>
+<div>ORA $00</div>
+<div>STA $pea_field,x</div>
+
+</div></div>
+
+... Of course, this approach is insanely inefficient.
+
+</li><LI>
+
+We could set the "high byte" of the A and Y registers to 0 before placing the A register into 8-bit mode, and replace the LDY with a LDA, followed by a TAY.  The Y register would be in 16-bit mode, but when we use it as an index, it would only have the "low byte" from the A register in it.
+
+</li><li>
+
+We could maintain a second copy of the whole PEA field, with every block "pre-converted" to the lighter color set, and eliminate table-lookups altogether while drawing the fog.  It would just be:
+
+<div class="codepages"><div>
+
+<div>LDA $foggy_pea_field,x</div>
+<div>STA $pea_field,x</div>
+
+</div></div>
+
+We could even pre-convert the blockset too, so we don't have to do any table lookups when making the second PEA field. ... Memory requirements for the effect would nearly double, of course.
+
+</li><li>
+
+We could make a fog table so large that it works even with 16-bit lookups, and leave everything in 16-bit mode.
+
+</li>
+</OL>
+
+<P>
+All of these solutions are plausible, but the solution we want is the one that runs the fastest.  That immediately rules out solutions 1 and 2, because they add additional CPU cycles to every single tiny piece of fog we draw.  Extra commands inside the tiniest of loops are what kill performance, and the Apple IIgs practically drags just sitting idle.
+</P><P>
+Solution 3 seems promising, and the extra memory requirements are not a big deal, but we have to consider what happens when Guido scrolls through the level.  Each time we need to draw another stripe of background we have to draw it a second time in the "lightened" color style, so we can refer to it later when drawing pieces of fog.  Balancing the six cycles we save from each piece of fog with the six to twelve cycles required to draw each piece of the background is a tough judgement call, and would depend on the approach we use to draw the blocks as well as the complexity of the fog.
+</P><P>
+Solution 4 is more of a brute-force method - instead of a 256-byte lookup table, we'd use a 65536-byte lookup table, and everything else remains the same.  However, to make this work, we'd have to restrict our use of color even further than we already have.  Of course, speed demons that we were, solution 4 was the one we favored.
+</P><P>
+So instead of a 256-byte lookup table, we use a 65536-byte lookup table, and our fog drawing code runs as-is.  Unfortunately, to make this work, we have to restrict our use of color even further than we already are.  You'll see why in a moment.
+</P><P>
+Making a 16-bit lookup table for fog colors can be done the same way we make the 8-bit table:  At each memory location a 16-bit value could point to, place an equivalent "foggy" value that it can be replaced with.  Unfortunately, an issue comes up that doesn't exist with the 8-bit table:  The Apple IIgs memory space only holds one byte per location.  If we use the pixel data #$2222 as an index, and store a 16-bit value, 8 of those 16 bits go into location $2222, and the other 8 go into $2223.  If we then tried to store 16 bits of data at the index $2223, we'd be overwriting half the data we wrote last time!  To keep things orderly, we must only store to the even-numbered memory locations: $1000, $1002, $1004, etc.  That way we can keep our 16-bit values safe from each other.
+</P><P>
+The immediate consequence of this arrangement is that if we want to find the lightened version of, say, the pixel data #$2345 ... it's not in the array.  In general, any block of pixel data that forms an odd-numbered memory address is going to load scrambled data from this array, and write crap back to the PEA field instead of nice fog-lightened colors.  To prevent this from happening, the last digit in the value - the last pixel in the group of four pixels - must always refer to an even color value.  That means every fourth column of pixels in the <I>whole background</I> can only be drawn with half the available colors.  That sucks.
+</P><P>
+(And no, we can't get around this addressing problem by just multiplying the pixel data by 2, to make it always refer to even index locations.  Multiplying a 16-bit value by 2 turns it into a 17-bit value, and the Apple IIgs is a strictly 16-bit machine.  The 17th bit would just get chopped off, and instead of the lowest of four pixels being restricted, the highest of four pixels would be restricted in exactly the same way.  Curses, foiled again.)
+</P><P>
+Using this approach was probably not the best decision, from a game-design standpoint.  We made it exclusively on the basis of speed without considering the artistic restrictions it carried.  Our reasoning makes sense only when you consider the software landscape at the time:  Big companies with art departments were cranking out pretty games, and they all ran like molasses on our computer of choice.  Art was important, but speed was the real challenge, the true measure of 1337-h4x0r1ng and the road to glory.
+</P><P>
+So we took our blockset for Gothic Land and clamped every fourth pixel down to the even colors only.  (Naturally, we wrote an Assembly Language program to manipulate the data for us.)  The result looked nasty at first, so we spent some time cleaning it up, with mixed results.  Eventually we decided that we should only use fog in the first and second levels because of the impact it had on the art.
+</p>
+
+</BODY>
+</HTML>

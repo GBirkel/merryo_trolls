@@ -1,0 +1,657 @@
+<html>
+<head>
+<title>Super Merryo Trolls</title>
+<link rel="stylesheet" href="styles.css" type="text/css" media="screen">
+</head>
+<body>
+
+<div class="centering"><h1>Super Merryo Trolls</h1></div>
+<div class="centering"><h2>Part Two</h2></div>
+
+<div class="centering">
+<table cellspacing=10 class="contents"><tr><td>
+
+<OL class="chapters">
+<li><A HREF="index.html#intro">Introduction</A></li>
+<li><A HREF="index.html#challenge">The Challenge</A></li>
+<li><A HREF="index.html#crash">Crash Course In Assembler</A></li>
+<li><A HREF="index.html#pea">The PEA Field</A></li>
+<li><A HREF="index.html#stupid">Stupid PEA Tricks</A></li>
+</OL>
+
+</TD><TD>
+
+<OL START=6 class="chapters">
+<li><A HREF="#further">Further Graphic Barbarity</A></li>
+<li><A HREF="#blocks">The Blockset</A></li>
+<li><A HREF="#sprites">Drawing Sprites</A></li>
+<li><A HREF="#messages">Message Blocks</A></li>
+<li><A HREF="#maps">The Level Maps</A></li>
+</OL>
+
+</TD><TD>
+
+<OL START=11 class="chapters">
+<li><A HREF="part_three.html#kings">The Kings Quest Thing</a></li>
+<li><A HREF="part_three.html#dungeon">Dungeon Faster</a></li>
+<li><A HREF="part_three.html#gallery">A Gallery Of Other Weirdness</a></li>
+<li><A HREF="part_three.html#support">Support Programs</a></li>
+<li><A HREF="part_three.html#code">Resurrection And Code</a></li>
+</OL>
+
+</td></tr></table>
+</div>
+
+<A NAME="further"><div class="centering"><h3>Further Graphic Barbarity</h3></div></a>
+
+<p>
+To round out the tour of cheap visual effects, we'll discuss the "fog effect" of Merryo Trolls World 4: Gothic Land.
+</p><p>
+In a modern 3D engine, the name "fog effect" would describe a situation where shapes on the screen get progressively more tinted as they move away from the viewer in 3D space. In the more primitive world of 2D graphics, however, a "fog effect" is usually a flat tinted overlay that moves around on top of a bunch of other layers, giving the impression that they're behind a cloud bank. The popular Super Nintendo game <i>Castlevania IV</i> used this effect generously, and it looked pretty good since the Super Nintendo had a special graphics mode to facilitate it, and could display thousands of different colors on the screen at a time. 
+</p><p>
+Compare that with the situation inside the Apple IIgs: No special graphics mode, and unless you worked within various restrictions, only 16 colors on the screen at once. In Gothic Land, the sixteen colors we used were these: 
+</p>
+
+<div class="centering"><div><img src="fog-pallette.png" style="max-width:535px;" /></div></div>
+
+<p>
+Doing any kind of graphics with only 16 colors is an invitation for hilarity, but ... a "fog effect"? In color?  You may ask why we even bothered.  We were teenagers, and this was a new frontier and our obsession.  We were no different from the kids who hung around the school's auto shop, installing neon tubing under their cars and and welding ugly metal "spoilers" onto them.  People laughed and called it pathetic, but we thought it was terrific and had a great time.
+</p><p>
+... Of course, that wasn't how we saw it <i>during</i> High School.  We considered ourselves the intellectual elite, and mocked the auto shop guys along with everyone else.  High School truly is a terrible time.
+</p><p>
+Anyway, here's how the "fog effect" worked:
+</p><p>
+At the simplest level, transparency is achieved by taking two pixels and averaging them mathematically into one. Do this for two whole images, and the images appear superimposed. (You can't really tell which one is supposed to be "on top" without some other visual cue, like one image being of bricks and the other of clouds, or one image scrolling faster than the other.)
+</p>
+
+<div class="centering fit">
+<video	src="fog_demo-loop.mp4"
+		poster="fog_demo-loop.jpg"
+		type="video/mp4"
+		controls="" autoplay="" loop="" muted="" playsinline=""></video>
+</div>
+
+<p>
+An even cheaper way to convey the illusion of "fog" is to swap dark colors on a source image for light colors, to create fingers of mist like in the screenshot above.  This isn't real transparency because the colors always brighten instead of averaging, but it's easier to apply and allows for easier re-use of colors.  For example, in the Gothic Land palette, we replace color 1 with color 2, turning blue into lighter blue. We replace color 0 with color B, turning black into the darkest available grey. The "foggy" version of all the lightest colors ends up being white, hence colors 2, 6, and A all turn into F.  We picked a similar transition for every color in the palette:
+</p>
+
+<div class="centering"><div><img src="fog-steps.png" /></div></div>
+
+<p>
+There's no easy mathematical algorithm to describe these transitions, but if we just create an array of the lightened colors, then picking the right color becomes trivial: 
+</p>
+
+<div class="centering"><div><img src="fog-charted.png" /></div></div>
+
+<p>
+Using an array, the lightened version of color 0 is at array position 0, the lightened version of color 1 is at array position 1, and so on. So all we need to do is load single pixel values from the PEA Field, use those to grab replacement pixels from the array, and then write the new pixels back over the old ones. Instant color lightening. 
+</p><p>
+Doing it one pixel at a time is a valid method, but it's disturbingly slow. (Reminder: <i>Everything</i> on the Apple IIgs is slow. It's <i>disturbingly</i> slow that you must worry about.) The problem is, each pixel is a four-bit value (from 0 to F), so each byte of memory covers two pixels. The byte $7D, for example, is a pixel of color 7 next to a pixel of color D. The smallest chunk of information that the Apple IIgs is able to work with efficiently is one byte, so working with one pixel at a time requires a lot of hairy sub-byte operations ... ANDs and EORs and ASLs and lots and lots of CPU cycles; yeech. Fortunately, another trivial workaround is available: Just use a bigger array.
+</p><p>
+If we can make an array for lightening one pixel, then we can just as easily make an array for lightening two pixels at a time. In fact, it's much easier because the two adjacent pixels stored inside each byte already form one convenient index value, which can point directly to their replacement byte. 
+</p><p>
+Let's consider some examples:
+</p>
+
+<ul>
+<li>If the pixels you want to replace are both dark blue (color 1), they form the byte $11. You want to replace them both with light blue (color 2), so in array location $11 you keep the value $22.</li>
+<li>If you've got dark blue next to black, that's $10. You want to turn the dark blue (1) to light blue (2), and the black (0) to the darkest grey (B), so in array location $10 you'd put the value $2B. Likewise, in array location $01 you'd put the value $B2.</li>
+</ul>
+
+<p>
+The rest of the array can be built along the same lines, covering all the possible combinations of two colors. Here's a visual representation of the completed array used in Gothic Land:
+</p>
+
+<div class="centering"><div><img src="fog-array.png" /></div></div>
+
+<p>
+(Building such a data table by hand would have been tedious. Instead, we wrote <a href="fogtable_basic.html">a program in BASIC</a> that coughed it out.)
+</p><p>
+So with a little 256 byte table, color lightening can happen a byte at a time. Our three-step sequence of "load old color, load replacement color, store over old color" becomes "load old byte, load replacement byte, store over old byte". And that can translate cleanly into three Assembly Language commands:
+</p>
+
+<div class="codepages"><div>
+
+<div>LDY $pea_field</div>
+<div>LDA $color_table,y</div>
+<div>STA $pea_field</div>
+
+</div></div>
+
+<p>
+Looks great. If we put the Apple IIgs CPU registers into "8-bit" mode, so they only load and store a single byte at a time, then these commands will work perfectly with the 256-byte array.  There's only one catch:  The fog needs to move.  In order to draw your fog at different offsets in the PEA Field and achieve animation, you need to involve a variable in all your loads and stores, so you can change it each time you run through the code. 
+</p><p>
+Fortunately, the Apple IIgs CPU has three registers: A, X, and Y. We're already using A and Y, but we can use X as an index to our loads and stores in the PEA Field:
+</p>
+
+<div class="codepages"><div>
+
+<div>LDY $pea_field,x</div>
+<div>LDA $color_table,y</div>
+<div>STA $pea_field,x</div>
+
+</div></div>
+
+<p>
+In theory, this is everything we need to make cheap animated fog on the Apple IIgs. However, our final step - adding the X register - has actually introduced a <a href="fog_approaches.html">huge problem.</a>
+</p><p>
+Follow the link for all the gory details ... But to make a long story short, because of this huge problem, we used an even <i>bigger</i> array:  An array built to draw the fog four pixels at a time.  Almost.  The largest array that the Apple IIgs can index with one register is 65536 bytes, or just enough for a grid of 256x256 bytes.  But what we really wanted was a grid of 256x256 <i>pairs</i> of bytes, and that was impossible ... so we compromised and skipped every other value, making a 128x256 array.  We could only substitute even values with it - $2A02 and $2A04 for example, but not $2A05 - which messed with the quality of our art.  On any level with fog, every fourth pixel was restricted to 8 possible colors.
+</p><p>
+Our one-man art department might have complained, except he was also a programmer, and we all shared the same crazy motivation:  We didn't want people to look at the screen and see a pretty drawing.  We wanted them to look at the screen and wonder, "How did they make that drawing move so fast?"
+</p><p>
+So we built a 65536-byte lookup table, consisting of 128x256 pairs of 16-bit fog values.  (Actually we <a href="large_fog_table.html">generated it dynamically</a> from the 8-bit table when the game started.)  We filled the PEA Field with specially tweaked blocks, ensuring that every 16-bit value pushed by a PEA was an even number.  With the background and the table prepared, we were set to draw the fog and make it move.
+</p>
+
+<div class="centering"><div><img src="fog-clouds.png" style="max-width:640px;" /></div></div>
+
+<p>
+This is the fog overlay.  It's a screenful of mist, drawn in Deluxepaint, carefully designed to loop horizontally.  It's made of four-pixel chunks, so the edges of the mist always occur on handy four-pixel intervals.  Since any part of it can be drawn four pixels at a time, we can use our huge 128x256 array to draw it.
+</p><p>
+Since Guido would be scrolling left and right on the level, we had to be able to draw the fog in small vertical stripes.  That way we could just draw the stripes of fog that were new to the screen with each update, instead of updating the whole thing.  But drawing new fog was only half the problem:  We also had to make it move relative to the background.
+</p><p>
+With the fog already divided into vertical stripes, it was easy to see the most efficient method of animating it:  We didn't have to redraw each entire stripe with every update.  Instead, we just had to draw and erase the little bits of each stripe that made it <i>different from its neighbor</i>.  For example, if we had drawn the sequence D E F G H, we just needed to alter stripe D until it turned into stripe E, and alter stripe E until it became stripe F, and so on, resulting in the sequence E F G H I.  The end result is that all the stripes appear to move one slot to the left, and animation occurs.
+</p>
+
+<div class="centering fit"><div><img src="fog_clouds_compile.png" style="max-width:956px;"  /></div></div>
+
+<p>
+This animation trick is an old one.  Older than dirt.  What's unique here is our method of implementing it:
+</p><p>
+<a href="fog_make_basic.html">Write a program</a> to:
+</p>
+
+<ol>
+<li>Isolate each vertical stripe in our fog template image (shown above).
+<li>Locate the stripe to its left. (If we're on the first stripe, we wrap around to the very last stripe and use that.)
+<li>Compare the left stripe with the current stripe, one four-pixel chunk at a time.
+<li>If the chunk is only present in the current stripe, spit out Assembly Language commands that <i>draw</i> that chunk, suitable for embedding in the Merryo Trolls source code.
+<li>If the chunk is only present in the left stripe, spit out Assembly Language commands that <i>erase</i> that chunk, by loading it from a fresh (un-fogged) copy of the background.
+<li>Gather all of these bits of code together into a collection of subroutines, one per stripe.  In each stripe, group all the drawing commands before the erasing commands.
+</ol>
+
+<p>
+Here's a sample of the source code that program generated.  The first three lines draw one chunk of fog.  A typical stripe of fog would require about a dozen of these.  Then comes a single TYX command, which moves our pointer from the Y register to the X register, and we're ready to erase chunks.  The remaining two lines are an example of one erase operation:  A "LDAL" from a pristine copy of the background, and a "STA" into the foggy PEA Field, effectively de-fogging that chunk.  After about a dozen of those, the sequence is complete, and one stripe has been converted into its neighbor.
+</p>
+
+<div class="codepages"><div>
+
+<div>...</div>
+<div>LDX ForeFld+43200,y   ; draw a chunk</div>
+<div>LDA Fogtable,x</div>
+<div class="lineafter">STA ForeFld+43200,y</div>
+
+<div class="lineafter">TYX</div>
+
+<div>LDAL BackFld+40800,x  ; erase a bit of the previous stripe</div>
+<div>STA ForeFld+40800,x</div>
+<div>...</div>
+
+</div></div>
+
+<p>
+You astute members of the audience may notice that the "LDA" command in the drawing code, which gets the replacement pixels from the fog table, appears to be loading from the same memory bank as the PEA Field.  A memory bank is only 64k, and the fog table alone is 64k ... so wouldn't there be no room for it and the PEA Field in one bank?
+</p><p>
+Well, the beginning of the Trolls source code contains these two definitions:
+</p>
+
+<div class="codepages"><div>
+
+<div>ForeFld = $040000</div>
+<div>FogTable = $04FFFF</div>
+
+</div><div class="commentary">
+
+<div>; Foreground field bank</div>
+<div>; (claims all of 5)</div>
+
+</div></div>
+
+<p>
+So in effect, our "LDA" command is starting way up at the very last byte in memory bank $04, and adding the X register to it, which skips it over into bank $05.  Why in the world do we do this?!  So we can use a "LDA" instruction to refer to data in the next bank, instead of doing the proper thing and using the "LDAL" to refer to the bank explicitly.  By doing this, we save <i>one cycle</i> per draw.  Ha ha ho!
+</p><p>
+Anyway, yes yes, we're all very clever.  We also optimized the drawing in other ways.  At the end of the code for each stripe, we inserted the following instructions:
+</p>
+
+<div class="codepages"><div>
+
+<div>...</div>
+<div>INY</div>
+<div>INY</div>
+<div>INY</div>
+<div>NOP</div>
+
+</div></div>
+
+<p>
+Then we immediately began drawing the next stripe.  At the end of all the stripes, we put a "JMP" instruction that jumped straight up to the beginning of the whole set.  So, left unaltered, if we jumped anywhere into this code and began drawing stripes, the code would loop around forever and hang the machine, drawing all the stripes over and over.  Why did we set it up this way?
+</p><p>
+Because our code was self-modifying.  See that "NOP" instruction?  Remember how it does nothing?  Well, while Merryo Trolls was running and you were actually playing the game, the program would locate one of those "NOP" instructions inside itself and replace it with a "RTS" instruction.  It would then jump into the (formerly infinite) loop <i>just after</i> the spot where it put the "RTS".  The code would execute from there, starting with that stripe, altering all the stripes in the PEA Field, one after the other, incrementing the Y register appropriately along the way (all those INY commands after each stripe) ... and then hit the "RTS" instruction and exit the loop, returning to wherever it came from.
+</p><p>
+So we looped through all the stripes exactly once, in exactly the order we needed each time, yet we never had to use any code to keep track of the loop.  It just <i>executed</i> that way.  Unrolling loops is an old trick that your modern compiler now does for you, when appropriate.  Back in the day, we made these choices by hand.  Every cycle counts!
+</p><p>
+The only detail left to address is the scrolling that happens as Guido runs around the level.  The scheme described above is for animating fog that's already on the screen - making it move over the background - by altering the edges of the clouds.  We save a lot of CPU time by just altering those edges.  However, when Guido walks, and a new stripe of block data scrolls onto the screen, we have to draw a whole stripe of fog all at once, on top of that block data.  We pre-compiled each full stripe into code, of course, but the code was <i>much</i> longer than the code for "animating" the stripes. ... So large that it took more than one bank of Apple IIgs memory to hold it all.  A price we gladly paid for the speed increase, of course.
+</p><p>
+So that's how fog worked.  Probably not the way you'd expect.  Any sane person these days would use a couple of clever OpenGL calls to make something twice as good, and the impact on the CPU would be next to nothing.  The details of implementation have changed drastically with 3D hardware.  Still, the logic that informs our choices is the same.
+</p>
+
+<A NAME="blocks"><div class="centering"><h3>The Blockset</h3></div></a>
+
+<p>
+Remember that film "Contact", based on the Carl Sagan novel?  A character in it describes an encoded radio message from aliens with the phrase "Efficiency functioning on multiple levels and in multiple dimensions."  That phrase is also an excellent description of the code programmers like to write.  Unfortunately, there is a phenomenon directly opposed to this effort that anyone in college or working for The Man has to contend with:  A phenomenon called a <i>ship date</i>.
+</p><p>
+The programming described in these pages was done with no deadline whatsoever, and it shows.  That's not to say it's sloppy -- quite the opposite.  Given free reign, we optimized <i>the hell</i> out of everything.  Even if it gave us a speed increase so small that we couldn't detect it, we optimized on general principle.  Optimization was an end unto itself.  It was probably more fun for us to optimize the code than to play the game we were coding for ... which was not a good sign if we ever decided to publish it.
+</p><p>
+Anyway, this is the blockset we designed for World 1 of Merryo Trolls:
+</p>
+
+<div class="centering fit"><div><img src="world_1_blockset.png" style="max-width:640px;" /></div></div>
+
+<p>
+We developed the blocks using paint programs whose canvas was screen-shaped.  One full screen of data in "Super Hi-Res Mode" was about 32k, and when we were done editing the picture we could save it to disk in a simple uncompressed format, and then extract the raw block data from that format with a little BASIC program.  The program would read the blocks out one row at a time, breaking each block into tiny horizontal strips, and append all the strips one after the other in a tall column that ended up being 30k in size.  We made eight screens of blocks, for Worlds 1 - 8, and created eight columns of block data on disk.
+</p><p>
+But that was just the beginning.  As we designed World 1, we came up with ideas for stuff that we wanted on the screen - like grass, sandy hills, various pipes, et cetera - so we broke these items down into blocks and added them to the blockset.  As we added them, we realized that there was a lot of redundancy.  The blocks describing the green hills, for example, were almost identical to each other.  When we looked at the column of block data we were extracting from each screen, we discovered that because of all the similarities, some of the blocks we needed could actually be drawn by combining the lower half of one block in the column with the upper half of the next block.
+</p><p>
+So as we added to the blockset, we carefully rearranged the blocks on the screen to make certain blocks adjacent, so they could share parts in the column.  Then we wrote an editor in BASIC and Assembly Language that allowed us to take each column of blocks and design a big table of pointers for it.  And <i>that table</i> became the <i>real</i> blockset for each World.
+</p><p>
+The following animation shows the process step-by-step:
+</p>
+
+<div class="centering"><img src="blox_into_blox.gif" style="width:85%;max-width:768px;" /></div>
+
+<p>This is the World 1 blockset, drawn in Deluxepaint or some other program made of sheepskins and twine.  The highlighted chunk in the animation is used for drawing vertical pipes.  Pipes are slightly skinnier than the two blocks they occupy on screen, so we need versions with a fringe of blue sky and versions with a fringe of green grass to mesh with the blocks around them.  Here's what we did:</p>
+
+<ul>
+<li>Start by loading this image into memory, as-is.</li>
+<li>Rearrange this grid of blocks, into one tall column of block data - essentially like stacking all the blocks on top of each other in memory, so they are no longer a grid of blocks, or even individual blocks at all, but just a single continuous column.</li>
+<li>Then, use a table of pointers to define new individual blocks from various parts of the column.  (Notice how, in the above example, we derive twelve blocks from eight.)</li>
+<li>Those new blocks are what we use to draw the map for each World.</li>
+</ul>
+
+<p>
+Desktop computers have changed so much that you might wonder:  Why did we write so much code just to lower redundancy in a 32k blockset?  Wouldn't the size of the code cancel out the savings in data?  It probably would have, if we wrote it in C++ and had all the variables padded out to 32 bits.  But in Assembly Language, all the logic to draw the blocks via the table, including an unwound loop for added speed, took less than 100 bytes of space.
+</p><p>
+Even so, why bother with a <i>specific</i> solution, when we could have used a <i>general</i> one?  Couldn't we have just made a huge blockset, and then dumped the whole thing into a zipfile, and let the zip compression algorithm deal with it?  Well yes, and in fact we did use compression on disk - with source code borrowed from the FTA (a notorious group of French Apple IIgs hackers) - but the algorithm wasn't that great, and the tools to manipulate the compressed files were very crude.  It helped to reduce our disk load, but it couldn't address our bigger concern, which was memory usage.  
+</p><p>
+We'd set a hard limit of 30k for the block data in a given World, and as long as we didn't go over that limit, we could fit all the block data on one screen and edit it all at once, which was hugely convenient.  Using the tables of pointers, we could also define many redundant blocks without a high memory cost.  Like ten blocks of green grass, for example, each defined at a slightly different offset in the column, making grass grow at ten different heights on the map.  We used this effect in Gothic Land to smooth out the interior of the rolling hills in Area 1:
+</p>
+
+<div class="centering fit"><div><img src="rolling_hills.png" style="max-width:640px;" /></div></div>
+
+<p>
+That looked nice, but as we developed more levels, we found ourselves almost never using the technique.  Also, our obsession with speed was overriding.  Drawing a strip of block data into the PEA field (and two strips if Guido was running) often involved a lot of redundant re-loading of registers, since many of the graphics had repeating patterns in them, or open spaces that were all one color.  We were using an unwound loop for speed, and that code made the redundancy very obvious.
+</p><p>
+The unwound loop drew a vertical stripe of data for a single block all at once, and looked like this:
+</p>
+
+<div class="codepages"><div>
+
+<div>LDA Blok+$0000,y        ; Block chunk 0</div>
+<div>STAL ForeFld+$0E11,x    ; Storing in reverse order, since the PEA field</div>
+<div>STAL BackFld+$0E11,x    ; draws upside down</div>
+<div>LDA Blok+$000A,y        ; Block chunk 1</div>
+<div>STAL ForeFld+$0D21,x</div>
+<div>STAL BackFld+$0D21,x</div>
+<div>LDA Blok+$0014,y        ; Block chunk 2</div>
+<div>STAL ForeFld+$0C31,x</div>
+<div>STAL BackFld+$0C31,x</div>
+<div>LDA Blok+$001E,y        ; Block chunk 3</div>
+<div>STAL ForeFld+$0B41,x</div>
+<div>STAL BackFld+$0B41,x</div>
+<div>LDA Blok+$0028,y        ; Block chunk 4</div>
+<div>STAL ForeFld+$0A51,x</div>
+<div>STAL BackFld+$0A51,x</div>
+<div>LDA Blok+$0032,y        ; Block chunk 5</div>
+<div>STAL ForeFld+$0961,x</div>
+<div>STAL BackFld+$0961,x</div>
+<div>LDA Blok+$003C,y        ; Block chunk 6</div>
+<div>STAL ForeFld+$0871,x</div>
+<div>STAL BackFld+$0871,x</div>
+<div>LDA Blok+$0046,y        ; Block chunk 7</div>
+<div>STAL ForeFld+$0781,x</div>
+<div>STAL BackFld+$0781,x</div>
+<div>LDA Blok+$0050,y        ; Block chunk 8</div>
+<div>STAL ForeFld+$0691,x</div>
+<div>STAL BackFld+$0691,x</div>
+<div>LDA Blok+$005A,y        ; Block chunk 9</div>
+<div>STAL ForeFld+$05A1,x</div>
+<div>STAL BackFld+$05A1,x</div>
+<div>LDA Blok+$0064,y        ; Block chunk 10</div>
+<div>STAL ForeFld+$04B1,x</div>
+<div>STAL BackFld+$04B1,x</div>
+<div>LDA Blok+$006E,y        ; Block chunk 11</div>
+<div>STAL ForeFld+$03C1,x</div>
+<div>STAL BackFld+$03C1,x</div>
+<div>LDA Blok+$0078,y        ; Block chunk 12</div>
+<div>STAL ForeFld+$02D1,x</div>
+<div>STAL BackFld+$02D1,x</div>
+<div>LDA Blok+$0082,y        ; Block chunk 13</div>
+<div>STAL ForeFld+$01E1,x</div>
+<div>STAL BackFld+$01E1,x</div>
+<div>LDA Blok+$008C,y        ; Block chunk 14</div>
+<div>STAL ForeFld+$00F1,x</div>
+<div>STAL BackFld+$00F1,x</div>
+<div>LDA Blok+$0096,y        ; Block chunk 15</div>
+<div>STAL ForeFld+$0001,x</div>
+<div>STAL BackFld+$0001,x    ; One extra byte over, to be in front of the PEA</div>
+
+</div></div>
+
+<p>
+That's 16 loads and 32 stores.  Each "LDA" grabs one 16-bit chunk of block data, which is written to the foreground and background PEA Fields with a pair of "STAL" commands.  (We used that background PEA Field for erasing sprites.)
+</p><p>
+So what if we used this routine to draw, for example, a stripe of the "blue sky" block?  Each "LDA" command would be loading the same value (#$DDDD) into the A register every time.  That's 15 redundant loads!  And what if Guido is outdoors, running across a platform that's only two blocks tall, and the remaining ten blocks are empty sky?  That's 15 * (10 blocks) * (2 stripes for running), making 300 redundant loads!  That particular kind of "LDA" takes 5 cycles, so we're wasting 1500 cycles!  <i>Aiiiiighh, the pain!</i>  <b><i>The PAAAAAIIINN!</i></b>
+</p><p>
+So what did we do?  We wrote code that would analyze the blockset, and convert it into <i>optimized Assembly Language</i>.  Each stripe of each block became its own little subroutine, referenced by a big jump table.  When we found a duplicate stripe, we just referenced the same routine twice.  Because of that redundant stripe elimination, the "compiled" blockset actually took up <i>less space in memory</i> than the original data.
+</p><p>
+The new approach eliminated all 1500 redundant cycles from the example above, and saved an additional 150 because now one of the "STAL" commands didn't have to be a long bank-crossing store.  (We could set the bank register to a bank with one of the PEA Fields in it, rather than setting it to the bank we loaded block data from.)
+</p><p>
+We ran the build at the beginning of each World, and we did it for the sprites as well as the blockset:
+</p>
+
+<div class="centering"><img src="building_screen.png" /></div>
+
+<p>
+If we'd stored the blockset on disk in compiled form, we wouldn't have made the player wait for it to convert. ... I don't know why we didn't do that.  If there was a reason, I no longer remember what it was!  Faster development time maybe?
+</p>
+
+<A NAME="sprites"><div class="centering"><h3>Drawing Sprites</h3></div></a>
+
+<p>
+So by now you've probably noticed the pattern:  The biggest tool in our optimization toolbox was the ability to take things that were typically data structures, and convert them into code structures.  The offscreen drawing buffer was turned upside-down and made into the PEA Field.  The fog overlay was cut up and converted into sequences that drew and erased their neighbors.  The blockset was analyzed and boiled down into a collection of subroutines and a big jump table.  Same for the sprites, and various other visual effects.
+</p><p>
+To summarize:  We wrote code that generated a field of code, and code that converted data into other code, some of which was self-modifying code, and that code continuously modified the field of code, which we finally executed, drawing our graphics to the screen.  Sounds great.  Ship it!
+</p><p>
+Of all these conversions, the sprites were the most complicated, for three reasons.  First, we had to worry about erasing them between frames of animation.  Second, many of our sprites - especially Guido himself - were made up of moving parts that had to combine in different ways.  And third, almost all of them were irregularly shaped, so we sometimes had to perform hairy sub-byte operations to draw single pixels.
+</p><p>
+This is the sprite set for Guido in World 1, as it looked in <a href="sprite_edit_basic.html">our editor</a>:
+</p>
+
+<div class="centering fit"><div><img src="guido_sprites.png" style="max-width:640px;" /></div></div>
+
+<p>
+If you divide the set down the middle, you come up with two regions of sprites that are mirror images.  The region on the left is used when Guido is facing right, and vice-versa.  The handful of sprites at the bottom is for use when Guido is facing forward, which only happens when he goes down a pipe or through a door.
+</p><p>
+Using this collection of parts, we drew Guido in various poses and with various powerups.  The majority of the parts are for his lower half, which had an eight frame running animation.  We tried very hard to keep the borders of the pieces on two-pixel increments, so that drawing them wouldn't require masking bits out of individual bytes in the PEA Field, but in some cases it was unavoidable.
+</p>
+
+<div class="centering"><h5>Sprite Drawing, Stage 1</h5></div>
+<div class="centering"><img src="head_compile-1-reverse.gif" style="width:200px;" /></div>
+
+<p>
+To convert one of these sprites into code, the first thing we did was find all the repeated sequences of four pixels, and group them together.  We drew each group by loading the A register once and then writing to the PEA Field with "STA" multiple times.  (This is the same optimization as we did for the blockset code.)  Once we handled the repeating sequences, we drew the leftovers one chunk at a time with individual loads and stores, until all the four-pixel chunks were drawn.  That usually eliminated of most of the sprite.
+</p>
+
+<div class="centering"><h5>Sprite Drawing, Stage 2</h5></div>
+<div class="centering"><img src="head_compile-2-reverse.gif" style="width:200px;" /></div>
+
+<p>
+Next, while we still had the CPU in 16-bit mode, we handled the chunks of three pixels at the edges of the sprite.  These chunks couldn't be drawn with a simple write operation because a "STA" can only write 2 or 4 pixels at a time.  If we'd just dropped all 16 bits of the A register into the PEA Field with a "STA", we would have messed up a pixel beyond the edge of the sprite.
+</p><p>
+To preserve that background pixel, we actually loaded it in from the PEA Field with a "LDA", and performed a masking operation on the pixels around it to replace them with part of the sprite.  Then we'd "STA" the modified value <i>back</i> to the PEA Field.  In total, it took four operations to deal with each of these chunks.
+</p><p>
+For example:  "Bouffant Guido", pictured above in the animation, has only two chunks that are three pixels wide.  The code we generated to draw these two chunks to the PEA Field was:
+</p>
+
+<div class="codepages"><div>
+
+<div>LDA ForeFld+$00FA,x</div>
+<div>AND #$00F0</div>
+<div>ORA #$0008</div>
+<div>STA ForeFld+$00FA,x</div>
+<div>LDA ForeFld+$00F4,x</div>
+<div>AND #$0F00</div>
+<div>ORA #$8000</div> 
+<div>STA ForeFld+$00F4,x</div>
+
+</div><div class="commentary">
+
+<div>; First chunk</div>
+<div>; Set all but four bits to 0, preserving one pixel</div>
+<div>; Add in a brown pixel; the other two stay black</div>
+<div>; Store it back into the PEA Field</div>
+<div>; Second chunk</div>
+<div>; Same thing - but keeping a different pixel</div>
+<div>; Add in a brown pixel; the other two stay black</div>
+<div>; Back it goes</div>
+
+</div></div>
+
+<p>
+(Old-skoolers may perk up and declare that we should have used the TSB and TRB operators here.  But note that those operators do not have indexed addressing modes.)
+</p><p>
+This looks like a lot of work to draw three pixels at a time ... but without pre-compiling the sprites this way, so we know which pixels to mask in advance, it would be even slower.  Think of all the time we'd waste if we tested every four bits of a 320-byte sprite for transparency <i>every time</i> we drew it.  That just makes my skin crawl.  <i>Huurgh.</i>
+</p>
+
+<div class="centering"><h5>Sprite Drawing, Stage 3</h5></div>
+<div class="centering"><img src="head_compile-3-reverse.gif" style="width:200px;" /></div>
+
+<p>
+Anyway, with all the continuous two-byte regions of the sprite taken care of, we issued a "SEP #$20" command and put the CPU into 8-bit mode.  Now we could write data one byte at a time and draw all of those two-pixel pairs along the edges without doing any masking.  Of course, we grouped the duplicate values first, issuing multiple "STA" commands to save time re-loading the A register.
+</p>
+
+<div class="centering"><h5>Sprite Drawing, Stage 4</h5></div>
+<div class="centering"><img src="head_compile-4-reverse.gif" style="width:200px;" /></div>
+
+<p>
+All we had left were the single-pixel edges of the sprite.  These required masking operations just like before, but with the CPU in 8-bit mode this time, the code took up less space and ran slightly faster.  For example, to draw that pixel on the upper right edge of "Bouffant Guido", we generated this code:
+</p>
+
+<div class="codepages"><div>
+
+<div>LDA ForeFld+$0C31,x</div>
+<div>AND #$F0</div>
+<div>STA ForeFld+$0C31,x</div>
+
+</div><div class="commentary">
+
+<div>; Load byte (two pixels)</div>
+<div>; Set one pixel to black, keep the other</div>
+
+</div></div>
+
+<p>
+Notice how the "ORA" instruction is missing.  That's because the pixel we wanted to draw was black.  Usually the "AND" sets pixels to black and the "ORA" changes them to something else by setting various bits, but if black is all we need, the "ORA" can be chucked out.  Optimization <i>rocks!!</i>
+</p><p>
+We did this four-stage Just-In-Time compiling procedure for every sprite, streaming the code into memory and adding each starting point to a jump table.  Overall it tended to occupy about the same space as the original sprite graphics, since many of the sprites were a lot smaller than their delimiting block.
+</p><p>
+At the same time we accumulated this drawing code, we also generated erasing code for each sprite, which had a much simpler structure.  We ignored any single-pixel-masking and just generated "LDA" and "STA" commands to load values from a backup copy of the PEA Field and store them to the the same location in the "working" PEA Field, drawing back over the sprite.  We erased the majority of the sprite with 16-bit "LDA"s and "STA"s, then switched the CPU to 8-bit mode to get the edges and save a few CPU cycles.
+</p><p>
+Of course, there's more to sprites than just drawing them on the screen - they have to animate, collide, and exhibit other sophisticated behaviors - but the way we addressed those problems was not as unique as our drawing method.  Here's a very brief summary:  We used a set of doubly-linked lists populated by a sorted array of map triggers which were activated either by scrolling or by Guido's actions.  Each sprite in the list was handled by various "sprite handler" subroutines, which sometimes cascaded into each other depending on how complicated the sprite behavior was.  The end.
+</p><p>
+Actually, before I close out this section, I should put an asterisk on the word "unique".  While it's true this method of drawing sprites is novel when you compare it to other things we did, it's not novel across the spectrum of Apple IIgs software.  <a href="https://brutaldeluxe.fr/products/crossdevtools/mrspritetech/index.html">Here's another fine example</a> of almost exactly the same method, implemented in the same era.
+</p><p>
+In retrospect it's easy to assume that we all got together and co-developed ideas like this, sharing diagrams and code in some chat room or forum, but usually we didn't.  The internet wasn't as good at connecting people back then.  Also, many of these ideas are a natural extension of the way the hardware is designed.  If you stared at the technical manual long enough they would wander up and present themselves.  That's hard to believe if you think of the insides of a personal computer as the vast universe it is today, but back then it was true.  Mere mortals could work this stuff out, without complex tools, just by staring at a book!
+</p>
+<p>
+And then going to school, zoning out in math class, and scribbling all over graph paper!
+</p>
+<div class="centering fit"><div><img src="four_pages_of_notebook_code.jpg" style="max-width:1600px;" /></div></div>
+
+<A NAME="messages"><div class="centering"><h3>Message Blocks</h3></div></a>
+
+<p>
+Sprites and blocks are good for a simple game, but we also wanted a more literal way to communicate our revolting sense of humor to the outside world.  Everyone was familiar with the "question mark" block:  You hit it, and coins popped out, or other goodies.  In "Super Mario World" for the Super Nintendo, players also found blocks with short text messages stuck inside them.  Smack it with Mario's head, and you'd get playing instructions, a tip on where to find a hidden room, or a bit of plot development.  For Super Merryo Trolls we made three kinds of message blocks:  A "Tips" block for play instructions, a "Hints" block for finding secrets, and a "Stuff" block for non-sequiturs, rude comments, programming rants, and the like.  So we drew a block with a glowing T, one with a glowing H, and one with a glowing S.
+</p><p>
+Well, actually, the only reason we drew three message blocks instead of one was so that we could line them up in a row with the "question mark" block somewhere on the map, and spell "SH?T".
+</p><p>
+Oh, don't look so surprised.
+</p><p>
+The graphics hardware in the Apple IIgs has a lot of screwy traits.  One of them is that, in "Super Hi-Res" mode, you can switch between two different screen resolutions on a <i>per-scanline basis</i>.  For example, you can have eight rows of 320x200-style graphics, and then suddenly have five rows of 640x200-style graphics just below that.  The 320x200 mode allows 16 colors per scanline, and the 640x200 mode allows four.  Whichever mode you set, the same amount of memory is used to display the scanline, since 320 pixels of 4-bit color uses the same amount of memory as 640 pixels of 2-bit color.
+</p><p>
+The upshot of this is, you can put a horizontal band of graphics somewhere on the screen that has a finer resolution, but fewer colors ... perfect for drawing smooth readable text.  For example, you can set the first 8 scanlines of the display to 640-mode and put a score counter up there.  You can also draw a big window across the middle of the screen, set those lines to 640 mode, and display a cheerful little message.  That's what we did, and it looked like this:
+</p>
+
+<div class="centering"><img src="smt-hello_message.png" /></div>
+
+<p>
+To draw text you need a font, and we rolled our own font as well, the same way we created the blocksets.  Each block was 8x16 pixels, and we drew a lot of them like puzzle-pieces to combine and make larger characters, like the two-block italic typeface shown above, and a three-block "extra large" typeface.  The font data was small, and we wanted it to be in memory all the time, so after we drew it we ran it through a BASIC program that turned it into Assembly Language source code, as big chunks of predefined arrays.  We stuck that code in a file called "FONT.S" and included it when we compiled the game.
+</p><p>
+We did some optimization here, but not as much as we could have ... there was font code in the Amiga demo scene that beat the pants off ours.  But that's par for the course, really - no matter what code you're writing, be assured that someone in the Amiga demo scene has written it first, and theirs ran faster.
+</p>
+
+<div class="centering"><img src="trolls_charset.png" /></div>
+
+<p>
+To get our messages into the game, we first wrote them in a text editor (ProTerm usually) with little bits of pseudo-code scattered around.  The codes were used to position the cursor on the screen, draw the window boxes, select the font style, change colors, et cetera.  We fed the text files into <a href="message_convert.html">a BASIC program</a> that would interpret <i>some</i> of the code commands, and convert the rest into another format, exiting with the results in memory.  Before conversion, a typical message would look like this:
+</p>
+
+<div class="centering"><TABLE VSPACE=18 BORDER=2 CELLPADDING=12 CELLSPACING=0><TR><TD BGCOLOR="#000000"><FONT COLOR="#00FF00">
+
+<div class="codepages" style="background-color:black;color:#00FF00;"><div>
+
+<div class="lineafter">~B0005791300~B0003790500~P0203~I02
+_1Welcome to _4SUPER _8MERRYO TROLLS!_1 (c) 1993 Garote, Ace, Zog.</div>
+
+<div>The object of this game is to travel through the eight lands to rescue the
+princess from the clutches of the ultimate evil.</div>
+
+<div>  You control Guido (a troll) who can run various directions and jump fairly
+high.  Collect coins for points, and collect food to keep your "calorie
+counter' from reaching zero.  You can pick up turtle shells by holding the
+second button and running into them.  Release the button to throw the shell.</div>
+
+<div>  Squash enemies!  Break bricks!  Gather mushrooms!  _3HURRY UP, GUIDO_1!!!</div>
+
+</div></div>
+
+</TD></TR></TABLE></div>
+
+<p>
+We would convert all the messages at once for each World, and graft the results onto the end of each World data file.  Compare this to the scenario for a modern project:  We would build our messages in an XML file and drop them into a resource area somewhere, and do any and all styling internally, while the game was running.  The data would be platform independent, easier to change, and obviously easier to internationalize.  Yes, we had fun writing this game, but frankly I do not miss this era of stone tools and mammoth hides.
+</p>
+
+<A NAME="maps"><div class="centering"><h3>The Level Maps</h3></div></a>
+
+<p>
+Every once in a while, some n00b programmer logs on to a game developer forum and posts a message that goes: "<span style="font-family:Comic Sans MS, Arial, Impact;color:#CC2099">HI, IM MAKING A 2D PLATFORM GAME.  I CAN DRAW BLOCKS & SPRITES, & MAKE THEM SCROLL BY DRAWING THOUSANDS OF QUADS IN IMMEDIATE MODE.  BUT HOW DO I STORE ALL THE MAP DATA FOR A LEVEL?  PLZ POST CODE SAPMLES.  KTHX BYE.</span>"
+</p><p>
+Well, in fairness, they usually know about the caps-lock key.  But the question they ask is often the same.  Why this question?  Because even though 2D platform games are all over the internet, it's surprisingly hard to find a tutorial on how to build one.  As a service to those forum visitors, this section will explain the map data format we used for Super Merryo Trolls.  Those of you who aren't writing a platform game will find this section rather dry, so feel free to skip it.
+</p><p>
+It may seem against the grain of this essay to discuss an implementation that hasn't changed appreciably in 30 years (Wow, has it really been that long?), but keep in mind that the 2D platform game is itself an anachronism, and anyone who ditches the 3D frontier in favor of 2D, or even uses 3D graphics to implement a side-scroller, has embarked on a programming safari into the past.  Techniques that don't make sense any more can become annoyingly relevant.
+</p><p>
+So.  Here's how we did it.  (Take all your notions of Object-Orientedness and throw them out the window.)  In the Super Merryo Trolls implementation, all the map data is packed together and loaded from disk as a single chunk.  We keep four of these chunks - four complete levels - in memory at a time.  When Guido enters a level, we make a copy of that particular chunk so we can alter it as Guido runs along smashing bricks and killing things.  When he dies or passes the level, we throw the copy away.
+</p><p>
+The data in each chunk has the following sections:
+</p>
+
+<div class="centering"><img src="map_format_general.png" /></div>
+
+<H4>Sections 1 and 2</H4>
+
+<p>
+The most important sections are 1 and 2.  Together, these describe the blocks in the level.
+</p>
+
+<UL>
+<li>Section 1 is an array of 256x12 bytes, with each byte describing the <i>behavior</i> of a block.  For example, 00 for open space, 08 for a platform, 11 for a coin, and 30 for solid.</li>
+<li>Section 2 is also an array of 256x12, but it's composed of 16-bit "words" instead of 8-bit bytes (therefore it takes up twice as much space in the chunk).  Each word is a value describing the <i>appearance</i> of a block, as an index into the big block array.</li>
+</UL>
+
+<p>
+With the behavior of a block described separately from its appearance, the game never has to do any guesswork about how Guido and the other sprites will interact with it.  As a bonus, it's trivial to create hidden coins, secret doors, invisible platforms, et cetera.
+</p>
+
+<H4>Section 3</H4>
+
+<p>
+Next in the rank of importance is section 3, the sprite list.  This section contains a doubly-linked list of items that vary in size from five to about 15 bytes each.  The content of each item varies, but the first five bytes always serve the same purpose.  Those first five bytes are:
+</p>
+
+<ol>
+<li>Offset to the previous item in the list</li>
+<li>Offset to the next item in the list</li>
+<li>Horizontal location (column number) of the sprite on the map</li>
+<li>Unique Identification value (UID) for this sprite</li>
+<li>Type of sprite</li>
+</ol>
+
+<p>
+If any custom data is needed by the particular sprite type, that data begins at byte 6, and keeps going for as long as necessary.
+</p><p>
+All these sprites are sorted according to their horizontal location (byte 3).  As the play window (the visible portion of the level) scrolls to the left or right, the game traces back and forth along this linked list by comparing the edges of the play window with the value in byte 3.  Any sprites that pass within a few blocks of the window are copied out of the list (the first two bytes are dropped) and grafted into the "active" list, elsewhere in memory.
+</p><p>
+This procedure for activating sprites has a serious deficiency though:  What if the window activates a turtle sprite, and the turtle walks out onto the screen, and then Guido scrolls back the other way, then scrolls forward again?  Will a duplicate of the turtle walk out onto the screen, making two?
+</p><p>
+To fix that bug, we use byte 4 of the sprite data.  Before the sprite is put on the "active" list, its UID value is compared with all the sprites there, and if there's a match, the sprite is not added.  Thus, the turtle will not be re-triggered if it's already walking around, but as soon as it falls down a hole (removing it from the list), it will be ready to appear at its starting place again.
+</p><p>
+Byte 5 is self-explanatory.  However it's worth mentioning that the concept of a "sprite" can be used very loosely.  For example, you can (and we did) use the sprite list to trigger visual effects, like fading the sky from blue to black, or altering the intensity of the <a href="index.html#stupid">"heat wave"</a> effect.  Or you can activate sprites that modify the terrain, causing holes to open, water to rise, doors to slam shut, et cetera.
+</p>
+
+<h4>Section 4</h4>
+
+<p>
+Section 4 is a table we call the "door connections".  It's a table of 32 items, 8 bytes per item.  The first two bytes of each item identify a door on the map, and the remaining six bytes describes where that door goes.  (Pipes that Guido walks or slides into are considered doors.)  Byte by byte, it goes:
+</p>
+
+<ol>
+<li>X coordinate of door block</li>
+<li>Y coordinate of door block</li>
+<li>X coordinate of destination location</li>
+<li>Y coordinate of destination location</li>
+<li>X coordinate of the left edge of the play window where Guido arrives</li>
+<li>Horizontal offset <i>within the block</i> where Guido arrives</li>
+<li>Extra data (Acid Land heat wave intensity, or Gothic Land fog status, for example)</li>
+<li>First four bits: Destination type.  Last four bits: Destination number.</li>
+</ol>
+
+<p>
+Byte 8 requires additional explanation.  The first half of the byte can be a value from 0 to 3.
+</p>
+
+<ul>
+<li>If the value is 0, then the door opens to another location on the same level.  The second half of the byte is the letter to use as a subscript.  (0 for 'a', 1 for 'b', et cetera.)  For example, the fourth pipe on World 1-Aa leads to an underground chamber on the same level, and that chamber is World 1-Ab.  That door's value for byte 8 is $10.  Inside the underground chamber, another pipe leads back to the surface.  In that case, the destination is 1-Aa, so the value for byte 8 is $00.</li>
+<li>If the value is 1, then the door opens on a different level in the same four-level chunk.  The second half of the byte identifies the level.  For example, if the chunk contains levels 5 through 8, then a byte of $21 would point to level 7, and $31 would point to level 8.</li>
+<li>If the value is 2, then the door opens on a level in a different four-level chunk.  The game will have to load the new chunk from disk, as well as new block and sprite information, usually.  The second half of byte 8 identifies which chunk to load, and the first level in the chunk is where Guido resumes play.</li>
+<li>If the value is 3, then the door leads to a different world.  The second half of the byte identifies the world, and the game loads the first chunk and drops Guido into the first level.  This transition requires loading a new version of the Trolls main executable, then spawning a tiny program elsewhere in memory to swap it in and run it.  (A different version of the executable, with various precompiler flags set, was made for each world.)</li>
+</ul>
+
+<h4>Section 5</h4>
+
+<p>
+This section is an array of 256 bytes, one byte per column of blocks on the map.  Each byte contains a set of one-bit flags that describe various traits of a column.  Even though we had 8 bits in each byte to work with, we ended up only using three.
+</p>
+
+<ul>
+<li>Bit 5 is the "solid above" flag.  If it's a 0, Guido can pass through the space above that column on the map.  If it's a 1, he will be blocked as if there was a wall there of infinite height.  (There is no equivalent "solid below" flag - if Guido goes off the bottom of the screen, he always dies.)</li>
+<li>Bit 6 is the "no-scroll right" flag.  If Guido is running towards the right edge of the screen, the visible play area will usually scroll to reveal more of the map ... but if this flag is set to 1 for a particular column, the screen will halt at that column and scroll no further.    If the screen won't scroll, Guido stops there too.</li>
+<li>Bit 7 is the "no-scroll left" flag.  It operates the same way as the "no-scroll right" flag, but for the opposite direction.</li>
+</ul>
+
+<h4>Section 6</h4>
+
+<p>
+This chunk was all about the weird graphics of the Apple IIgs.
+</p><p>
+Everything in the "hi-res" graphics mode is drawn using indexed color.  For example, a value of "3" in the screen memory is actually referring to the third color in a palette of 16 colors that we define somewhere else.  You've seen this indexed color mode being exploited in various ways already, including the "fog effect" that works by replacing some indexes with others in a giant lookup table.  The visual effect is a sort of crude transparency, but we're doing it while still confined to the same 16 colors.
+</p><p>
+Well, the palette - the set of colors we use - can shift so much over the course of a level, that we need a way to reset it to a known state when we start the next level, or restart the current one.  For example, if Guido is in Techno Land, and he walks past a message block that announces the start of a "rave party" and triggers a sprite that starts shifting the colors all around on the screen by tweaking the definitions in the palette, the palette could be in any state when he gets hit by a critter and dies.  So we have to keep a copy of the original somewhere.
+</p><p>
+You may ask, "Since each world has it's own blockset, why not just take the palette that goes with it and turn it into a chunk of data that's baked into the Trolls application, since you have a different build of the application for each world?"  We could do that, but then we wouldn't be able to vary the palette on a per-level basis, which we do in various ways.  For example, in the "Rolling Hills" section of Gothic Land (level 4-1) we use a palette that's specially tweaked to make the fog effect work.  But when Guido appears in level 4-5 (the very literally titled "Exciting Horse Ride through Pointy Forest") we're using a different section of the blockset, which has fewer grays and some nice blue-greens instead, which we alter as the level proceeds.
+</p>
+
+<h4>Section 7</h4>
+
+<p>
+This contained general information about the map, including the name, the amount of time (calories) to put on the clock at the start, and a big section that changed according to which world the level was in.
+</p><p>
+For example, there are switches and buttons in Techno Land, and we needed a way to track their state while Guido was wandering around the level.  It would be a hack to put this information in a sprite and then pin it to a column with a switch, and though we were generally in favor of hacks if they got the job done, it seemed pointlessly convoluted when we could instead assign a number to each button or switch and then use some open space in the map memory to store the state.</p>
+
+<h4>Section 8</h4>
+
+<p>
+Here, finally, we come to the section that's full of messages for message blocks.  The only thing to add here is that we <i>should</i> have stored these by putting them in a linked list, but instead we used extra entries in Section 4 to point to them.  Instead of a door, the X and Y coordinates pointed to a message block - hidden or otherwise - and instead of a destination, those X and Y coordinates were combined into an address that pointed to a message.
+</p><p>
+There wasn't really a good reason for this, except that we had space in Section 4 for 32 doors, and only ended up using maybe five of them in the average level.  By doing this we eliminated the need for a linked list, which saved...  Uh, probably only about 32 bytes of space.  I guess I was just drinking too much soda on the day I coded that up.
+</p>
+
+<p>And on that embarrassing note, we complete the tour of the level map structure.</p>
+
+<A NAME="moving"><div class="centering"><h3>Moving On...</h3></div></a>
+
+<p>This also completes our coverage of the weirdest parts of the Super Merryo Trolls graphics pipeline.  But there was still a bunch more hacky, obsolete, and questionably creative stuff going on, and it's worth taking a tour through that.</p>
+
+<p ALIGN=RIGHT><h3 ALIGN=RIGHT>
+---> <a href="part_three.html">A Gallery Of Other Weirdness</a></h3></p>
+
+</body>
+</html>

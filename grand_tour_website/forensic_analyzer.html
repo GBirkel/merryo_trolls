@@ -1,0 +1,140 @@
+<HTML>
+<HEAD>
+<TITLE>Super Merryo Trolls - Message Converter</TITLE>
+<link rel="stylesheet" href="styles.css" type="text/css" media="screen">
+</HEAD>
+<BODY>
+
+<div class="centering"><h1>Super Merryo Trolls</h1></div>
+<div class="centering"><h2>Sneaky forensic analyzer program</h2></div>
+
+<p>
+This was a chunk of Applesoft Basic and a chunk of Assembly Language that worked in tandem to put the Apple IIgs in graphics display mode and then transport chunks of memory onto the screen.  Its main purpose is to sneak around in memory after rebooting the machine, to examine how the program that was previously running moments earlier was storing its graphics.
+</p><p>
+Among other controls, it had a "wrapping interval", so you could move chunks of memory onto the display in intervals that matched the width of whatever graphics you were trying to examine.  For example, if you were looking at a piece of art that was 80 pixels (40 bytes) wide, you could dial the interval down to 40 and the art would unscramble itself and appear on the screen as the artist intended.
+</p>
+
+<PRE class="codeonly">
+ 3 S = 8263
+ 4 G = 49193
+ 5 L = 8216
+ 6  POKE G,193
+ 10 D$ =  CHR$ (4)
+ 20  PRINT : PRINT D$;"bload ga,a$2000"
+ 30 B = 7:X = 12:P = 9:Y = 246
+ 40 W = 16
+ 50  POKE 0,W: POKE 1,0
+ 60  POKE L,Y: POKE L + 1,X + (P * 16): POKE L + 2,B
+ 70  CALL 8192
+ 75  GET A$
+ 76  IF A$ = "0" THEN  POKE G,65: GOTO 120
+ 80  IF A$ = "4" AND W > 4 THEN W = W - 2
+ 85  IF A$ = "6" AND W < 256 THEN W = W + 2
+ 90  IF A$ = "1" THEN Y = Y - 1: IF Y =  - 1 THEN Y = 255:A$ = "8"
+ 92  IF A$ = "3" THEN Y = Y + 1: IF Y = 256 THEN Y = 0:A$ = "2"
+ 94  IF A$ = "8" THEN X = X - 1: IF X =  - 1 THEN X = 15:A$ = "7"
+ 96  IF A$ = "2" THEN X = X + 1: IF X = 16 THEN X = 0:A$ = "9"
+ 98  IF A$ = "7" THEN P = P - 1: IF P =  - 1 THEN P = 15:A$ = "="
+ 99  IF A$ = "9" THEN P = P + 1: IF P = 16 THEN P = 0:A$ = "/"
+ 100  IF A$ = "=" AND B > 2 THEN B = B - 1
+ 101  IF A$ = "/" AND B < 34 THEN B = B + 1
+ 102  IF A$ = "+" AND M > 0 THEN M = M - 1: POKE 2,M: CALL S
+ 103  IF A$ = "-" AND M < 190 THEN M = M + 1: POKE 2,M: CALL S
+ 110  GOTO 50
+ 120  PRINT : PRINT "Stopped at:"
+ 121 A = (P * 4096) + (X * 256) + Y
+ 122 C = (M + 1) * W
+ 123  PRINT "Bank:";B: PRINT "Data Width:";W: PRINT "Address:";A
+ 124  PRINT "(Page:";P;")(Line:";X;")(Byte:";Y;")"
+ 125  PRINT "Length marker at:";M
+ 126  PRINT "Lenth x Width = ";C
+ 130  PRINT : PRINT "To capture screen:"
+ 140  PRINT "]mtr"
+ 150  PRINT "*00/1000<e1/2000.9fffm"
+ 160  PRINT "*bsave ga.save1,a$1000,l$8000"
+ 170  PRINT : PRINT "To capture data:"
+ 175  PRINT "]mtr"
+ 180  PRINT "*00/1000<";
+ 183 Q$ = "0123456789ABCDEF"
+ 184  PRINT  MID$ (Q$, INT (B / 16) + 1,1); MID$ (Q$,(B -  INT (B / 16) * 16) + 1,1);"/";
+ 185 D = C + A: IF D > 65535 THEN D = D - 65535
+ 186  PRINT  MID$ (Q$, INT (A / 4096) + 1,1);:A = A -  INT (A / 4096) * 4096
+ 187  PRINT  MID$ (Q$, INT (A / 256) + 1,1);:A = A -  INT (A / 256) * 256
+ 188  PRINT  MID$ (Q$, INT (A / 16) + 1,1);:A = A -  INT (A / 16) * 16
+ 189  PRINT  MID$ (Q$,A + 1,1);".";
+ 190  PRINT  MID$ (Q$, INT (D / 4096) + 1,1);:D = D -  INT (D / 4096) * 4096
+ 191  PRINT  MID$ (Q$, INT (D / 256) + 1,1);:D = D -  INT (D / 256) * 256
+ 192  PRINT  MID$ (Q$, INT (D / 16) + 1,1);:D = D -  INT (D / 16) * 16
+ 193  PRINT  MID$ (Q$,D + 1,1);"m"
+ 194  PRINT "*bsave funky";W;"w,a$1000,l";C
+</PRE>
+
+<P>Here's the Assembly Language portion, which was loaded into memory address $2000.</P>
+
+<PRE class="codeonly">
+ CLC
+ XCE
+ SEP #30     (shortm shortx)
+ LDA #E1
+ PHA
+ PLB
+ REP #30     (longm longx)
+ LDA #0000
+ STA 02
+ STA 04
+ STZ 06
+ LDX 02
+ LDY 04
+ LDA 079CF6,X
+ STA 2000,Y
+ INX
+ INX
+ INY
+ INY
+ INC 06
+ INC 06
+ LDA 06
+ CMP 00
+ BNE 2017 {-15}
+ LDA 02
+ CLC
+ ADC 00
+ STA 02
+ LDA 04
+ CLC
+ ADC #00A0
+ CMP #7900
+ BCC 200F {-2F}
+ SEP #30     (shortm shortx)
+ LDA #00
+ PHA
+ PLB
+ SEC
+ XCE
+ RTS
+ CLC
+ XCE
+ REP #30     (longm longx)
+ LDA 02
+ AND #00FF
+ STA 02
+ ASL
+ ASL
+ ADC 02
+ ASL
+ ASL
+ ASL
+ ASL
+ ASL
+ ADC 00
+ TAX
+ LDA #FEEF
+ STA E12000,X
+ SEP #30     (shortm shortx)
+ SEC
+ XCE
+ RTS
+ </PRE>
+
+</BODY>
+</HTML>

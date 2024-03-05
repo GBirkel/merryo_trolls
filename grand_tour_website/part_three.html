@@ -1,0 +1,301 @@
+<html>
+<head>
+<title>Super Merryo Trolls</title>
+<link rel="stylesheet" href="styles.css" type="text/css" media="screen">
+</head>
+<body>
+
+<div class="centering"><h1>Super Merryo Trolls</h1></div>
+<div class="centering"><h2>Part Three</h2></div>
+
+<div class="centering">
+<table cellspacing=10 class="contents"><tr><td>
+
+<OL class="chapters">
+<li><A HREF="index.html#intro">Introduction</A></li>
+<li><A HREF="index.html#challenge">The Challenge</A></li>
+<li><A HREF="index.html#crash">Crash Course In Assembler</A></li>
+<li><A HREF="index.html#pea">The PEA Field</A></li>
+<li><A HREF="index.html#stupid">Stupid PEA Tricks</A></li>
+</OL>
+
+</td><td>
+
+<OL START=6 class="chapters">
+<li><A HREF="part_two.html#further">Further Graphic Barbarity</A></li>
+<li><A HREF="part_two.html#blocks">The Blockset</A></li>
+<li><A HREF="part_two.html#sprites">Drawing Sprites</A></li>
+<li><A HREF="part_two.html#messages">Message Blocks</A></li>
+<li><A HREF="part_two.html#maps">The Level Maps</A></li>
+</OL>
+
+</TD><TD>
+
+<OL START=11 class="chapters">
+<li><A HREF="#kings">The Kings Quest Thing</a></li>
+<li><A HREF="#dungeon">Dungeon Faster</a></li>
+<li><A HREF="#gallery">A Gallery Of Other Weirdness</a></li>
+<li><A HREF="#support">Support Programs</a></li>
+<li><A HREF="#code">Resurrection And Code</a></li>
+</OL>
+
+</TD></TR></TABLE>
+</div>
+
+<A NAME="gallery"><div class="centering"><h3>The Kings Quest Thing</h3></div></a>
+
+<p>
+These days, computers don't often have to be restarted.  But in the 1990's we regularly restarted them just to switch tasks, or bring them back to life, or because they got glitchy and needed what my friends and I called a "courtesy flush".
+</p><p>
+It may horrify you to learn this, but when you restarted a really old computer like the Apple IIgs, almost all the contents of memory were left intact.  Any document you were writing, or picture you were editing, was still sitting there and could read by the next program to be launched, or the next person to use the computer.  In practice this didn't matter because the next person using the computer was always you, but it had an interesting consequence:  You could jam down the reset keys in the middle of any running program, including your favorite game, and then when the machine started back up, go poking around in memory to see what that program was doing.
+</p><p>
+Programmers could keep few secrets.  Using this one weird technique with <a href="forensic_analyzer.html">a few hand-rolled programs</a>, I discovered stuff like this:
+</p>
+
+<div class="centering" style="gap: 1em;"><img src="kings_quest_dump.png" style="max-width:40%" /><img src="dungeon_master_dump.png" style="max-width:36%" /></div>
+
+<p>
+The picture on the left is a chunk the game "King's Quest" left behind when I murdered it with the reset key.  The picture on the right is from "Dungeon Master".
+</p><p>
+King's Quest was one of my favorite games as a teenager, but I was always frustrated by how slow it ran.  The main character strolled around through these cool fantasy landscapes, passing in front of and behind objects, but it took an entire minute for him to get across one screen.  I didn't know how most of the game logic worked, and it would have been painful to reverse-engineer it, but one thing I did know was graphics hackery, and I was certain I could make Guido stroll around the screen the same way the guy in King's Quest did, except Guido would go ten times faster.
+</p><p>
+The image I recovered from the corpse of King's Quest told me all I needed to know:  The way the programmers made the character interact with a scene was by drawing two versions of it - one regular, and one in silhouette - and using the second version as a key.
+</p><p>
+So I declared World 8 would have an homage to Kings Quest, and set about building one that was exactly two screens in size:  Just large enough for Guido to appear next to one side of a castle, and then walk over to the other side and go in the front door.  At the bottom I could put a little text entry box, like the original game, but instead of offering any meaningful gameplay I could just make the computer jabber nonsense and make jokes at the player no matter what they typed in.  So, basically like meeting me in real life.
+</p>
+
+<div class="centering fit">
+<video	src="kings_quest_homage.mp4"
+		poster="kings_quest_homage.jpg"
+		type="video/mp4"
+		controls="" autoplay="" loop="" muted="" playsinline=""></video>
+</div>
+
+<p>
+The world of King's Quest doesn't scroll.  Instead of moving the whole screen around, all I needed to do was redraw Guido and a little bit of the area around him to cover up his previous position.  The only crafty part was knowing whether he should be obscured by various pieces of scenery, and for that I used the key.
+</p><p>
+It's dead simple.  In the key, objects from the scene are represented as big colored blobs of the same shape.  16 pixel colors to choose from means 16 shapes.  I assigned each color a number between 0 and 160, making sure that the number I chose matched the vertical location of the base of an object on the screen.  For example, the color for the tree got the number 130, since the base of the tree is 130 pixels down.  Then during the game I just took Guido's vertical position, and if it was less than 130, I didn't draw any part of him that intersected that color in the key.  If he walked forward (down the screen), his vertical position would increase, and eventually it would reach 131 and he'd appear in front of the tree.
+</p><p>
+There are lots of creative ways to speed this up.  The only thing I did was make a second smaller key, with 16 masking bytes in it.  Every time Guido changed vertical position I recalculated the masking bytes.  So if Guido was at location 131 for example, the color for the tree blob would get a masking byte of $FF.  As I drew Guido, I loaded values from the big key, and then used those values to assemble a mask from the smaller key one pixel at a time.  I used that on Guido, then inverted all the bits and used it on the background, then wrote the result to the screen.  The point was, I didn't have to waste time looking at every pixel and asking "Is Guido supposed to be in front of this color at 131 or not?" because that question already had a yes/no answer in the masking bytes, in the form of an $F or a $0.
+</p><p>
+All I needed then was to make sure he couldn't walk <i>through</i> objects.  King's Quest did that by drawing white lines on the key, and not allowing the player to cross them.  So I did the same thing.
+</p>
+
+<A NAME="gallery"><div class="centering"><h3>Dungeon Faster</h3></div></a>
+
+<p>
+Another of my all-time favorites for the Apple IIgs was a game called "Dungeon Master".  Again, it was an immersive, clever fantasy adventure game with a semi-3D graphics style ... and it ran in perpetual slow-motion.
+</p>
+
+<div class="centering fit">
+<video	src="dungeon_master_speed_example.mp4"
+		poster="dungeon_master_speed_example.jpg"
+		type="video/mp4"
+		controls="" autoplay="" loop="" muted="" playsinline=""></video>
+</div>
+
+<p>
+This is the game running in Crossrunner.  That's cycle-accurate timing!  I'm pressing keys as fast as the game will read them.  You can't walk through the dungeon any faster than that, and most of the time it's much slower.  I honestly have no idea how a kid with undiagnosed attention deficit issues loved playing it so much.  I guess I just loved the atmosphere.
+</p><p>
+(Hey, how can you tell if someone grew up playing adventure games in the 80's?  You say the word "dungeon", and they imagine something like the basement of a U-Haul storage center.)
+</p><p>
+When I knocked Dungeon Master unconscious and fired up the forensics tools, I discovered big rectangles of game art, mostly walls and floors, which the program composited together one pixel at a time to create a view from anywhere in the dungeon.  It was a generic approach, requiring no detailed knowledge of the hardware.  I should have expected that, since it was ported from other platforms and written in C.  They probably dumped the game code into a compiler and tweaked it just enough to run, then kicked it out the door.  Acceptable for a small company shipping a game on unpopular hardware.  I could do better.
+</p><p>
+I wrote a program that compiled all the art into PEA fields, then used pixel-masking only for the edges.  When you've got a winning strategy, why not use it?  I ran the PEA code to layer all the walls to a different chunk of memory off-screen, then used a loop of PEI instructions to shove that whole thing onto the play window.  Using this pipeline, you could sprint around the dungeon so fast that the only thing limiting you was the repeat speed of the key when you held it down.
+</p>
+
+<div class="centering fit">
+<video	src="dungeon_faster_speed_example.mp4"
+		poster="dungeon_faster_speed_example.jpg"
+		type="video/mp4"
+		controls="" autoplay="" loop="" muted="" playsinline=""></video>
+</div>
+
+<p>
+It's tempting to think that if I'd been older and more connected in the industry, I could have approached FTL (the publishers) and pitched them on releasing the sequel for the Apple IIgs using this improved engine.  But I was in no state to impress anyone:  My High School GPA was barely enough to graduate, and my version of "dressing up" was locating a T-shirt without holes.  Besides, when I made the prototype in 1992 the entire Apple II line was already dead as a gaming platform, and everyone was moving on.  The only people left to impress were us hardcore weirdos.
+</p><p>
+So my plan was to start up this interface as soon as Guido entered the castle from the King's Quest scene, and make him the leader of a four-person party including me, Ace, and Zog.  He could roam around a castle dungeon with the co-developers of his own game, who would all have terrible stats and get killed immediately.
+</p>
+
+<A NAME="gallery"><div class="centering"><h3>A Gallery Of Other Weirdness</h3></div></a>
+
+<div class="centering"><h4>Ya Gotta Have Credits</h4></div>
+
+<p>
+While messing around with the PEA and PEI instructions, Ace and I came up with a bunch of wacky variations that didn't fit in the game.  Since the code was already written, we decided to string them all together with a blocky font and make a credits crawl.
+</p>
+
+<div class="centering fit">
+<video	src="credits-edits.mp4"
+		poster="credits-edits.jpg"
+		type="video/mp4"
+		controls="" autoplay="" loop="" muted="" playsinline=""></video>
+</div>
+
+<p>
+These modes are all variations on "do math on the stack pointer" and "skip over data in your PEI sequence".
+</p><p>
+You may notice that the credits don't go all the way to the sides of the screen:  Each line is 256 pixels wide at the most.  That's because we made the squeezing effect by drawing all the lines twice to an area offscreen, the second time with a one-pixel offset, and then with the PEI instructions we switched between the offsets at regular intervals, which had the effect of skipping single pixels as each line got pushed to the screen.  The more times we switched, the more compressed the line got.  Unfortunately the PEI instruction can only address a range from $00 to $FF, which means that in any sequence of PEIs, you better have everything you need within a 256-byte region or you're going to have to move the Direct Page pointer around in the middle of your sequence.  That would have been messy, so instead we restricted each line to 256 pixels, which was 128 bytes, so both versions of each line could fit in 256 bytes side-by-side.
+</p>
+
+<div class="centering"><h4>The Joystick: How Hard Can It Be?</h4></div>
+
+<p>
+If you're making an action game, you want players to use a joystick.  But how do you read the position of the joystick in the Apple IIgs?  It's like this:  Throw the joystick up into the air.  Now start a timer.  Stop it when the joystick shatters on the ground.  The number of seconds that took is the position of one axis of the joystick, X or Y.
+</p><p>
+Okay, that's just an analogy, but it captures the absurdity of the process:  What you really do is poke a memory location, and then poke a different one until it changes, and count how long that took.  There's no hardware to do the counting for you.  Also, your counting code better take exactly the same number of cycles per tick or your result will be gibberish, and to do that you have to stop everything else you're doing and stand there counting milliseconds, like a chump, in a computer that is already as slow as a tree sloth filing papers at the DMV.
+</p><p>
+Making this worse, there are two axes on a joystick, and potentially two joysticks to read.  Unless you're clever, you have to do this poke-and-wait routine four times to get the numbers you need.  Oh, and if both joysticks are in the "upper left" position, all four axes will be near zero, which will make all the reads finish quickly...  And your player will go in that direction faster, which is disorienting!
+</p><p>
+Now that you understand the lunacy of the problem, here's some code to consider:
+</p>
+
+<PRE class="codeonly">
+         SEP   $30
+         LDAL  $E0C070
+         LDY   #$60
+         STZ   JoystkReadX
+         STZ   JoystkReadY
+Loop     LDAL  $E0C064
+         BMI   XAOn
+         NOP
+         NOP
+         BRA   XAOff
+XAOn     INC   JoystkReadX
+XAOff    LDAL  $E0C065
+         BMI   YAOn
+         NOP
+         NOP
+         BRA   YAOff
+YAOn     INC   JoystkReadY
+YAOff    LDAL  $E0C066
+         BMI   XBOn
+         NOP
+         NOP
+         BRA   XBOff
+XBOn     NOP
+         NOP
+         NOP
+XBOff    LDAL  $E0C067
+         BMI
+         NOP
+         NOP
+         BRA   YBOff
+YBOn     NOP
+         NOP
+         NOP
+YBOff    BRA   Extra
+Extra    DEY
+         BPL   Loop
+</pre>
+
+<p>
+I'm not going to torture you with a line-by-line interpretation.  I'll just say that this code - cribbed and then modified from those French hackers I mentioned a while back - is the only elegant way to solve a really gross problem.
+</p><p>
+What it does, is start four counts at once, and then it runs in a loop, checking all four axes in a row for a fixed amount of time.  If a given axis reports "I'm done" (if the BMI or "branch on minus" instruction doesn't branch), it skips incrementing the counter for that axis.  The really clever part is those NOP instructions:  They <i>waste just enough time</i> in the CPU of the computer to be the equivalent of running an INC instruction, so the length of time spent in each iteration of the loop is exactly the same whether the computer incremented four counters, or two, or none, and the counts don't interfere with each other.
+</p><p>
+With this code, it costs the lowest possible fixed amount of time to read the joystick no matter what the position is.  But that fixed amount is like a tax you pay in the CPU for using the joystick, and the CPU is a desperately limited resource.  The hardware design that led to this software hack was probably the best they could do in 1986, especially to keep backward compatibility with games from earlier Apple II machines, but can you imagine doing this now?  No.  The operating system handles this sort of thing.
+</p><p>
+Today's approach is much simpler:
+</p>
+
+<ol>
+<li>Put "how to read joystick xinput dotnet" into a search engine.</li>
+<li>?????????</li>
+<li>Done!</li>
+</ol>
+
+<div class="centering"><h4>The Autopilot Sprite</h4></div>
+
+<p>
+Back In My Day&trade;, games usually had an "attract mode" showing a few seconds of a game playing itself.  That's very optional now, since people learn about games differently, but in 1994 it was standard, so Merryo Trolls wouldn't be legit unless it did the same thing.  What was the cheapest way we could do it?
+</p><p>
+Well, the Apple IIgs was the opposite of a multi-tasking machine.  If you fed it the same inputs with the same timing, it would always respond the same way.  All the inputs needed to play the game were on the joystick: Two axes and two buttons.  Technically you could finish level 1 without using the second button or moving the joystick up or down, so all we really needed was the X-axis and one button.  The state of those could be crammed into a single byte.
+</p><p>
+We needed a delivery mechanism for this input data.  Something we could start and stop, like the cruise control on a car, because we also needed to take over the controls after Guido slid down the flagpole at the end of a level.  We already wrote code to manage sprites; why not use that?  Anything could be a sprite.
+</p><p>
+So we created a "recorder" sprite, and added a few lines of code that checked the keyboard for the "r" key at the beginning of each game cycle.  If it was pressed we created an instance of the sprite, with a counter set to zero.  Every cycle through the game code after that, when the sprite handler was executed, we looked at the X-axis and button data.  If it was different from the previous value, we noted down the change and the number in the counter.  Then we increased the counter by one, and went back around again.
+</p><p>
+The status of the inputs could potentially be different on every cycle of the game, but in practice the joystick got held in one position for many cycles in a row, and we discarded all the repeats.  The result was a pretty small chunk of data for a relatively long recording.  Once the data was there, how did we extract it?  Easy:  <i>Reset the computer.</i>
+</p><p>
+As I mentioned before, the corpse of any previous program lingers in the Apple IIgs memory after a reset.  So we just ran a BASIC program to read the recording out of memory and convert it into data statements that we could dump into the Merlin Assembler document alongside the rest of our Merryo Trolls code:
+</p>
+
+<div class="codepages smaller"><div>
+
+<div>Demo</div>
+
+</div><div class="commentary">
+
+<div>HEX   0206040484090405020C040C84070400</div>
+<div>HEX   03000207040184018200020404058201</div>
+<div>HEX   0200820102080300040A020182038401</div>
+<div>HEX   04020300020F03158304030102030300</div>
+<div>HEX   04030300020E82038300840404168407</div>
+<div>HEX   04080206820283008401040102170403</div>
+<div>HEX   84038200020382040214030004008401</div>
+<div>HEX   040F8408040102058407040102060401</div>
+<div>HEX   030002050302020D030102100006800D</div>
+<div>HEX   0003010002036969</div>
+
+</div></div>
+
+<p>
+Once we had the data, we wrote a "player" sprite that did the inverse of the "recorder" sprite.  To make the game play itself we just spawned that sprite at the start of the level.  Done!
+</p><p>
+You've probably noticed by now that Assembly Language on home computers in the 80's basically had no rules.  There was no security at the hardware level.  If you wanted to write a sprite routine that reached over into your joystick code and plugged in fake numbers, that was totally your deal.  If screwy code design brought the whole machine down in flames, that was also your deal.  Just jab that restart button...
+</p>
+
+<A NAME="gallery"><div class="centering"><h3>Support Programs</h3></div></a>
+
+<p>
+It takes a lot of support programs to make a game.  In 30 years this hasn't changed at all.  A surprising amount of developer time gets poured into software that never reaches the device of any customer, but instead goes to art departments, sound departments, level designers, QA personnel, et cetera.  Most of the programs we wrote for Merryo Trolls have been mentioned already, but there are a few more worth a look.
+</p><p>
+In 1992, the internet was still dial-up modems and email, except for universities and a handful of fancy people.  Late in the year Zog went away to college, but he wanted to keep developing maps for the game.  He had access to a computer lab full of UNIX machines, but none of us knew how to write software for them, let alone some kind of networked software that would allow him to edit maps remotely.  What to do?
+</p><p>
+In a surge of caffeine and industrial music, he invented a solution:
+</p>
+
+<div class="centering fit"><div><img src="zogmap-key.png" style="max-width:540px;" /></div></div>
+
+<p>
+It's map design over email!
+</p>
+
+<div class="centering fit"><div><img src="zogmap-level.png" style="max-width:460;" /></div></div>
+
+<p>
+The above is a draft of World 1-3, assembled by Zog in the computer lab and sent through the tubes in 1992.  When Ace and I received it, we constructed a <a href="map_translator.html">translation key and a BASIC program</a> so we could dump the email straight into a level file for playtesting.  It was tedious work for Zog because there was no software on his end to help out.  He made drafts on notebook paper, then used <a href="https://www.vim.org">vim</a> to build maps in the lab and then pipe them into an email.  It was painful so he didn't do it often, but it kept development going!
+</p><p>
+Now for a moment let's skip ahead, past 1994 when this Apple IIgs code last saw any attention, to 1996 when I was in college.  Everything had changed.  The death of the Apple II platform had pushed me reluctantly onto a Windows box, and the new hotness in home computer graphics was DirectX, which I wanted to learn.
+</p><p>
+I explored the idea of re-making Merryo Trolls as a Windows application.  It would have to be a total rewrite, from Assembly Language to C, with different file formats and updated art, and a much more by-the-book graphics system.  I did manage to cough out a working prototype but the whole exercise felt silly, because the Nintendo 64 had appeared a year earlier and everyone was declaring 2D action games to be dead, dead, dead.
+</p><p>
+The source code exists but there's nothing interesting about it.  It's amusing to see the editor, though, in all its Windows '95-era hideousness:
+</p>
+
+<div class="centering fit">
+<video	src="windows_map_editor.mp4"
+		poster="windows_map_editor.jpg"
+		type="video/mp4"
+		controls="" autoplay="" loop="" muted="" playsinline=""></video>
+</div>
+
+<p>
+From editing maps over email, to this sort of thing, in four years.  The computer industry has always been nuts.
+</p>
+
+
+<A NAME="gallery"><div class="centering"><h3>Resurrection And Code</h3></div></a>
+
+
+
+
+
+
+
+<p ALIGN=RIGHT>
+--<a href="mailto:garrett@deeptht.armory.com">G</a></p>
+
+</BODY>
+</HTML>

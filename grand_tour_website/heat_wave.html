@@ -1,0 +1,179 @@
+<HTML>
+<HEAD>
+<TITLE>Super Merryo Trolls - Heat Wave Effect Detail</TITLE>
+<link rel="stylesheet" href="styles.css" type="text/css" media="screen">
+</HEAD>
+<BODY>
+
+<div class="centering"><H1>Super Merryo Trolls</H1></div>
+
+<div class="centering"><H2>Heat Wave Effect Detail</H2></div>
+
+<div class="centering fit">
+<video	src="heat_wave_effect.mp4"
+		poster="heat_wave_effect.jpg"
+		type="video/mp4"
+		controls="" autoplay="" loop="" muted="" playsinline=""></video>
+</div>
+
+<P>To get this effect to work consistently, the stack-tweaking code had to consistently remain at the sides of the screen, even when the screen was scrolling across the level.  So we had to erase and redraw the Assembly Language code each time, making sure to leave regular PEA instructions in its wake.  If we were scrolling the level forward (terrain moving from right to left), we had to move our stripe of code upwards in memory, writing fresh PEA instructions below.  And if we were scrolling the level back, we had to redraw the stripe of code downwards in memory, writing PEA instructions above it.  Listed below is the source code we wrote for the Merlin 16+ Assembler program to chew on, executed whenever we scroll one line forward:</P>
+
+<PRE class="codeonly">
+    DO HeatWave
+       phb                    ; save the bank register
+       pea #>ForeFld
+       plb
+       plb                    ; set the bank to that of the PEA Field
+]lp  = SizLine - CodeSiz
+]lp2 = 0
+       LUP #128               ; compiler directive: loop this 128 times
+       lda #]lp2*$100 + $e5   ;   CODE: sbc ##
+       sta ForeFld + ]lp,y    ; write this code into the PEA Field
+]lp  = ]lp + SizLine          ; proceed to the next full line of PEAs
+]lp2 = ]lp2 + 2               ; proceed to the next Direct Page word
+       --^                    ; end of loop
+]lp2 = 0
+       LUP #62                ; loop this 62 times, total of 190 PEA lines
+       lda #]lp2*$100 + $f5   ;   CODE: sbc ##,x
+       sta ForeFld + ]lp,y
+]lp  = ]lp + SizLine
+]lp2 = ]lp2 + 2
+       --^
+       lda #$f41b             ;   CODE: tcs, pea #$xxxx
+]lp  = SizLine - CodeSiz + 2
+       LUP #190               ; loop this 190 times
+       sta ForeFld + ]lp,y
+]lp  = ]lp + SizLine
+       --^
+       plb                    ; restore the bank register
+       FIN
+ </PRE>
+
+<P>When compiled, this generates a sequence of three unwound loops, bracketed by some code to keep things tidy.  The first unwound loop is a series of 128 LDA and STA instructions, like so:</P>
+
+<PRE class="codeonly">
+       lda #$00E5
+       sta $20ED,y
+       lda #$02E5
+       sta $21DD,y
+       lda #$04E5
+       sta $22CD,y
+       lda #$06E5
+       sta $23BD,y
+       lda #$08E5
+       sta $24AD,y
+       lda #$0AE5
+       sta $259D,y
+      ...
+</PRE>
+
+<P>So what does this code do?  Well, it appears to be loading an ever-increasing value into the A register, and storing it into memory at widely-spaced but regular intervals.  The Bank register has been set beforehand, so all the STA commands are storing into the memory bank where we keep the PEA Field.  The PEA Field starts at offset $2000 within the bank, and a full row's worth of pixel data and PEA instructions is $F0 bytes long, so the first STA is storing its value to the spot just three bytes <I>before the first row ends.</I>  And the second STA is storing to the spot just before the <I>second</I> row ends, and so on.</P>
+
+<P>The Y register is also being added to the location of each STA, so by setting the Y register beforehand, we can account for the scrolling of the screen.  Setting Y to #$0003 before we run this code will cause all these writes to take place three bytes further down in memory, which is one PEA instruction further along.  So this unwound loop is reusable, no matter where the PEA field has scrolled to.  It can be used to draw the stripe of code anywhere we need it.</P>
+
+<P>Now here's a snippet of the <I>third</I> unwound loop that the source code generates:</P>
+
+<PRE class="codeonly">
+       lda #$F41B
+       sta $20EF,y
+       sta $21DF,y
+       sta $22CF,y
+       sta $23BF,y
+       sta $24AF,y
+       sta $259F,y
+      ...
+</PRE>
+
+<P>Here, we're storing the same value into each place in memory, so we only need to load the A register with it once, and then we can do all 190 stores in a row.  Note that the locations of each STA match up with the locations in the first unwound loop - except that each one is exactly two bytes further along in memory.  That's because the first loop wrote one half of the stripe, and this final loop is writing the other half.  The halves combine to make four bytes of code written together at regular intervals in the PEA Field.</P>
+
+<P>So what is actually being written into the PEA Field?  Well, let's look at the first value we load, in the first loop: #$00E5.  The Apple IIgs CPU uses a little-endian architecture, so when we store that into memory it will become the sequence "$E5 $00".  The third loop stores #$F41B into memory just after that, creating the four byte sequence "$E5 $00 $1B $F4".</P>
+
+<P>Here's what that sequence means in Assembly Language:</P>
+
+<PRE class="codeonly">
+       sbc $00          ; $E5 00
+       tcs              ; $1B
+       pea #$????       ; $F4 ?? ??
+</PRE>
+
+<P>There are question marks at the end because we don't know what data the PEA instruction is going to push.  We've written the $F4, invoking the PEA, but we don't know what comes after it in memory, past our four byte sequence.  Actually it doesn't matter what's there, because that data is going to be overwritten later on by the block-drawing routine, when it draws the stripe of graphics that have just been scrolled onto the screen.  What we've done here is make sure that the necessary PEA instruction exists.</P>
+
+<P>So how does it all come together?  Suppose we want to draw our graphics to the screen.  We set all the registers up, tweak some softswitches, and then jump headlong into the PEA Field.  Along comes the computer's CPU, executing PEA instructions in the field, pushing data onto the screen:</P>
+
+<PRE class="codeonly">
+      ...
+       pea #$3033
+       pea #$0100
+       pea #$1111
+       pea #$4411
+      ...
+</PRE>
+
+<P>When it nears the end of the first row, it encounters this:</P>
+
+<PRE class="codeonly">
+      ...
+       pea #$1000
+       pea #$0000
+       pea #$5533
+       sbc $00
+       tcs
+       pea #$0000
+       pea #$1000
+       pea #$1111
+      ...
+</PRE>
+
+<P>... And keeps on going, merrily executing the PEAs for the second row.</P>
+
+<P>SBC stands for Subtract With Carry.  It does some math on the A register.  This particular variation of SBC is subtracting the value it finds in Direct Page location $00 from the A register.  (For a description of the Direct Page, see the main document.)  The next instruction after that is TCS, which transfers the contents of the A register <I>into the stack pointer</I>, overwriting the old value.  So the next row of screen data no longer has to pick up exactly where the last row left off.  It can begin wherever it wants - wherever the new stack pointer points to.</P>
+
+<P>At the end of the second row, the CPU encounters this:</P>
+
+<PRE class="codeonly">
+      ...
+       pea #$7677
+       pea #$7777
+       pea #$7777
+       sbc $02
+       tcs
+       pea #$0000
+       pea #$1110
+       pea #$1011
+      ...
+</PRE>
+
+<P>Which performs another subtraction on the A register, this time using the value that's in Direct Page location $02, instead of location $00.  The value goes into the stack pointer just like before, and the third row begins.  Since this is the Heat Wave effect, it probably appears on the screen slightly askew from the second.</P> 
+
+<P>This pattern continues, subtracting a different value loaded from the Direct Page for each line.  Because each line gets its own value, we can set the offset for each line independently.  In the case of Heat Wave, this means that some lines can get only slightly skewed, while others get very skewed, making the whole effect transition smoothly from calm at the top to manic at the bottom, like real heat rising from the desert floor.  It can also change over the course of the game.  How did we make the effect scroll smoothly up the screen?  Elementary, my dear Watson.  We just chose a slightly different pointer for the Direct Page each time, in a loop the size of a wave.</P>
+
+<P>But there's one more problem to solve:  Each line needs its own independent value in the Direct Page.  The Direct Page can be used to address 256 bytes - or 128 16-bit values.  That covers the first 128 lines just fine.  <I>But what about the remaining 62?</I></P>
+
+<P>That's what the second unwound loop described in our source code is for.  It generates a sequence like so:</P>
+
+<PRE class="codeonly">
+       lda #$00F5
+       sta $98ED,y
+       lda #$02F5
+       sta $99DD,y
+       lda #$04F5
+       sta $9ACD,y
+       lda #$06F5
+       sta $9BBD,y
+       lda #$08F5
+       sta $9CAD,y
+       lda #$0AF5
+       sta $9D9D,y
+      ...
+</PRE>
+
+<P>This sequence looks a lot like the first loop, except it's writing further down in memory.  In fact, it's picking up where the first loop left off, completing the stripe of code.  The crucial difference between the two loops is that the $E5 in each LDA of the first loop has been replaced with an $F5.</P>
+
+<P>We saw above that $E5 represents "SBC $??".  The $F5 here represents "SBC $00,x".  By loading the X register with #$0100 before jumping into the PEA Field, we can use it to refer to memory <I>just beyond</I> the usual reach of the Direct Page.  Thus, we can provide independent values for all 190 lines of the display.  Hah!</P>
+
+<P>So, all in all, we've written macro code that automatically <I>unwinds</I> into Assembly Language code whose purpose is to <I>dynamically modify other Assembly Language code</I>, which is then executed by the CPU whenever we draw a screenful of graphics.  If you had to do this in any of your CS classes, let me know.  I'll be surprised.</P>
+
+<P>The contents of the memory pointed to by the Direct Page are left as an exercise to the reader.  As an aid to understanding it, consider that filling the whole region with the value #$00F0 will make the screen draw normally.  (Remember, the stack pushes backwards, and the rows are also in reverse order.)</P>
+
+</BODY>
+</HTML>

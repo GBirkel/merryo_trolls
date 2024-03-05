@@ -1,0 +1,86 @@
+<HTML>
+<HEAD>
+<TITLE>Super Merryo Trolls - Heat Wave Effect Detail</TITLE>
+<link rel="stylesheet" href="styles.css" type="text/css" media="screen">
+</HEAD>
+<BODY>
+
+<div class="centering"><H1>Super Merryo Trolls</H1></div>
+
+<div class="centering"><H2>Zog-Format Map Translator</H2></div>
+
+<p>
+All we needed for translating Zog's maps was a key, which took the form of a text file like so:
+</p>
+
+<PRE class="codeonly">
+0,0,Sky
+..
+0,4400,Hillside
+;;
+0,6080,White M
+ww
+0,8640,Wood M
+XR
+20,14880,Geom Red
+XG
+20,15040,Geom Grn
+XB
+20,15200,Geom Blue
+XZ
+20,14720,Geom Grey
+[R
+20,17920,Sold Red
+[G
+.......
+ </PRE>
+
+<p>
+We wrote a BASIC program that slurped in the key, then read in a level map and translated each two-character symbol into the corresponding numbers for the "block type" and "block picture" portions of a level map.  Just a few loops and some "POKE" statements to get the values into memory, and we were done.
+</p>
+
+<div class="codepages"><div>
+<div> 10  DIM B$(200),A(200),B(200),N$(200),R$(12)</div>
+<div> 15 D$ =  CHR$ (4): HGR : TEXT : HOME </div>
+<div> 20  PRINT "File number:";: GET A: PRINT A</div>
+<div> 30  PRINT : PRINT "Initializing block equivalents:"</div>
+<div> 35  PRINT D$;"open edit.dir/level";A;".txt"</div>
+<div> 37  PRINT D$;"read edit.dir/level";A;".txt"</div>
+<div> 40 BN = 1: PRINT </div>
+<div> 45  INPUT B$(BN)</div>
+<div> 50  INPUT A(BN),B(BN),N$(BN)</div>
+<div> 51  IF N$(BN) = "MapStart" THEN  GOTO 60</div>
+<div> 52  IF  LEN (B$(BN)) &lt; 2 THEN B$(BN) = B$(BN) +  LEFT$ ("   ",2 -  LEN (B$(BN)))</div>
+<div> 55  PRINT "|";B$(BN);"| ";N$(BN);" ";A(BN);",";B(BN)</div>
+<div> 56 BN = BN + 1: GOTO 45</div>
+<div> 60  PRINT : PRINT "Total blocks:";BN - 1</div>
+<div> 65  PRINT : PRINT "Writing world:";A(BN);"-";B$(BN)</div>
+<div> 66 BN = BN - 1:MA = 8192:MB = 12288</div>
+<div> 70  INPUT P$: IF P$ = "End" THEN  GOTO 200</div>
+<div> 71 P =  VAL (P$): PRINT "Page:";P</div>
+<div> 72  FOR X = 1 TO 12: INPUT R$(X)</div>
+<div> 74  IF  LEN (R$(X)) &lt; 65 THEN R$(X) = R$(X) +  LEFT$ ("                                                                ",65 -  LEN (R$(X)))</div>
+<div> 78  NEXT X</div>
+<div> 80  FOR X = 0 TO 31: PRINT "Column:";X</div>
+<div> 85  FOR Y = 0 TO 11</div>
+<div> 86  PRINT "|"; MID$ (R$(Y + 1),(X * 2) + 2,2);"| ";</div>
+<div> 90  FOR Z = 1 TO BN: IF  MID$ (R$(Y + 1),(X * 2) + 2,2) = B$(Z) THEN  GOTO 110</div>
+<div> 100  NEXT Z: PRINT "Unknown!":Z = 1: GOTO 115</div>
+<div> 110  PRINT N$(Z)</div>
+<div> 115  POKE MA + (P * 384) + (X * 12) + Y,A(Z)</div>
+<div> 120  POKE MB + (P * 768) + (X * 24) + (Y * 2),B(Z) -  INT (B(Z) / 256) * 256</div>
+<div> 125  POKE MB + (P * 768) + 1 + (X * 24) + (Y * 2), INT (B(Z) / 256)</div>
+<div> 130  NEXT Y: NEXT X: GOTO 70</div>
+<div> 200  PRINT : PRINT D$;"close"</div>
+<div> 210  PRINT "Saving..."</div>
+<div> 220  PRINT : PRINT D$;"bsave maps/wd";A(BN + 1);B$(BN + 1);",a$2000,l$3000"</div>
+</div></div>
+
+<p>
+Of course these days a workflow like this is crazy.  Instead we would create a web page, hosted on a remote server with a database attached, that would send a large chunk of javascript code to a browser in Zog's machine, where he would make all his edits and then press a "Save" button.  Later on we would connect to the same website and fetch the edited map from the database, through an entirely different mechanism.
+</p><p>
+Which is a different kind of crazy, if you think about it.  (This is <a href="https://github.com/GBirkel/merryo_trolls/tree/main/dev_tools/level_editor">more-or-less what I did</a>, in 2024.)
+</p>
+
+</BODY>
+</HTML>

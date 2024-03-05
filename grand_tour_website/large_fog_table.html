@@ -1,0 +1,67 @@
+<HTML>
+<HEAD>
+<TITLE>Super Merryo Trolls - Heat Wave Effect Detail</TITLE>
+<link rel="stylesheet" href="styles.css" type="text/css" media="screen">
+</HEAD>
+<BODY>
+
+<div class="centering"><H1>Super Merryo Trolls</H1></div>
+
+<div class="centering"><H2>Making The Large Fog Array</H2></div>
+
+<P>An array of 32768 16-bit values takes up 64k of space.  By today's standards, that's absolutely nothing.  By 1992 standards, that's a significant amount - especially since software shipped on 3.5-inch magnetic disks that only held 800k each.  (Yes, that means you can store more than five thousand of those disks, uncompressed, on one single-sided blank DVD.)</P>
+
+<P>Disk storage was the real problem here - 64k out of 800k leaves that much less room for artwork, maps, sound effects, and other data that could be part of Super Merryo Trolls.  Instead of storing the whole 64k fog-array on the disk, it made sense to calculate it dynamically.  The following code uses the 8-bit fog-array as reference, and generates the 16-bit fog array with a pair of loops.  Instead of taking 64k on disk, it claims less than 1k.
+</P>
+
+<PRE class="codeonly">
+    ...
+     REP #$30
+     STZ Tmp
+]lp2 REP #$20
+     LDA Tmp
+     XBA
+     TAX
+     LDA FogSmall-1,x
+     SEP #$20
+     LDY #$0000
+     LDX Tmp
+]lp  LDA FogSmall,y
+     REP #$20
+     STAL FogTable,x
+     SEP #$20
+     INX
+     INX
+     INY
+     INY
+     CPY #$0100
+     BNE ]lp
+     STX Tmp
+     CPX #$0000
+     BNE ]lp2
+    ...
+ 
+ FogSmall HEX BBBCB1B5B3BFB9BDB7B8BCBABEBDBDBD
+     HEX CBCCC1C5C3CFC9CDC7C8CCCACECDCDCD
+     HEX 1B1C1115131F191D17181C1A1E1D1D1D
+     HEX 5B5C5155535F595D57585C5A5E5D5D5D
+     HEX 3B3C3135333F393D37383C3A3E3D3D3D
+     HEX FBFCF1F5F3FFF9FDF7F8FCFAFEFDFDFD
+     HEX 9B9C9195939F999D97989C9A9E9D9D9D
+     HEX DBDCD1D5D3DFD9DDD7D8DCDADEDDDDDD
+     HEX 7B7C7175737F797D77787C7A7E7D7D7D
+     HEX 8B8C8185838F898D87888C8A8E8D8D8D
+     HEX CBCCC1C5C3CFC9CDC7C8CCCACECDCDCD
+     HEX ABACA1A5A3AFA9ADA7A8ACAAAEADADAD
+     HEX EBECE1E5E3EFE9EDE7E8ECEAEEEDEDED
+     HEX DBDCD1D5D3DFD9DDD7D8DCDADEDDDDDD
+     HEX DBDCD1D5D3DFD9DDD7D8DCDADEDDDDDD
+     HEX DBDCD1D5D3DFD9DDD7D8DCDADEDDDDDD
+ </PRE>
+
+<P>If you're not familiar with Apple IIgs Assembly Language, the "SEP" and "REP" instructions may confuse you.  Those are the opcodes that change the size of the A, X, and Y registers.  They're used to set and clear single-bit-sized flags inside the CPU: The "SEP" opcode sets bits, and the "REP" opcode clears them.  For example "SEP #$20" sets the flag for the A register - making the register 8 bits wide.  "REP #$10" clears the flag controlling the X and Y registers, making them both 16 bits wide.  And of course, "REP #$30" would clear both flags, making A, X, and Y all 16 bits wide.</P>
+
+<P>The other thing that may confuse you is the "XBA" opcode.  That merely swaps the low and high bytes of the A register.</P>
+
+</BODY>
+</HTML>

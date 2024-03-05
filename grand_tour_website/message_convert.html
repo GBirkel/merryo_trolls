@@ -1,0 +1,90 @@
+<HTML>
+<HEAD>
+<TITLE>Super Merryo Trolls - Message Converter</TITLE>
+<link rel="stylesheet" href="styles.css" type="text/css" media="screen">
+</HEAD>
+<BODY>
+
+<div class="centering"><H1>Super Merryo Trolls</H1></div>
+
+<div class="centering"><H2>Message Box Conversion Program</H2></div>
+
+<P>
+MESG.MAKER.BAS was the program we used to do the intermediate processing of our in-game messages.  Unfortunately, all I could dig up was an outdated copy of the program, which converted messages one-by-one.  The later version is almost exactly the same as this, except that it uses Hi-Res page 1 as the source memory, and builds a table of pointers to each message in the first 0x80 bytes of space on Hi-Res page 2.
+</P>
+
+<div class="codepages"><div>
+
+<div>2  HOME</div>
+<div>3  DIM C(16),BA(27),BB(27),BC(27)</div>
+<div>5 C(1) = 63:C(2) = 127:C(3) = 95:C(4) = 159</div>
+<div>6 L = 32768:Y = 0:PG = 0</div>
+<div>8  FOR X = 1 TO 26: READ L$: READ BA(X): READ BB(X): READ BC(X): NEXT X</div>
+<div>10 A$ = "_5WELCOME_1, YES INDEEDY. _3HOW YA DOIN_1 ^)"</div>
+<div>20  HGR : VTAB 22</div>
+<div>30  FOR X = 1 TO  LEN (A$)</div>
+<div>31  GET FU$</div>
+<div>40 B$ =  MID$ (A$,X,1): PRINT B$;</div>
+<div>45  IF B$ = "_" THEN  GOTO 100</div>
+<div>46  IF B$ = "^" THEN  GOTO 200</div>
+<div>50  IF B$ &lt; "A" OR B$ > "Z" THEN  GOTO 60</div>
+<div>51  IF D = 5 THEN  GOTO 300</div>
+<div>52  GOSUB 900</div>
+<div>53  POKE L + Y, ASC (B$) + C(D)</div>
+<div>54 Y = Y + 1</div>
+<div>55  NEXT X: GOTO 130</div>
+<div>60  GOSUB 900</div>
+<div>61  IF B$ = " " THEN  POKE L + Y,0</div>
+<div>65  IF B$ = "," THEN  POKE L + Y,91</div>
+<div>66  IF B$ = "." THEN  POKE L + Y,93</div>
+<div>99 Y = Y + 1: NEXT X: GOTO 130</div>
+<div>100 X = X + 1:B$ =  MID$ (A$,X,1): PRINT B$;</div>
+<div>110  IF B$ &lt; "1" OR B$ > "5" THEN  GOTO 120</div>
+<div>115 D =  ASC (B$) - 48: NEXT X</div>
+<div>120  NEXT X: GOTO 129</div>
+<div>129 Y = Y + 1: POKE L + Y,255</div>
+<div>130  PRINT : PRINT "Done. Start:";L;" Length:";Y + 1</div>
+<div>135  END</div>
+<div>200 X = X + 1:B$ =  MID$ (A$,X,1): PRINT B$;</div>
+<div>205  IF B$ = "P" THEN  POKE L + Y,64: POKE L + Y + 1,65:Y = Y + 2</div>
+<div>210  IF B$ = "G" THEN  POKE L + Y,66: POKE L + Y + 1,67:Y = Y + 2</div>
+<div>215  IF B$ = "(" THEN  POKE L + Y,68: POKE L + Y + 1,69:Y = Y + 2</div>
+<div>220  IF B$ = ")" THEN  POKE L + Y,70: POKE L + Y + 1,71:Y = Y + 2</div>
+<div>225  NEXT X: GOTO 130</div>
+<div>300  IF PG = 0 THEN  POKE L + Y,255: POKE L + Y + 1,2: POKE L + Y + 2,0:
+     POKE L + Y + 3,16:PG = 1:Y = Y + 4: PRINT "(P:1)";</div>
+<div>310  POKE L + Y,BA( ASC (B$) - 64): POKE L + Y + 1,BB( ASC (B$) - 64): POKE
+    L + Y + 2,BC( ASC (B$) - 64):Y = Y + 2: GOTO 54</div>
+<div>900  IF PG = 1 THEN  POKE L + Y,255: POKE L + Y + 1,2: POKE L + Y + 2,0:
+     POKE L + Y + 3,0:PG = 0:Y = Y + 4: PRINT "(P:0)";</div>
+<div>901  RETURN</div>
+<div>1200  DATA "A",2,36,3,"B",4,14,5</div>
+<div>1210  DATA "C",6,34,7,"D",8,34,9</div>
+<div>1220  DATA "E",10,14,11,"F",12,36,13</div>
+<div>1230  DATA "G",6,14,15,"H",16,22,17</div>
+<div>1240  DATA "I",57,8,1,"J",20,43,21</div>
+<div>1245  DATA "K",16,22,23,"L",24,43,25</div>
+<div>1250  DATA "M",26,27,28,"N",26,29,30</div>
+<div>1255  DATA "O",6,34,9,"P",12,36,33</div>
+<div>1260  DATA "Q",6,34,35,"R",12,36,37</div>
+<div>1265  DATA "S",38,14,39,"T",64,65,31</div>
+<div>1270  DATA "U",42,43,21,"V",44,43,45</div>
+<div>1275  DATA "W",46,49,47,"X",48,22,23</div>
+<div>1280  DATA "Y",54,55,56,"Z",52,14,53</div>
+<div>3000  REM _1 = uppercase small</div>
+<div>3002  REM _2 = lowercase small</div>
+<div>3004  REM _3 = bold small</div>
+<div>3006  REM _4 = italic small</div>
+<div>3008  REM _5 = huge</div>
+<div>3050  REM ^  = symbols:</div>
+<div>3055  REM  P = tongue out face</div>
+<div>3058  REM  G = growling face</div>
+<div>3060  REM  ) = happy face</div>
+<div>3062  REM  ( = sad face</div>
+
+</div></div>
+
+<P>Using this code we converted the fonts and formatting, and some symbols, before handing the data off to the game.</P>
+
+</BODY>
+</HTML>

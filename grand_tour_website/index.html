@@ -1,0 +1,386 @@
+<html>
+<head>
+<title>Super Merryo Trolls</title>
+<link rel="stylesheet" href="styles.css" type="text/css" media="screen">
+</head>
+<body>
+
+<div class="centering"><h1>Super Merryo Trolls</h1></div>
+<div class="centering"><h3 style="margin:0;">or</h3></div>
+<div class="centering"><h2>Last Century's Weirdest Graphics Technique</h2></div>
+
+<div class="centering">
+<table cellspacing=10 class="contents"><tr><td>
+
+<OL class="chapters">
+<li><A HREF="#intro">Introduction</A></li>
+<li><A HREF="#challenge">The Challenge</A></li>
+<li><A HREF="#crash">Crash Course In Assembler</A></li>
+<li><A HREF="#pea">The PEA Field</A></li>
+<li><A HREF="#stupid">Stupid PEA Tricks</A></li>
+</OL>
+
+</TD><TD>
+
+<OL START=6 class="chapters">
+<li><A HREF="part_two.html#further">Further Graphic Barbarity</A></li>
+<li><A HREF="part_two.html#blocks">The Blockset</A></li>
+<li><A HREF="part_two.html#sprites">Drawing Sprites</A></li>
+<li><A HREF="part_two.html#messages">Message Blocks</A></li>
+<li><A HREF="part_two.html#maps">The Level Maps</A></li>
+</OL>
+
+</TD><TD>
+
+<OL START=11 class="chapters">
+<li><A HREF="part_three.html#kings">The Kings Quest Thing</a></li>
+<li><A HREF="part_three.html#dungeon">Dungeon Faster</a></li>
+<li><A HREF="part_three.html#gallery">A Gallery Of Other Weirdness</a></li>
+<li><A HREF="part_three.html#support">Support Programs</a></li>
+<li><A HREF="part_three.html#code">Resurrection And Code</a></li>
+</OL>
+
+</TD></TR></TABLE>
+</div>
+
+<p>
+<b>Note to all you programmers</b>: Most of the links in this document lead to additional detail, if you're interested in the really <i>really</i> gritty parts of this implementation.
+</p>
+
+<p>
+<b>Note to all you nit-picky programmers</b>: In this text I use the term Assembly Language to refer to both Assembly Language <I>and</I> Machine Language (the compiled result of Assembly Language.)  This is to keep things simple.  Hah!  Simple...
+</p>
+
+<A NAME="intro"><div class="centering"><h3>Introduction</h3></div></A>
+
+<p>
+It's the year 1991.  You're a teenage computer geek.
+</p><p>
+You've just upgraded to your first "16-bit" computer, and the possibilities are infinite. To relieve the crushing boredom of your High School coursework, you and your friends embark on the computer geek equivalent of forming a heavy metal band: You create your own video game.
+</p><p>
+You meet on the benches during lunch hour, and pass around crude plans scribbled on graph paper. You assign each other impressive titles like "Master Programmer", "Sound Designer", and "Area Data Input". You draw circles and arrows all over fuzzy dot-matrix printouts of code, and argue over them between episodes of "Ren and Stimpy". You swap 3.5" disks around like furtive secret agents. You consume incredible quantities of soda. Your parents look at your owlish eyes - and possibly your slipping grades - and wonder aloud if you're "on drugs".
+</p>
+
+<div class="centering fit"><div><img src="notebook_pages.jpg" style="max-width:1920px;"></div></div>
+
+<p>
+If the above sounds familiar to you, then the rest of this article may prove interesting.  It uses the game my friends and I started - but didn't finish - in High School, in order to describe the programming acrobatics we had to perform while writing it.  Nowadays, the content of the game itself is only good for an embarrassing laugh, but I feel that the code we hammered out shows the unique challenges of a bygone era, which should be remembered.
+</p>
+
+<A NAME="challenge"><div class="centering"><H3>The Challenge</H3></div></A>
+
+<div class="centering"><div><IMG SRC="its_a_iigs.png" style="max-width:660px;"></div></div>
+
+<p>
+This is an Apple IIgs.  The CPU is inside the box on the left, underneath that external hard drive that's missing a cover.  When you flip the power switch of an Apple IIgs, you don't hear any fans spin up.  The box is dead quiet, and stays that way no matter what the computer is doing.  How did Apple accomplish such an engineering feat?  Easy.  The Apple IIgs is SLOW.  Fist-clenchingly, <FONT COLOR="#FF0000">a&nbsp;g&nbsp;o&nbsp;n&nbsp;iz&nbsp;in&nbsp;gly</FONT> slow.  I grit my teeth and shriek, and feel sick, just thinking about it.  You honestly have no idea how slow this god-forsaken toast-rack of a computer is ... unless you've tried to make it go fast.
+</p>
+
+<div class="centering fit">
+<video	src="gameplay_video.mp4"
+		poster="gameplay_video.jpg"
+		type="video/mp4"
+		controls="" autoplay="" loop="" muted="" playsinline=""></video>
+</div>
+
+<p>
+This is the first level of "Super Merryo Trolls".  Imagine it flickering on the little monitor in the previous picture.  Yes, the game looks suspiciously familiar.  It's a rip-off of Super Mario Brothers, though all the blocks are drawn in a 20x16 aspect ratio instead of the usual 16x16.  The main character, Guido, has a head that looks like a pixel-exact rip-off of Mario from Super Mario World.  (This is nearly the case.  You'd probably never notice it, but Mario's eyes both slant forward, while Guido's slant inward at each other, giving him a slightly more menacing look.)
+</p>
+
+<div class="centering fit"><div><IMG SRC="newmarios.png" style="max-width:640px;"></div></div>
+
+<p>
+Our idea was to start with the game looking as conventional as possible, and then quickly introduce the sick and twisted elements we never got to see in any "legitimate" Mario games.  Those "legitimate" games ran on store-bought consoles like the Super Nintendo and the Sega Master System.  They had specialized hardware, and usually managed a smooth 60 frames per second.  The best full-screen animation we could manage on a stock Apple IIgs was around 20 frames per second.
+</p><p>
+During the decade when first-person-shooter games were exploding, everyone learned that the most important benchmark was the frame rate.  A low frame rate meant that a game was unplayable.  Developers added configuration screens, so that players could turn off the fancy visual enhancements, sacrificing graphical quality for speed.  This dichotomy - of fast graphics versus fancy graphics - has always existed.  But since the Apple IIgs only came in one flavor and ran at one speed, there was no reason to give game players a configuration screen.  (Their choice would have been between slow and slow.)  Instead, it was a different uphill battle for the programmers:  If they were tricky, the games they produced were playable.  If they weren't tricky, the games they produced were <I>unplayable</I>, period.
+</p><p>
+So, what's an aspiring team of High School nerds to do, in pursuit of programming fortune and glory?  How do we make a game so cool that even we would play it, on hardware so slow that even the law of gravity can't accelerate it?
+</p><p>
+We've got to get tricky.  In order to get the highest possible performance out of the Apple IIgs, we'll be writing everything in Assembly Language, so we can have absolute control over every cycle of the computer's CPU.
+</p>
+
+<A NAME="crash"><div class="centering"><H3>Crash Course In Assembler</H3></div></A>
+
+<p>Those of you familiar with Assembly Language may wish to skip this section.  Those of you too young to remember when it was called 'Assembler' are encouraged to read it, and laugh at how crude it was before branch prediction and vector instructions got involved.</p>
+
+<div class="centering"><div><img src="block.png" /></div></div>
+
+<p>
+This is a block, one of many that compose the two-dimensional levels of Super Merryo Trolls.  To make fast animation, and a playable game, we need to draw lots of these on the screen very quickly.  No matter what solution we choose, it's going to involve repetition, because the largest amount of memory the Apple IIgs can move in a single CPU cycle is a <I>one byte</I> - and a block like the one pictured above is 160 bytes of data.
+</p>
+
+<div class="centering"><div><img src="block_as_data.png" class="smallforpc" /></div></div>
+
+<p>
+So the crucial question to ask is, what's the quickest way to move a piece of data from one place to another inside the Apple IIgs?  What Assembly Language instruction, or combination of them, gets the job done in the fewest number of CPU cycles?  The answer lies in this handy reference chart I drew in 1992:
+</p>
+
+<div class="centering"><div><img src="assembly_chart.jpg" /></div></div>
+
+<p>
+This is a chart of the Apple IIgs Assembly Language instruction set.  Assembly Language is the name for the tiny fragments of computer code that the Apple IIgs (like every other computer) runs on, at the most basic level.  Each Assembly Language instruction has a three-letter name, like "LDA", "STA", "SBC", or "PHB".  The letters in the name describe what the instruction does.  For example, "LDA": Load the "A" register with a number.  "STA": Store the number from the "A" register somewhere in memory.  Every computer program you've ever used is composed of tiny math operations just like these, even huge bloated ones like Garage Band.
+<p><p>
+Strange, isn't it?  It's like taking a close look at the Eiffel Tower and discovering that the entire structure is made from little bits of uncooked macaroni, and then looking around and realizing that the whole city of Paris is little bits of macaroni.  This type of madness is why programmers have to do their work sitting down.
+</p><p>
+Anyway, the most straightforward way to move a block from here to there is to load a piece of it into the CPU's "A" register, and then write the "A" register out to someplace else.  To do that in Assembly Language, we'd use the "Load A" and "Store A" instructions like so:
+</p>
+
+<div class="codepages"><div>
+
+<div>LDA $021300</div>
+<div>STA $012000</div>
+
+</div><div>
+
+<div>$AF $00 $13 $02</div>
+<div>$8F $00 $20 $01</div>
+
+</div></div>
+
+<p>
+(Those hex numbers on the right are a more accurate representation of what this looks like inside the computer.  The instructions and the parameters we give them all reduce to sequences of numbers.  In this case, "LDA" is $AF, and the parameter "$021300" is flipped around and split apart into "$00 $13 $02", and so on.  It's all numbers!)
+</p><p>
+This example isn't very practical because it's too specific.  It's saying, "Load A with the number we find at $021300, and store that number at $012000."  When the computer runs this code, it always loads from one exact spot, and stores in another exact spot.  We'd have to write a whole lot of "LDA" and "STA" commands to move an entire block ... and we'd only be able to draw it to one exact place on the screen!  Nope, not practical.
+<p><p>
+We can make this code more flexible by involving a variable, like the "X" register.  By adding the "X" register to each memory location, we can refer to many different locations with the same code:
+</p>
+
+<div class="codepages"><div>
+
+<div>LDA $021300,X</div>
+<div>STA $012000,X</div>
+
+</div><div>
+
+<div>$BF $00 $13 $02</div>
+<div>$9F $00 $20 $01</div>
+
+</div></div>
+
+<p>
+If "X" is set to zero beforehand, this code does the same thing as the first example.  But if we set "X" to 2, this code will load from $021302 instead of $021300, and store to $012002 instead of $012000.  This is very useful, because now we can set up a loop - running this code over and over with different values for "X" - and move a big block of data around.  Our problem appears to be solved.  But how fast does this code go?
+</p>
+<p>
+Inside the computer, each Assembly Language instruction takes a certain number of CPU cycles to execute.  Some instructions use only a few cycles and are executed quickly, while others occupy the machine for a long time.  Take a look at the green-shaded area in the reference chart.  It details the minimum number of CPU cycles that "LDA" and "STA" require to get their work done.  For "STA" to store a 16-bit value (two bytes of data) into memory, at least five cycles are required.  For "LDA" to load 16 bits into "A", at least three cycles are required. So in total, it takes 8 cycles to move 2 bytes.  Multiply that by a whole screen full of data, and you're looking at <B>128,000 CPU cycles.</B>  That's a freaking long time inside an Apple IIgs.  I could bake a pizza in that time.
+</p>
+
+<IMG SRC="pizza.png" BORDER=0 VSPACE=1 HSPACE=10 ALIGN=RIGHT>
+
+<p>
+(As an aside, there are Assembly Language instructions in the IIgs called "MVN" and "MVP" that actually cause big chunks of memory to shift around.  If you find these on the chart, and look at the cycle counts, you'll discover that these instructions require 7 cycles <I>per byte</I>.  That's <B>224,000 cycles</B> to move a screen.  I could bake <I>and eat</I> a pizza in that time.)
+</p><p>
+So what else can we do?
+</p>
+
+<A NAME="pea"><div class="centering"><h3>The PEA Field</h3></div></A>
+
+<p>
+Probably the strangest trick employed in making Super Merryo Trolls go fast is the "PEA Field".  No, it's not a winter crop, nor is it some alien death ray from outer space.  "PEA" is an Assembly Language instruction.  You can see it in the purple-shaded region of the reference chart.  "PEA" stands for "Push Effective Address". (That's not a very straightforward name, actually.)  In the computer's memory, the instruction is represented by the number $F4.
+</p><p>
+The "PEA" instruction requires a 16-bit number to do its work, which is loaded from the spot right after it in memory.  So if you put the sequence "$F4 $07 $07" into memory and then tell the computer to execute that, it will execute "PEA #$0707".  (This may seem a bit strange, because it illustrates that the numbers in a computer's memory can lead a kind of double life:  A number can be just a number, or it can actually represent an Assembly Language instruction.  In point of fact, everything inside the computer is numbers, and the computer only interprets some of the numbers as Assembly Language because of the way they're arranged.)  So the "PEA" instruction is always paired with a 16-bit number.  But what does "PEA" do with this number?
+</p><p>
+It adds it to a structure called "the stack".  "The stack" is a block of memory that the CPU uses to keep track of where it's been, so it can eventually return there.  Depending on how complicated the computer's current job is, the stack grows and shrinks, just like a stack of papers on your desk at work.  Generally, a programmer doesn't have to worry about the stack, because it's managed automatically - address numbers are pushed and pulled from it at the appropriate times by the CPU during the execution of a program.
+</p><p>
+But sometimes a programmer may want to make the CPU behave in non-linear ways, and one method for doing that is to futz with the contents of the stack.  That's exactly what the "PEA" instruction is designed for.  This sequence of PEA instructions:
+</p>
+
+<div class="codepages"><div>
+
+<div>PEA #$1300</div>
+<div>PEA #$1902</div>
+<div>PEA #$3387</div>
+
+</div><div>
+
+<div>$F4 $00 $13</div>
+<div>$F4 $02 $19</div>
+<div>$F4 $87 $33</div>
+
+</div></div>
+
+<p>
+will push three 16-bit numbers onto the stack.  So "$1300 $1902 $3387" will appear in the area of memory where the stack is kept.  Later on, the CPU may pull those numbers off the stack, and use them to jump somewhere new, or the programmer may pull them off manually, effectively using the stack as temporary storage.
+</p><p>
+Now hold on a minute here ... there's loading and storing taking place, and according to the chart, the "PEA" instruction takes <I>only five cycles</I> to move a 16-bit value!  (Check out the purple-shaded region.)  That's a bargain!  In fact, it's the best bargain the hardware has to offer.  A whole string of "PEA" instructions will push a whole string of data into memory, and there's not even an "X" register to manage.  Wouldn't it be nice if we could move data to the screen this way?
+</p><p>
+It just so happens we can.  With some memory-shadowing tomfoolery, it is possible to make the Apple IIgs use the same memory for both the stack <I>and the screen</I>.  A "PEA" instruction will then write data directly to the screen.
+</p>
+
+<div class="centering"><div><img src="block_grid.gif" /></div></div>
+
+<p>
+Here's the block we want to move.  The thick dividing lines in the illustration separate the block into wide rectangles, with four pixels inside each.  Each of these 80 rectangles is 16 bits worth of data.  A single "PEA" instruction can push 16 bits of data onto the stack.  What if we created a huge string of "PEA" instructions that, when executed by the CPU, "pushed" this block onto the screen?
+</p>
+
+<div class="centering"><div><img src="block_grid-scr.gif" /></div></div>
+
+<p>
+Here we've broken the block into 16-bit chunks, and inserted a "PEA" instruction in front of each chunk.  (Remember, a "PEA" instruction is really just the number $F4, and pixel data is also just numbers, so all we're really doing is inserting numbers in between numbers here.)  You may wonder why the block looks scrambled now.  Well, there's something I haven't told you about the stack in the Apple IIgs.  It runs backwards in memory.
+</p><p>
+Yep, it's true.  If you execute a bunch of "PEA" instructions, one after the other, each piece of stack data is stored in memory just <I>below</I> the previous one.  By contrast, programs in memory are executed one instruction at a time with each instruction just <I>above</I> the previous one.  So while the program runs forward, the stack is drawn backwards.  To make things come out right, the program needs to push its 16-bit chunks in reverse order!
+</p><p>
+In addition, the rows of pixels on the screen are represented in memory from top to bottom.  If we're drawing backwards, we should push the last row first.  In total, we need to turn our data upside down and backwards before we convert it into PEA instructions.
+</p><p>
+This is a cute solution for drawing a single block, but if we just used it to draw one block at a time, we'd run into problems.  Every time we finish one row of pixels, we have to do some math on the stack pointer so we can start drawing the next row in the right place on the screen.  That costs precious CPU time - so much that it threatens to defeat the purpose of our exercise.
+</p><p>
+But what if we don't confine ourselves to a single block?  What if we draw the <I>entire screen, all at once</I>, in backwards order using "PEA" instructions?  That way, the stack can just chug away across the screen, and wrap up to the previous line all by itself.
+</p>
+
+<div class="centering fit"><div><img src="pea_scene.png" style="max-width:1170px;" /></div></div>
+
+<p>
+Now we don't need to do any math on the stack pointer, because each row of pixels naturally begins where the previous one left off.  It's all "PEA" as far as the eye can see.  A chunk of 16,000 "PEA" instructions can draw a whole screen of data, and it takes <B>a mere 80,000 cycles</B>, which is almost <B>40% faster</B> than the previous solution.  I could still bake a pizza in that time, but I'd have to preheat the oven.
+</p><p>
+This bizarre method is <I>the</I> fastest way to redraw the entire screen on the Apple IIgs, period.  I'm sure the hardware designers didn't plan it this way.  If they did, well, ... shame on them!  This is a total hack!
+</p><p>
+There are other methods that <I>appear</I> to redraw everything (Fill mode, the TSB operator, etc), but they all rely on restricting what you're allowed to draw, or using a lower resolution.  This method works no matter what you're drawing, because it refreshes all the data, every time.  In Super Merryo Trolls, we kept this huge tapestry of "PEA" instructions in memory bank $07, and we called it "The PEA Field".
+</p>
+
+<A NAME="stupid"><div class="centering"><H3>Stupid PEA Tricks</H3></div></A>
+
+<p>
+There is also another very important advantage to using this method.  If you want to redraw everything four pixels to the right, all you need to do is skip the first PEA instruction in the chain, and tack a new one onto the end.  Repeat the procedure, and your data scrolls continuously across the screen.
+</p>
+
+<div class="centering fit"><div><img src="mini_tv_scroll-1.gif" /></div></div>
+
+<p>
+Reverse the procedure, and you can scroll back in the other direction just as easily.  While the bulk of the PEA Field sits still in memory, we achieve animation by fiddling with the ends just before we "execute" it.  It's similar to the way tank treads work:  The tread lays still on the ground, but by fiddling with the ends, we can make a vehicle roll across the landscape.
+</p><p>
+If all we did was add and remove PEA instructions, the graphics would loop around the screen repeatedly.  But when you're playing a game you want the scenery to change, not repeat like some cheap Warner Bros. cartoon - so you also need to draw extra stripes of material into the PEA Field as it scrolls.
+</p><p>
+You don't have to limit yourself to PEA instructions, of course.  You can toss in other Assembly Language codes anywhere you want, to achieve interesting visual effects.  The most amusing one we cooked up for Super Merryo Trolls was called the "Heat Wave" effect.  Every time the PEA Field finished drawing a line of pixels, we would <A HREF="heat_wave.html">do some crafty math</A> to the stack pointer, shifting it forward or back just a little bit so the next line got drawn in a different place.  We would change the sequence of amounts with each frame, making the distortion appear to move up the screen, like so:
+</p>
+
+<div class="centering fit">
+<video	src="heat_wave_effect.mp4"
+		poster="heat_wave_effect.jpg"
+		type="video/mp4"
+		controls="" autoplay="" loop="" muted="" playsinline=""></video>
+</div>
+
+<p>
+Of course, if you can change the stack pointer a little, you can change it a lot.  In "Techno Land" there was a button that, when you stomped on it, would turn the whole display upside down, sprites and all.  For no reason.
+</p><p>
+The most impressive variation that the PEA Field allowed was two-layer scrolling, though the implementation had problems because it made sprite drawing very complicated.  We made a <A HREF="generic_demo.zip">proof-of-concept demo</A> that would successfully scroll, but we were never able to integrate it with the game:
+</p>
+
+<div class="centering fit">
+<video	src="generic_demo_1994-loop.mp4"
+		poster="generic_demo_1994-loop.jpg"
+		type="video/mp4"
+		controls="" autoplay="" loop="" muted="" playsinline=""></video>
+</div>
+
+<p>
+This demo played music while scrolling a foreground region over a background region which was further subdivided into five horizontally scrolling planes.  On top of everything, semi-transparent raindrops fell slowly down the screen.  It looks like monkey poop now, but believe me, in 1994 it was a miracle.
+</p><p>
+That red stripe at the bottom of the display is a kind of rudimentary CPU-meter:  By changing the "border color" register from black to red for just a fraction of each 60th of a second, then doing some processing, then switching the register back to black, you could get a visual indication of how much CPU time a task took to complete.  Apple IIgs developers used this technique a lot to balance their CPU "budget".
+</p>
+
+<div class="centering"><TABLE BORDER=0 CELLPADDING=8 CELLSPACING=0><TR><TD ALIGN=CENTER>Foreground<BR><IMG SRC="two_layer_demo-a.gif" BORDER=0 VSPACE=10 HSPACE=0></TD><TD ALIGN=CENTER>Background:<BR><IMG SRC="two_layer_demo-b.gif" BORDER=0 VSPACE=10 HSPACE=0></TD></TR></TABLE></div>
+
+<p>
+So how did two-layer scrolling work?  Well, we started by making the foreground picture into a PEA Field.  Then we modified all the PEA instructions that pushed gray pixels, changing them into something else.  Instead of:
+</p>
+
+<div class="codepages"><div>
+
+<div>PEA #$1111</div>
+<div>PEA #$1111</div>
+<div>PEA #$1111</div>
+<div>...</div>
+
+</div><div>
+
+<div>$F4 $11 $11</div>
+<div>$F4 $11 $11</div>
+<div>$F4 $11 $11</div>
+<div>...</div>
+
+</div></div>
+
+<p>We wrote:</p>
+
+<div class="codepages"><div>
+
+<div>PEI $9E</div>
+<div>NOP</div>
+<div>PEI $9C</div>
+<div>NOP</div>
+<div>PEI $9A</div>
+<div>NOP</div>
+<div>...</div>
+
+</div><div>
+
+<div>$D4 $9E</div>
+<div>$EA</div>
+<div>$D4 $9C</div>
+<div>$EA</div>
+<div>$D4 $9A</div>
+<div>$EA</div>
+<div>...</div>
+
+</div></div>
+
+<p>
+We overwrote each PEA with two instructions, a PEI and a NOP.  You may ask: How can two instructions fit on top of one?  In this case it's possible because the original PEA instruction takes a two-byte argument (The "$11 $11" portion of our "$F4 $11 $11" example), making each occurrence of PEA occupy three bytes.  By contrast, PEI requires a one-byte argument, so it occupies two bytes total, and NOP requires no argument at all.  Two bytes for PEI plus one byte for NOP occupies exactly the space of a three-byte PEA.  Let's examine this visually.
+</p>
+
+<div class="centering"><div><img src="key_1.png" /></div></div>
+
+<p>
+Here's a gray block that's got a key drawn on it.  We want the key to appear on the first layer, but we want to get rid of the gray, and instead show the background layer beyond it.  The first thing we'll do is stick this block into a PEA Field.
+</p>
+
+<div class="centering"><div><img src="key_2.png" /></div></div>
+
+<p>
+Next, we replace each PEA of gray pixels with a PEI and a NOP, so our code looks like this:
+</p>
+
+<div class="centering"><div><img src="key_3.png" /></div></div>
+
+<p>
+If we execute this code, the PEA instructions will draw the key to the screen, as usual - but what happens at the spots with the PEI/NOP?  We already know what has to happen in general:  Two bytes need to get pushed onto the stack, just like the original PEA instruction would have done.  If the end result is anything else, the picture of the key will get all mangled on its way to the screen.  So the PEI/NOP has to get two bytes from somewhere - but where exactly?
+</p><p>
+First, the PEI instruction.  PEI stands for "Push Effective Indirect".  It takes its one-byte argument - be it a $00 or an $04 or a $7E - and treats it like a memory address, loading a two-byte value from that address on the "Direct Page", and pushing that value onto the stack.  So unlike PEA, which just pushes its argument directly onto the stack, PEI takes its argument and uses it to load from <I>somewhere else</I>, then pushes <I>that</I> value onto the stack.  That's the "Indirect" part of "Push Effective Indirect".
+</p><p>
+Okay, so we load from memory, instead of pushing directly - so what?  What's so special about that?  The secret lies in this new structure called the Direct Page.  The Direct Page isn't a fixed place in memory, it's more like a little window-frame that you can move around on top of memory.  It's a window-frame that's exactly $100 bytes wide, and you can refer to whatever's inside it by using Direct Page addressing.
+</p><p>
+A few examples will make this easy to understand.  The location of the Direct Page is controlled by setting a pointer ("D") inside the CPU.  If you set D to be $0400, and then execute the instruction "LDA $02", the CPU will add the $0400 to the $02 and come up with memory address $0402 - and load the "A" register with whatever's there.  If you then say "STA $10", the CPU will deposit the contents of A into location $0410.
+</p><p>
+If you then set D to $2222, and do a "LDA $33", the CPU will add $2222 to $33 and load a value from memory address $2255.  So, using the Direct Page, you can give the computer a little two-digit address, and it will extrapolate that into a complete address for you.  That's Direct Page addressing.
+</p><p>
+Why is it useful?  Consider a typical programming situation, where you have maybe 15 variables that you need to keep referring to over and over.  If you put all those variables next to each other in memory, and then set the Direct Page pointer to a spot nearby, you can refer to all of them using that two-digit shorthand.  Additional Assembly Language instructions become available too, if you use the Direct Page - funky indirect indexed addressing modes like "LDA ($06,S),Y".  Hoo-hah!
+</p><p>
+Here, we're using the Direct Page to accomplish something it wasn't designed for.  Of course.  We're taking advantage of the fact that we can use the same address numbers - $00, $02, $04, et cetera - to refer to a different region of memory every time we run through the PEA Field.  If we set D to be $0100, then the sequence:
+</p>
+
+<div class="codepages"><div>
+
+<div>PEI $24</div>
+<div>PEI $22</div>
+<div>PEI $20</div>
+<div>...</div>
+
+</div></div>
+
+<p>
+Will refer to memory locations $0124, $0122, and $0120.  But if we set D to be $0101, and then run through the exact same code, the code will instead refer to $0125, $0123, and $0121.  The <I>same</I> PEI instructions will load - and push - data from one byte higher in memory than before!
+</p><p>
+And that is the secret of two-layer scrolling.  In our example above, the PEA Field draws the picture of the key to the screen, but the PEI instructions load from wherever the Direct Page happens to be pointing, and draw that to the screen instead.  Chop off a PEA, increment D by one, then run through it again - and you've just scrolled the foreground four pixels, and the background only two.  Viola!  Two layer scrolling.
+</p><p>
+But what about the NOP instruction?  What's that for?  Guess what: The NOP instruction does <I>nothing</I>.  The computer just skips right over it.  It's the PEI instruction here that does all the work.  So why is the NOP there at all?  To occupy that third byte!  Whatever we replace the PEA instruction with <I>has</I> to occupy exactly three bytes, or it won't fit in the opening.
+</p><p>
+Now let's pause and consider that for a second - we're taking a useless instruction that does nothing except waste CPU cycles, and using it as filler so that our code occupies <I>more space in memory</I> than it otherwise would.  It seems crazy, but it's actually very useful:  It ensures that each fragment of the PEA field is always three bytes in size.  Therefore, we can treat it like a big grid, and find any point on it quickly.  We rely heavily on that grid for things like sprite drawing (discussed later) and localized visual effects.
+</p><p>
+Deliberate code-bloat?  Drawing graphics with the stack?  Treating the Direct Page like a copy machine? <I>How much worse did this code get?</I>
+</p>
+
+<p>Plenty.</p>
+
+<p ALIGN=RIGHT><h3 ALIGN=RIGHT>
+---&gt; <a href="part_two.html">Further Graphic Barbarity</a></h3></p>
+</body>
+</html>

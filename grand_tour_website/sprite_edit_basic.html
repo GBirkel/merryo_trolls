@@ -1,0 +1,97 @@
+<HTML>
+<HEAD>
+<TITLE>Super Merryo Trolls - BASIC Sprite Editor</TITLE>
+<link rel="stylesheet" href="styles.css" type="text/css" media="screen">
+</HEAD>
+<BODY>
+
+<div class="centering"><H1>Super Merryo Trolls</H1></div>
+
+<div class="centering"><H2>BASIC Sprite Editor</H2></div>
+
+<P>
+Before we wrote an all-assembly sprite editor to help us embed sprites in the maps, we used a rudimentary BASIC version.  Here it is, for the whole world to laugh at:
+</P>
+
+<div class="codepages smaller"><div>
+
+<div>1  LOMEM: 28672: DIM B(9)</div>
+<div>3 D$ =  CHR$ (4): PRINT : PRINT D$;"PR#3"</div>
+<div>20  POKE 49205,0: POKE 49193,65</div>
+<div>21  POKE 11,0: POKE 10,0:OFF = 192</div>
+<div>25  POKE 3,0: POKE 5,0: POKE 1,0</div>
+<div>35 C = 0:P = 0:S = 0:H = 4:I = 6:PL = 15360</div>
+<div>37 E = 0</div>
+<div>38  IF  PEEK (PL + (E * 9)) &lt;  > 0 THEN E = E + 1: GOTO 38</div>
+<div>40  HOME :X = S:Y = 0</div>
+<div>45  PRINT " ";X;":";:Z = PL + (X * 9): PRINT  PEEK (Z);" ("; PEEK (Z + 1
+     );")";</div>
+<div>50  ON  PEEK (Z + 1) GOSUB 1000,1050,1100,1150,1200,1250,1300,1350,1400,
+     1450,1500,1550,1600,1650,1700,1750,1800</div>
+<div>55  PRINT</div>
+<div>60 X = X + 1:Y = Y + 1: IF  PEEK (Z + 9) = 0 THEN  GOTO 70</div>
+<div>62  IF Y &lt; 16 THEN  GOTO 45</div>
+<div>70  PRINT "[END]": PRINT :Z = PL + (S * 9)</div>
+<div>71  VTAB Y + 3: HTAB 1: PRINT "Map: ";C + H;",";I;"   "</div>
+<div>75  PRINT "[8] Up one spr": PRINT "[2] Down one spr"</div>
+<div>80  PRINT "[5] Find a new map loc": PRINT "[0] Map loc > sprite ref"</div>
+<div>81  PRINT "[*] Add new sprite of same type"</div>
+<div>90  ON  PEEK (Z + 1) GOSUB 1010,1060,1110,1160,1210,1260,1310,1360,1410,
+    1460,1510,1560,1610,1660,1710,1760,1810</div>
+<div>93  PRINT "[.] Quit and save"</div>
+<div>95  VTAB 1: HTAB 1: PRINT ">"</div>
+<div>100  VTAB Y + 2: HTAB 1: PRINT "Cmd:";: GET B$: IF B$ = "5" THEN  GOSUB
+    200: GOTO 71</div>
+<div>105  IF B$ = "0" THEN  POKE Z,H + C: GOTO 40</div>
+<div>110  IF B$ = "2" AND Y > 1 THEN S = S + 1: GOTO 40</div>
+<div>112  IF B$ = "*" THEN E = PL + (E * 9): POKE E,254: FOR R = 1 TO 8: POKE
+    E + R, PEEK (Z + R): NEXT R: GOTO 37</div>
+<div>115  IF B$ = "8" AND S > 0 THEN S = S - 1: GOTO 40</div>
+<div>120  IF B$ = "." THEN  PRINT : PRINT D$;"run mapload": END</div>
+<div>190  ON  PEEK (Z + 1) GOTO 1020,1070,1120,1170,1220,1270,1320,1370,1420,
+    1470,1520,1570,1620,1670,1720,1770,1820</div>
+<div>199  GOTO 100</div>
+<div>200  POKE 49193,193</div>
+<div>210  POKE 0,C: CALL 8195: POKE 10,0: POKE 2,H + 8: POKE 4,I: POKE 6,7: POKE
+    7,0: CALL 8198: GET B$</div>
+<div>220  IF B$ = "3" THEN C = C + 1: IF C > 247 THEN C = 247</div>
+<div>225  IF B$ = "1" AND C > 0 THEN C = C - 1</div>
+<div>230  IF B$ = "5" AND I &lt; 11 THEN I = I + 1</div>
+<div>232  IF B$ = "8" AND I > 0 THEN I = I - 1</div>
+<div>234  IF B$ = "4" AND H > 0 THEN H = H - 1</div>
+<div>236  IF B$ = "6" AND H &lt; 7 THEN H = H + 1</div>
+<div>250  IF B$ = "0" THEN  POKE 49193,65: RETURN</div>
+<div>260  GOTO 210</div>
+<div>1000  PRINT "Fragment";: RETURN</div>
+<div>1010  RETURN</div>
+<div>1020  GOTO 100</div>
+<div>1050  PRINT "Snail  As:"; PEEK (Z + 3);" HB:"; PEEK (Z + 7);" HS:"; PEEK
+    (Z + 8);" VB:"; PEEK (Z + 5);" VS:"; PEEK (Z + 6);" VV:"; PEEK (Z +
+    4);" F:"; PEEK (Z + 2);: RETURN</div>
+<div>1060  PRINT "[S] Map loc > snail loc"</div>
+<div>1069  RETURN</div>
+<div>1070  IF B$ = "s" THEN  POKE Z + 7,C + H: POKE Z + 5,I: GOTO 40</div>
+<div>1079  GOTO 100</div>
+<div>1750  PRINT "SloFade";: RETURN</div>
+<div>1760  RETURN</div>
+<div>1770  GOTO 100</div>
+<div>1800  PRINT "ColorSw  Fwd(R:"; PEEK (Z + 3);" G:"; INT ( PEEK (Z + 2) /
+    16);" B:"; PEEK (Z + 2) - 16 *  INT ( PEEK (Z + 2) / 16);") ";</div>
+<div>1802  PRINT "Bak(R:"; PEEK (Z + 5);" G:"; INT ( PEEK (Z + 4) / 16);" B:"
+    ; PEEK (Z + 4) - 16 *  INT ( PEEK (Z + 4) / 16);") P#:"; INT ( PEEK
+    (Z + 6) / 16);</div>
+<div>1804  PRINT " C#:"; PEEK (Z + 6) - 16 *  INT ( PEEK (Z + 6) / 16);" F:";
+     PEEK (Z + 7);: RETURN</div>
+<div>1810  RETURN</div>
+<div>1820  GOTO 100</div>
+
+</div></div>
+
+<P>
+The curious bystander may remark at this point, "Dang, you sure do need to make an awful lot of stupid little support programs just to make a basic 2D platform game!"
+</P><P>
+Yep!
+</P>
+
+</BODY>
+</HTML>

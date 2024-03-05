@@ -1,0 +1,66 @@
+<HTML>
+<HEAD>
+<TITLE>Super Merryo Trolls - Fog Effect Detail</TITLE>
+<link rel="stylesheet" href="styles.css" type="text/css" media="screen">
+</HEAD>
+<BODY>
+
+<div class="centering"><H1>Super Merryo Trolls</H1></div>
+
+<div class="centering"><H2>Making The Fog Source Code</H2></div>
+
+<P>You may think it's crude, but AppleSoft BASIC was all we needed to accomplish the task of converting the drawing of the fog into the code we used inside Merryo Trolls.</P>
+
+<div class="codepages"><div>
+
+<div>5 L = 6114</div>
+<div>6 F$ = "prg/bits/fogimport.s"</div>
+<div>10 D$ =  CHR$ (4)</div>
+<div>20  HOME : PRINT : PRINT D$;"bload px/world4.fog,a";L;",b$500,l$7800,t$c1"</div>
+<div>25  PRINT "Converting (this may take awhile, so grab a snack or do some BBSing.)"</div>
+<div>30  PRINT D$;"open ";F$</div>
+<div>35  PRINT D$;"write ";F$</div>
+<div>47  PRINT "* This source actually written by a basic program."</div>
+<div>48  PRINT "* ... So watch your ass."</div>
+<div>50  PRINT : PRINT "FogTabls";</div>
+<div>60  FOR T = 0 TO 9</div>
+<div>70  PRINT " DA ";</div>
+<div>80  FOR U = 0 TO 7</div>
+<div>85  PRINT "FogT";U + (T * 8);",";</div>
+<div>90  NEXT U: PRINT : NEXT T</div>
+<div>93  PRINT : PRINT "BackLoop";</div>
+<div>100  FOR X = 0 TO 79</div>
+<div>103  PRINT " iny": PRINT " iny": PRINT " iny": PRINT " nop"</div>
+<div>105  PRINT : PRINT "FogT";X;</div>
+<div>106 Z = X + 1: IF Z = 80 THEN Z = 0</div>
+<div>110  FOR Y = 0 TO 191</div>
+<div>115 U =  PEEK (L + (X * 2) + (Y * 160))</div>
+<div>118 V =  PEEK (L + (Z * 2) + (Y * 160))</div>
+<div>119  IF U > 0 AND V = 0 THEN  GOTO 125</div>
+<div>120  NEXT Y: GOTO 145</div>
+<div>125  PRINT " ldx ForeFld+";46080 - (Y * 240);",y"</div>
+<div>130  PRINT " lda FogTable,x"</div>
+<div>136  PRINT " sta ForeFld+";46080 - (Y * 240);",y"</div>
+<div>140  NEXT Y</div>
+<div>145  PRINT " tyx"</div>
+<div>150  FOR Y = 0 TO 191</div>
+<div>155 U =  PEEK (L + (X * 2) + (Y * 160))</div>
+<div>160 V =  PEEK (L + (Z * 2) + (Y * 160))</div>
+<div>165  IF U = 0 AND V > 0 THEN  GOTO 175</div>
+<div>170  NEXT Y: GOTO 190</div>
+<div>175  PRINT " ldal BackFld+";46080 - (Y * 240);",x"</div>
+<div>180  PRINT " sta ForeFld+";46080 - (Y * 240);",x"</div>
+<div>185  NEXT Y</div>
+<div>190  NEXT X</div>
+<div>194  PRINT " jmp BackLoop"</div>
+<div>195  PRINT : PRINT D$;"close ";F$</div>
+<div>200  PRINT "Done!": END</div>
+
+</div></div>
+
+<P>
+This program created the code for moving the stripes, and a jump table so we could start drawing the fog from any stripe.
+</P>
+
+</BODY>
+</HTML>
