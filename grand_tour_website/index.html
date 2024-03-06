@@ -2,12 +2,89 @@
 <head>
 <title>Super Merryo Trolls</title>
 <link rel="stylesheet" href="styles.css" type="text/css" media="screen">
+<script type="text/javascript"> 
+
+const subtitles = [
+	"Last Century's Weirdest Graphics Technique",
+	"I Can't Believe It's Not (using a) Blitter",
+	"Very Metal Stack Pollution",
+	"Late 20th Century CPU Abuse",
+	"VRAM? Remember that? Well this is before that.",
+	"Flip It And Reverse It, Then Push It To Blit It",
+	"Stupid Frame Rates With Stupid Code",
+	"Why We Were Jealous Of The Amiga 500",
+	"If SUS Was An Opcode, We Would Have Used It",
+	"Hurry Up, Guido!",
+	"If There Were Segments, They'd Be Faulted",
+	"Ya Haul 16 Bits, And Whaddaya Get?"
+];
+
+rnd.today = new Date();
+rnd.seed = rnd.today.getTime();
+
+next_line = 0;
+pingpong = 1;
+
+function rnd()
+{
+	rnd.seed = (rnd.seed*9301+49297) % 233280;
+	return rnd.seed/(233280.0);
+};
+
+function rand(number)
+{
+   return Math.ceil(rnd()*(number+1)) - 1;
+};
+
+function clear(e)
+{
+    while (e.firstChild) { e.removeChild(e.lastChild); }
+};
+
+function changeByline() {
+
+	last_line = next_line;
+	do {
+		next_line = rand(subtitles.length-1);
+	} while (last_line == next_line);
+
+	var s;
+	var snext;
+
+	if (pingpong == 1) {
+		s = document.getElementById("subtitle");
+		snext = document.getElementById("subtitlenext");
+	} else {
+		s = document.getElementById("subtitlenext");
+		snext = document.getElementById("subtitle");
+	}
+	pingpong = 1 - pingpong;
+
+	clear(snext);
+	const t = document.createTextNode(subtitles[next_line]);
+	snext.appendChild(t);
+	snext.style.opacity = 1;
+	s.style.opacity = 0;
+
+	setTimeout("changeByline()",4500);
+}
+
+function startSwaps() {
+	s = document.getElementById("subtitlenext");
+	s.style.opacity = 0;
+	setTimeout("changeByline()",3200);
+}
+
+</script>    
 </head>
-<body>
+<body onload="startSwaps();">
 
 <div class="centering"><h1>Super Merryo Trolls</h1></div>
-<div class="centering"><h3 style="margin:0;">or</h3></div>
-<div class="centering"><h2>Last Century's Weirdest Graphics Technique</h2></div>
+<div class="centering" style="padding:0;"><h3 style="margin:0;">or</h3></div>
+<div class="centering">
+	<h2 class="subtitle next" id="subtitlenext"></h2>
+	<h2 class="subtitle" id="subtitle">Last Century's Weirdest Graphics Technique</h2>
+</div>
 
 <div class="centering">
 <table cellspacing=10 class="contents"><tr><td>
@@ -111,6 +188,10 @@ This is a block, one of many that compose the two-dimensional levels of Super Me
 <div class="centering"><div><img src="block_as_data.png" class="smallforpc" /></div></div>
 
 <p>
+I need to stress at this point, for all you modern readers who have done graphics programming:  When you're drawing things on the Apple IIgs, the CPU is <i>all you get.</i>  There is no GPU.  There is no VRAM.  There is no blitter.  If you want to move a byte of pixels to the screen, you have to do it yourself.
+</p><p>
+Think of a construction crew, with forklifts and dumptrucks, moving tons of material wherever you tell them.  That's modern graphics hardware.  Now think of the drop-claw game at the pizza parlor...
+</p><p>
 So the crucial question to ask is, what's the quickest way to move a piece of data from one place to another inside the Apple IIgs?  What Assembly Language instruction, or combination of them, gets the job done in the fewest number of CPU cycles?  The answer lies in this handy reference chart I drew in 1992:
 </p>
 
@@ -137,7 +218,7 @@ Anyway, the most straightforward way to move a block from here to there is to lo
 </div></div>
 
 <p>
-(Those hex numbers on the right are a more accurate representation of what this looks like inside the computer.  The instructions and the parameters we give them all reduce to sequences of numbers.  In this case, "LDA" is $AF, and the parameter "$021300" is flipped around and split apart into "$00 $13 $02", and so on.  It's all numbers!)
+(Those hex numbers on the right are a more accurate representation of what this looks like inside the computer.  It's all numbers, but the numbers in a computer's memory can lead a kind of double life:  A number can be just a number, or it can represent an Assembly Language instruction.  At the CPU rolls along, it interprets some of the numbers as instructions, and some of the numbers that follow are "arguments", used to inform the behavior of the instruction.  In this case, "LDA" is $AF, and the argument "$021300" is flipped around and split apart into "$00 $13 $02", and so on.)
 </p><p>
 This example isn't very practical because it's too specific.  It's saying, "Load A with the number we find at $021300, and store that number at $012000."  When the computer runs this code, it always loads from one exact spot, and stores in another exact spot.  We'd have to write a whole lot of "LDA" and "STA" commands to move an entire block ... and we'd only be able to draw it to one exact place on the screen!  Nope, not practical.
 <p><p>
@@ -158,8 +239,7 @@ We can make this code more flexible by involving a variable, like the "X" regist
 
 <p>
 If "X" is set to zero beforehand, this code does the same thing as the first example.  But if we set "X" to 2, this code will load from $021302 instead of $021300, and store to $012002 instead of $012000.  This is very useful, because now we can set up a loop - running this code over and over with different values for "X" - and move a big block of data around.  Our problem appears to be solved.  But how fast does this code go?
-</p>
-<p>
+</p><p>
 Inside the computer, each Assembly Language instruction takes a certain number of CPU cycles to execute.  Some instructions use only a few cycles and are executed quickly, while others occupy the machine for a long time.  Take a look at the green-shaded area in the reference chart.  It details the minimum number of CPU cycles that "LDA" and "STA" require to get their work done.  For "STA" to store a 16-bit value (two bytes of data) into memory, at least five cycles are required.  For "LDA" to load 16 bits into "A", at least three cycles are required. So in total, it takes 8 cycles to move 2 bytes.  Multiply that by a whole screen full of data, and you're looking at <B>128,000 CPU cycles.</B>  That's a freaking long time inside an Apple IIgs.  I could bake a pizza in that time.
 </p>
 
@@ -176,7 +256,7 @@ So what else can we do?
 <p>
 Probably the strangest trick employed in making Super Merryo Trolls go fast is the "PEA Field".  No, it's not a winter crop, nor is it some alien death ray from outer space.  "PEA" is an Assembly Language instruction.  You can see it in the purple-shaded region of the reference chart.  "PEA" stands for "Push Effective Address". (That's not a very straightforward name, actually.)  In the computer's memory, the instruction is represented by the number $F4.
 </p><p>
-The "PEA" instruction requires a 16-bit number to do its work, which is loaded from the spot right after it in memory.  So if you put the sequence "$F4 $07 $07" into memory and then tell the computer to execute that, it will execute "PEA #$0707".  (This may seem a bit strange, because it illustrates that the numbers in a computer's memory can lead a kind of double life:  A number can be just a number, or it can actually represent an Assembly Language instruction.  In point of fact, everything inside the computer is numbers, and the computer only interprets some of the numbers as Assembly Language because of the way they're arranged.)  So the "PEA" instruction is always paired with a 16-bit number.  But what does "PEA" do with this number?
+The "PEA" instruction requires a 16-bit argument to do its work, which is found right after it in memory.  So if you put the sequence "$F4 $07 $07" into memory and then tell the computer to execute that, it will execute "PEA #$0707".  But what does "PEA" do with this number?
 </p><p>
 It adds it to a structure called "the stack".  "The stack" is a block of memory that the CPU uses to keep track of where it's been, so it can eventually return there.  Depending on how complicated the computer's current job is, the stack grows and shrinks, just like a stack of papers on your desk at work.  Generally, a programmer doesn't have to worry about the stack, because it's managed automatically - address numbers are pushed and pulled from it at the appropriate times by the CPU during the execution of a program.
 </p><p>
@@ -198,7 +278,7 @@ But sometimes a programmer may want to make the CPU behave in non-linear ways, a
 </div></div>
 
 <p>
-will push three 16-bit numbers onto the stack.  So "$1300 $1902 $3387" will appear in the area of memory where the stack is kept.  Later on, the CPU may pull those numbers off the stack, and use them to jump somewhere new, or the programmer may pull them off manually, effectively using the stack as temporary storage.
+... will push three 16-bit numbers onto the stack.  So "$1300 $1902 $3387" will appear in the area of memory where the stack is kept.  Later on, the CPU may pull those numbers off the stack, and use them to jump somewhere new, or the programmer may pull them off manually, effectively using the stack as temporary storage.
 </p><p>
 Now hold on a minute here ... there's loading and storing taking place, and according to the chart, the "PEA" instruction takes <I>only five cycles</I> to move a 16-bit value!  (Check out the purple-shaded region.)  That's a bargain!  In fact, it's the best bargain the hardware has to offer.  A whole string of "PEA" instructions will push a whole string of data into memory, and there's not even an "X" register to manage.  Wouldn't it be nice if we could move data to the screen this way?
 </p><p>
@@ -216,7 +296,7 @@ Here's the block we want to move.  The thick dividing lines in the illustration 
 <p>
 Here we've broken the block into 16-bit chunks, and inserted a "PEA" instruction in front of each chunk.  (Remember, a "PEA" instruction is really just the number $F4, and pixel data is also just numbers, so all we're really doing is inserting numbers in between numbers here.)  You may wonder why the block looks scrambled now.  Well, there's something I haven't told you about the stack in the Apple IIgs.  It runs backwards in memory.
 </p><p>
-Yep, it's true.  If you execute a bunch of "PEA" instructions, one after the other, each piece of stack data is stored in memory just <I>below</I> the previous one.  By contrast, programs in memory are executed one instruction at a time with each instruction just <I>above</I> the previous one.  So while the program runs forward, the stack is drawn backwards.  To make things come out right, the program needs to push its 16-bit chunks in reverse order!
+Yep, it's true.  If you execute a bunch of "PEA" instructions, one after the other, each piece of stack data is stored in memory just <I>before</I> the previous one.  By contrast, programs in memory are executed one instruction at a time with each instruction just <I>after</I> the previous one.  So while the program runs forward, the stack is drawn backwards.  To make things come out right, the program needs to push its 16-bit chunks in reverse order!
 </p><p>
 In addition, the rows of pixels on the screen are represented in memory from top to bottom.  If we're drawing backwards, we should push the last row first.  In total, we need to turn our data upside down and backwards before we convert it into PEA instructions.
 </p><p>

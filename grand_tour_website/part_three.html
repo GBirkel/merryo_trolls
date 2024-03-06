@@ -95,7 +95,7 @@ Another of my all-time favorites for the Apple IIgs was a game called "Dungeon M
 </div>
 
 <p>
-This is the game running in Crossrunner.  That's cycle-accurate timing!  I'm pressing keys as fast as the game will read them.  You can't walk through the dungeon any faster than that, and most of the time it's much slower.  I honestly have no idea how a kid with undiagnosed attention deficit issues loved playing it so much.  I guess I just loved the atmosphere.
+This is the game running in Crossrunner.  That's cycle-accurate timing!  I'm pressing keys as fast as the game will read them.  I honestly have no idea how a kid with undiagnosed attention deficit issues could handle walking through a dungeon this slowly.  It must have been the atmosphere.
 </p><p>
 (Hey, how can you tell if someone grew up playing adventure games in the 80's?  You say the word "dungeon", and they imagine something like the basement of a U-Haul storage center.)
 </p><p>
@@ -112,7 +112,7 @@ I wrote a program that compiled all the art into PEA fields, then used pixel-mas
 </div>
 
 <p>
-It's tempting to think that if I'd been older and more connected in the industry, I could have approached FTL (the publishers) and pitched them on releasing the sequel for the Apple IIgs using this improved engine.  But I was in no state to impress anyone:  My High School GPA was barely enough to graduate, and my version of "dressing up" was locating a T-shirt without holes.  Besides, when I made the prototype in 1992 the entire Apple II line was already dead as a gaming platform, and everyone was moving on.  The only people left to impress were us hardcore weirdos.
+It's tempting to think that if I'd been older and connected to the industry, I could have approached FTL (the publishers) and pitched them on releasing the sequel for the Apple IIgs using this improved engine.  But I was in no state to impress anyone:  My High School GPA was barely enough to graduate, and my version of "dressing up" was wearing the T-shirt without the holes.  Besides, when I made the prototype in 1992 the entire Apple II line was already dead as a gaming platform, and everyone was moving on.  The only people left to impress were us hardcore weirdos.
 </p><p>
 So my plan was to start up this interface as soon as Guido entered the castle from the King's Quest scene, and make him the leader of a four-person party including me, Ace, and Zog.  He could roam around a castle dungeon with the co-developers of his own game, who would all have terrible stats and get killed immediately.
 </p>
@@ -133,9 +133,11 @@ While messing around with the PEA and PEI instructions, Ace and I came up with a
 </div>
 
 <p>
-These modes are all variations on "do math on the stack pointer" and "skip over data in your PEI sequence".
+These modes are all variations of "do math on the stack pointer" and "skip over data in your PEI sequence".
 </p><p>
-You may notice that the credits don't go all the way to the sides of the screen:  Each line is 256 pixels wide at the most.  That's because we made the squeezing effect by drawing all the lines twice to an area offscreen, the second time with a one-pixel offset, and then with the PEI instructions we switched between the offsets at regular intervals, which had the effect of skipping single pixels as each line got pushed to the screen.  The more times we switched, the more compressed the line got.  Unfortunately the PEI instruction can only address a range from $00 to $FF, which means that in any sequence of PEIs, you better have everything you need within a 256-byte region or you're going to have to move the Direct Page pointer around in the middle of your sequence.  That would have been messy, so instead we restricted each line to 256 pixels, which was 128 bytes, so both versions of each line could fit in 256 bytes side-by-side.
+You may notice that the credits don't go all the way to the sides of the screen:  Each line is 256 pixels wide at the most.  That's because we made the graphics smoother by drawing all the lines twice to an area offscreen, the second time with a one-pixel offset.
+</p><p>
+To do the squeezing effect for example, we would make a PEI sequence that switched between the offsets at regular intervals, allowing us to skip single pixels as each line got pushed to the screen.  The more times we switched, the more compressed the line got.  Unfortunately PEI instructions can only address a range from $00 to $FF, which means that in any sequence of PEIs, you better have everything you need within a 256-byte region or you're going to have to move the Direct Page pointer around in the middle of your sequence.  That would have been messy, so instead we restricted each line to 256 pixels, which was 128 bytes, so both versions of each line could fit in the Direct Page side-by-side.
 </p>
 
 <div class="centering"><h4>The Joystick: How Hard Can It Be?</h4></div>
@@ -210,9 +212,9 @@ Today's approach is much simpler:
 <p>
 Back In My Day&trade;, games usually had an "attract mode" showing a few seconds of a game playing itself.  That's very optional now, since people learn about games differently, but in 1994 it was standard, so Merryo Trolls wouldn't be legit unless it did the same thing.  What was the cheapest way we could do it?
 </p><p>
-Well, the Apple IIgs was the opposite of a multi-tasking machine.  If you fed it the same inputs with the same timing, it would always respond the same way.  All the inputs needed to play the game were on the joystick: Two axes and two buttons.  Technically you could finish level 1 without using the second button or moving the joystick up or down, so all we really needed was the X-axis and one button.  The state of those could be crammed into a single byte.
+Well, the Apple IIgs is the opposite of a multi-tasking machine.  If you feed it the same inputs with the same timing, it will always respond the same way.  All the inputs needed to play the game were on the joystick: Two axes and two buttons.  Technically you could finish level 1 without using the second button or moving the joystick up or down, so all we really needed was the X-axis and one button.  The state of those could be crammed into a single byte.
 </p><p>
-We needed a delivery mechanism for this input data.  Something we could start and stop, like the cruise control on a car, because we also needed to take over the controls after Guido slid down the flagpole at the end of a level.  We already wrote code to manage sprites; why not use that?  Anything could be a sprite.
+We needed a delivery mechanism for this input data.  Something we could start and stop, like the cruise control on a car, because we also needed to take over the controls after Guido slid down the flagpole at the end of a level.  We already wrote code to manage sprites; why not use that?  Anything could be a sprite...
 </p><p>
 So we created a "recorder" sprite, and added a few lines of code that checked the keyboard for the "r" key at the beginning of each game cycle.  If it was pressed we created an instance of the sprite, with a counter set to zero.  Every cycle through the game code after that, when the sprite handler was executed, we looked at the X-axis and button data.  If it was different from the previous value, we noted down the change and the number in the counter.  Then we increased the counter by one, and went back around again.
 </p><p>
@@ -249,7 +251,7 @@ You've probably noticed by now that Assembly Language on home computers in the 8
 <A NAME="gallery"><div class="centering"><h3>Support Programs</h3></div></a>
 
 <p>
-It takes a lot of support programs to make a game.  In 30 years this hasn't changed at all.  A surprising amount of developer time gets poured into software that never reaches the device of any customer, but instead goes to art departments, sound departments, level designers, QA personnel, et cetera.  Most of the programs we wrote for Merryo Trolls have been mentioned already, but there are a few more worth a look.
+It takes a lot of support programs to make a game.  In 30 years this hasn't changed at all.  A surprising amount of developer time gets poured into software that never reaches the device of any customer, but goes to art departments, sound departments, level designers, QA personnel, et cetera.  Most of the programs we wrote for Merryo Trolls have been mentioned already, but there are a few more worth a look.
 </p><p>
 In 1992, the internet was still dial-up modems and email, except for universities and a handful of fancy people.  Late in the year Zog went away to college, but he wanted to keep developing maps for the game.  He had access to a computer lab full of UNIX machines, but none of us knew how to write software for them, let alone some kind of networked software that would allow him to edit maps remotely.  What to do?
 </p><p>
@@ -265,11 +267,11 @@ It's map design over email!
 <div class="centering fit"><div><img src="zogmap-level.png" style="max-width:460;" /></div></div>
 
 <p>
-The above is a draft of World 1-3, assembled by Zog in the computer lab and sent through the tubes in 1992.  When Ace and I received it, we constructed a <a href="map_translator.html">translation key and a BASIC program</a> so we could dump the email straight into a level file for playtesting.  It was tedious work for Zog because there was no software on his end to help out.  He made drafts on notebook paper, then used <a href="https://www.vim.org">vim</a> to build maps in the lab and then pipe them into an email.  It was painful so he didn't do it often, but it kept development going!
+The above is a draft of World 1-3, assembled by Zog in the computer lab and sent through the tubes in 1992.  When Ace and I received it, we constructed a <a href="map_translator.html">translation key and a BASIC program</a> so we could dump the email straight into a level file for playtesting.  It was tedious work for Zog because there was no software on his end to help out.  He made drafts on notebook paper, then used <a href="https://www.vim.org">vim</a> to build maps in the lab and then pipe them into an email.  It was painful so he didn't do it often, but it kept development going.
 </p><p>
-Now for a moment let's skip ahead, past 1994 when this Apple IIgs code last saw any attention, to 1996 when I was in college.  Everything had changed.  The death of the Apple II platform had pushed me reluctantly onto a Windows box, and the new hotness in home computer graphics was DirectX, which I wanted to learn.
+Now let's make a comparison by skipping ahead, past 1994 when this Apple IIgs code last saw any attention, to 1996 when I was in college.  Everything had changed.  The death of the Apple II platform had pushed me reluctantly onto a Windows box, and the new hotness in home computer graphics was DirectX, which I wanted to learn.
 </p><p>
-I explored the idea of re-making Merryo Trolls as a Windows application.  It would have to be a total rewrite, from Assembly Language to C, with different file formats and updated art, and a much more by-the-book graphics system.  I did manage to cough out a working prototype but the whole exercise felt silly, because the Nintendo 64 had appeared a year earlier and everyone was declaring 2D action games to be dead, dead, dead.
+Why not make Merryo Trolls a Windows application?  It would have to be a total rewrite, from Assembly Language to C, with different file formats and updated art, and a much more by-the-book graphics system.  I did manage to cough out a working prototype but the whole exercise felt silly, because the Nintendo 64 had appeared a year earlier and everyone was declaring 2D action games to be dead, dead, dead.
 </p><p>
 The source code exists but there's nothing interesting about it.  It's amusing to see the editor, though, in all its Windows '95-era hideousness:
 </p>
@@ -283,8 +285,11 @@ The source code exists but there's nothing interesting about it.  It's amusing t
 
 <p>
 From editing maps over email, to this sort of thing, in four years.  The computer industry has always been nuts.
+</p><p>
+On a personal note, writing this has led me to confront the question - for about the hundredth time - why in the world did I find this stuff so fascinating as a child?  The machines were obtuse and uncooperative.  Assembly Language programming was incredibly abstract, and uses huge amounts of discrete math and algebra.  I didn't start with a "natural talent" for those things, I stubbornly hammered them into myself over a period of years.  By contrast I <i>loathed</i> doing math homework.  Doing long division with pencil and paper made me <i>want to die.</i>  And then I'd sit down in front of this machine and lose entire days poking numbers into it, with the only concrete reward being a beep or some flashing lights.
+</p><p>
+Don't get me wrong:  I love what I do now.  But what I do now is much more diverse.  What about Assembly Language was appealing to a 14-year-old?
 </p>
-
 
 <A NAME="gallery"><div class="centering"><h3>Resurrection And Code</h3></div></a>
 
