@@ -95,7 +95,7 @@ Another of my all-time favorites for the Apple IIgs was a game called "Dungeon M
 </div>
 
 <p>
-This is the game running in Crossrunner.  That's cycle-accurate timing!  I'm pressing keys as fast as the game will read them.  I honestly have no idea how a kid with undiagnosed attention deficit issues could handle walking through a dungeon this slowly.  It must have been the atmosphere.
+This is the game running in Crossrunner.  That's cycle-accurate timing!  I'm pressing keys as fast as the game will read them.  I honestly have no idea how a kid with undiagnosed attention deficit issues could handle walking through a dungeon this slowly.  It must have hypnotized me.
 </p><p>
 (Hey, how can you tell if someone grew up playing adventure games in the 80's?  You say the word "dungeon", and they imagine something like the basement of a U-Haul storage center.)
 </p><p>
@@ -207,6 +207,84 @@ Today's approach is much simpler:
 <li>Done!</li>
 </ol>
 
+<div class="centering"><h4>The Rez-Out Effect</h4></div>
+
+<p>
+Here's a slowed-down video of the (already slow) effect in Super Merryo Trolls:
+</p>
+
+<div class="centering fit">
+<video	src="rez-out-slowed.mp4" style="max-width:486px"
+		poster="rez-out-slowed.jpg"
+		type="video/mp4"
+		controls="" autoplay="" loop="" muted="" playsinline=""></video>
+</div>
+
+<p>
+This is our attempt to copy an effect in Super Mario World.  The game console does it at 30 frames a second of course, but we managed to get the idea across.
+</p><p>
+It's relatively simple for how cool it looks.  First it makes a backup copy of everything on the screen.  Then it runs a loop of code that makes another screen-sized copy, this time replacing every odd pixel with the even one after it, using mask-and-shift code like we use for sprite drawing.  Then it does the same thing for three-pixel intervals.
+</p><p>
+Those redraws are very CPU intense, which is why they're prepared in advance.  From there, we run this code:
+</p>
+
+<PRE class="codeonly">
+* Display 2x version
+     LDX   #BackgPeaField+$8000
+     LDY   #SHR
+     LDA   #$77FE
+     MVN   BackgPeaField+$8000,SHR
+
+* Display 3x version
+     JSR   Fade
+     LDX   #ForegPeaField
+     LDY   #SHR
+     LDA   #$77FE
+     MVN   ForegPeaField,SHR
+
+* Make and display 4x version
+     JSR   Fade
+     LDX   #0
+]lp2 LDY   #80
+]lp  LDAL  BackgPeaField+$a1,x
+     AND   #$000f
+     STA   Tmp
+     STA   Tmp+1
+     ORA   Tmp
+     ASLS  4
+     ORA   Tmp        ; No need for XBA this way
+     STA   SHR,X
+     STA   SHR+$A0,X
+     STA   SHR+$140,X
+     INX
+     INX
+     DEY
+     BNE   ]lp
+     TXA
+     CLC
+     ADC   #$A0*2
+     TAX
+     CMP   #$A0*192
+     BCC   ]lp2
+
+* Make and display 5x version
+     JSR   Fade
+     LDX   #0
+]lp2 LDY   #32
+]lp  LDAl  2*$a0+BackgPeaField,X
+     AND   #$F000
+     STA   Tmp+1
+     ...
+</pre>
+
+<p>
+This moves the 2x and the 3x-zoom versions of the image to the screen, calling the "Fade" subroutine each time, then constructs and moves a 4x-zoom version, then 5x, and so on.  The subroutine moves the palette one step closer to all zeros, so the screen fades a little bit with each zoom level.
+</p><p>
+We keep going like this for 6x, 7x, 8x, 10x, 12x, 16x, 20x, 24x, 32x, and finally 40x, then just fade the rest of the way to black.
+</p><p>
+The only tricky part is, we don't pre-calculate any of the zoom levels beyond 2x and 3x, so they need to be relatively efficient.  That means writing new code for each zoom level, and that means writing code that does the calculation in chunks that fall on 2 or 4 byte intervals so it can be repeated.  For example, the "7x zoom" code had to handle 7-byte intervals, 14 pixels at a time, since going 7 pixels at a time falls halfway across a byte.
+</p>
+
 <div class="centering"><h4>The Autopilot Sprite</h4></div>
 
 <p>
@@ -286,15 +364,24 @@ The source code exists but there's nothing interesting about it.  It's amusing t
 <p>
 From editing maps over email, to this sort of thing, in four years.  The computer industry has always been nuts.
 </p><p>
-On a personal note, writing this has led me to confront the question - for about the hundredth time - why in the world did I find this stuff so fascinating as a child?  The machines were obtuse and uncooperative.  Assembly Language programming was incredibly abstract, and uses huge amounts of discrete math and algebra.  I didn't start with a "natural talent" for those things, I stubbornly hammered them into myself over a period of years.  By contrast I <i>loathed</i> doing math homework.  Doing long division with pencil and paper made me <i>want to die.</i>  And then I'd sit down in front of this machine and lose entire days poking numbers into it, with the only concrete reward being a beep or some flashing lights.
+On a personal note, writing this has led me to confront the question - for about the hundredth time - why in the world did I find this stuff so fascinating as a child?  The machines were obtuse and uncooperative.  Assembly Language programming is incredibly abstract, and uses huge amounts of discrete math and algebra.  I didn't start with a "natural talent" for those things, I stubbornly hammered them into myself over a period of years.
+</p><p>
+By contrast I <i>loathed</i> doing math homework.  Doing long division with pencil and paper made me <i>want to die.</i>  And then I'd sit down in front of this machine and lose entire days poking numbers into it, with the only concrete reward being a beep or some flashing lights.  Why?
 </p><p>
 Don't get me wrong:  I love what I do now.  But what I do now is much more diverse.  What about Assembly Language was appealing to a 14-year-old?
 </p>
 
 <A NAME="gallery"><div class="centering"><h3>Resurrection And Code</h3></div></a>
 
-
-
+<p>
+And now, we return from our safari 30 years into the past, to the year 2024.  That was weird, right?
+</p><p>
+This is an interesting year for the Apple IIgs.   There's a brand new emulator called <a href="https://www.crossrunner.gs">Crossrunner</a>, and it's the very first <i>cycle accurate</i> emulator for this ancient system.  Up until this point, Super Merryo Trolls either didn't launch at all in emulators, or was unplayably fast.  So now you can finally see this game in its original screen-tearing single-digit frames-per-second glory.
+</p><p>
+And you know what else?  You can make your own version, because the source code for Super Merryo Trolls has survived all this time, carried across four platforms and two dozen OS upgrades, lo these thirty years, and is <a href="https://github.com/GBirkel/merryo_trolls">now uploaded to Github</a>.
+</p><p>
+You can edit and build it in a modern environment, thanks to the <a href="https://brutaldeluxe.fr/products/crossdevtools/merlin/index.html">Merlin32 assembler</a> and the <a href="https://ciderpress2.com/">CiderPress II</a> disk image utility.  In the making of this document I've been adding commentary to the ancient code and cleaning it up a bit, using <a href="https://code.visualstudio.com">Visual Studio Code</a>, which has a <a href="https://github.com/digarok/vscode-merlin-assembler">Merlin Assembler</a> syntax highlighting plugin.
+</p>
 
 
 

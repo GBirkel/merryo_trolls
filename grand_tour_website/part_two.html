@@ -52,7 +52,7 @@ In a modern 3D engine, the name "fog effect" would describe a situation where sh
 Compare that with the situation inside the Apple IIgs: No special graphics mode, and unless you worked within various restrictions, only 16 colors on the screen at once. In Gothic Land, the sixteen colors we used were these: 
 </p>
 
-<div class="centering"><div><img src="fog-pallette.png" style="max-width:535px;" /></div></div>
+<div class="centering"><div><img src="fog_pallette.png" style="max-width:535px;" /></div></div>
 
 <p>
 Doing any kind of graphics with only 16 colors is an invitation for hilarity, but ... a "fog effect"? In color?  You may ask why we even bothered.  We were teenagers, and this was a new frontier and our obsession.  We were no different from the kids who hung around the school's auto shop, installing neon tubing under their cars and and welding ugly metal "spoilers" onto them.  People laughed and called it pathetic, but we thought it was terrific and had a great time.
@@ -75,13 +75,13 @@ At the simplest level, transparency is achieved by taking two pixels and averagi
 An even cheaper way to convey the illusion of "fog" is to swap dark colors on a source image for light colors, to create fingers of mist like in the screenshot above.  This isn't real transparency because the colors always brighten instead of averaging, but it's easier to apply and allows for easier re-use of colors.  For example, in the Gothic Land palette, we replace color 1 with color 2, turning blue into lighter blue. We replace color 0 with color B, turning black into the darkest available grey. The "foggy" version of all the lightest colors ends up being white, hence colors 2, 6, and A all turn into F.  We picked a similar transition for every color in the palette:
 </p>
 
-<div class="centering"><div><img src="fog-steps.png" /></div></div>
+<div class="centering"><div><img src="fog_steps.png" /></div></div>
 
 <p>
 There's no easy mathematical algorithm to describe these transitions, but if we just create an array of the lightened colors, then picking the right color becomes trivial: 
 </p>
 
-<div class="centering"><div><img src="fog-charted.png" /></div></div>
+<div class="centering"><div><img src="fog_charted.png" /></div></div>
 
 <p>
 Using an array, the lightened version of color 0 is at array position 0, the lightened version of color 1 is at array position 1, and so on. So all we need to do is load single pixel values from the PEA Field, use those to grab replacement pixels from the array, and then write the new pixels back over the old ones. Instant color lightening. 
@@ -102,7 +102,7 @@ Let's consider some examples:
 The rest of the array can be built along the same lines, covering all the possible combinations of two colors. Here's a visual representation of the completed array used in Gothic Land:
 </p>
 
-<div class="centering"><div><img src="fog-array.png" /></div></div>
+<div class="centering"><div><img src="fog_array.png" /></div></div>
 
 <p>
 (Building such a data table by hand would have been tedious. Instead, we wrote <a href="fogtable_basic.html">a program in BASIC</a> that coughed it out.)
@@ -142,7 +142,7 @@ Our one-man art department might have complained, except he was also a programme
 So we built a 65536-byte lookup table, consisting of 128x256 pairs of 16-bit fog values.  (Actually we <a href="large_fog_table.html">generated it dynamically</a> from the 8-bit table when the game started.)  We filled the PEA Field with specially tweaked blocks, ensuring that every 16-bit value pushed by a PEA was an even number.  With the background and the table prepared, we were set to draw the fog and make it move.
 </p>
 
-<div class="centering"><div><img src="fog-clouds.png" style="max-width:640px;" /></div></div>
+<div class="centering"><div><img src="fog_clouds.png" style="max-width:640px;" /></div></div>
 
 <p>
 This is the fog overlay.  It's a screenful of mist, drawn in Deluxepaint, carefully designed to loop horizontally.  It's made of four-pixel chunks, so the edges of the mist always occur on handy four-pixel intervals.  Since any part of it can be drawn four pixels at a time, we can use our huge 128x256 array to draw it.

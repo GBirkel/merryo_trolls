@@ -186,7 +186,7 @@ div.fit video {
 	padding-bottom: 0.4em;
 }
 
-@media only screen and (min-device-width: 1024px) {
+@media only screen and (min-device-width: 800px) {
 	div.centering > div > img.smallforpc {
 		width: 50%;
 	}
