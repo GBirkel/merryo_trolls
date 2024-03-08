@@ -4,9 +4,9 @@
 
 RezzOut  PHB
          REP   $31
-         stz   Tmp        ; Move original pic
+         stz   Tmp               ; Move original pic
          PEA   #>BackgPeaField-2 ; into storage
-         PLB              ; for reference
+         PLB                     ; for reference
          PLB
          ldx   #$7d00-$500
 ]lp      ldal  ShrB+$500-2,x
@@ -78,33 +78,36 @@ RezzOut  PHB
          CPX   #$A0*192
          BCC   ]lp2
 
-         ldx   #BackgPeaField+$8000 ; Display 2
-         ldy   #SHR
-         lda   #$77FE
+* Display 2x version
+         LDX   #BackgPeaField+$8000
+         LDY   #SHR
+         LDA   #$77FE
          MVN   BackgPeaField+$8000,SHR
 
-         jsr   Fade
-         ldx   #ForegPeaField   ; Display 3
-         ldy   #SHR
-         lda   #$77FE
+* Display 3x version
+         JSR   Fade
+         LDX   #ForegPeaField
+         LDY   #SHR
+         LDA   #$77FE
          MVN   ForegPeaField,SHR
 
-         jsr   Fade
-         LDX   #0         ; Magnify 4
-]lp2     ldy   #80
-]lp      ldal  BackgPeaField+$a1,x
-         and   #$000f
-         sta   Tmp
-         sta   Tmp+1
-         ora   Tmp
+* Make and display 4x version
+         JSR   Fade
+         LDX   #0
+]lp2     LDY   #80
+]lp      LDAL  BackgPeaField+$a1,x
+         AND   #$000f
+         STA   Tmp
+         STA   Tmp+1
+         ORA   Tmp
          ASLS  4
-         ora   Tmp        ; No need for XBA this way
+         ORA   Tmp        ; No need for XBA this way
          STA   SHR,X
          STA   SHR+$A0,X
          STA   SHR+$140,X
          INX
          INX
-         DEy
+         DEY
          BNE   ]lp
          TXA
          CLC
@@ -113,8 +116,9 @@ RezzOut  PHB
          CMP   #$A0*192
          BCC   ]lp2
 
-         jsr   Fade
-         LDX   #0         ; Magnify 5
+* Make and display 5x version
+         JSR   Fade
+         LDX   #0
 ]lp2     LDY   #32
 ]lp      LDAl  2*$a0+BackgPeaField,X
          AND   #$F000
@@ -158,8 +162,9 @@ RezzOut  PHB
          BCs   *+5
          jmp   ]lp2
 
+* Make and display 6x version
          jsr   Fade
-         LDX   #2         ; Magnify 6
+         LDX   #2
 ]lp2     LDY   #26
 ]lp      LDAl  2*$a0+BackgPeaField+2,X
          AND   #$000F
@@ -208,9 +213,10 @@ RezzOut  PHB
          BCs   *+5
          jmp   ]lp2
 
-         jsr   Fade
-         LDX   #0         ; Magnify 7
-         stz   Tmp        ; this one is infuriating
+* Make and display 7x version
+         jsr   Fade        ; this one is infuriating
+         LDX   #0
+         stz   Tmp
 ]lp2     LDY   #22
 ]lp      LDAl  3*$A0+BackgPeaField+1,x
          AND   #$F000
@@ -280,9 +286,10 @@ RezzOut  PHB
          BCS   *+5
          jmp   ]lp2
 
+* Make and display 8x version
          jsr   Fade
          stz   Tmp
-         LDX   #0         ; Magnify 8
+         LDX   #0
 ]lp2     LDy   #40
 ]lp      ldal  3*$a0+BackgPeaField+2,x
          and   #$000f
@@ -310,8 +317,9 @@ RezzOut  PHB
          CPX   #$A0*192
          BCC   ]lp2
 
+* Make and display 10x version
          jsr   Fade
-         LDX   #0         ; Magnify10
+         LDX   #0
 ]lp2     LDy   #32
 ]lp      ldal  4*$a0+BackgPeaField+3,x
          and   #$000f
@@ -340,9 +348,10 @@ RezzOut  PHB
          BCs   *+5
          jmp   ]lp2
 
+* Make and display 12x version
          jsr   Fade
          stz   Tmp
-         LDX   #2         ; Magnify 12
+         LDX   #2
 ]lp2     LDy   #26
 ]lp      ldal  5*$a0+BackgPeaField+3,x
          and   #$000f
@@ -372,8 +381,9 @@ RezzOut  PHB
          BCs   *+5
          jmp   ]lp2
 
+* Make and display 16x version
          jsr   Fade
-         LDX   #0         ; Magnify 16
+         LDX   #0
 ]lp2     LDy   #20
 ]lp      ldal  6*$a0+BackgPeaField+4,x
          and   #$000f
@@ -403,8 +413,9 @@ RezzOut  PHB
          BCS   *+5
          jmp   ]lp2
 
+* Make and display 20x version
          jsr   Fade
-         LDX   #0         ; Magnify 20
+         LDX   #0
 ]lp2     LDy   #16
 ]lp      ldal  8*$a0+BackgPeaField+5,x
          and   #$000f
@@ -435,8 +446,9 @@ RezzOut  PHB
          BCS   *+5
          jmp   ]lp2
 
+* Make and display 24x version
          jsr   Fade
-         LDX   #0         ; Magnify24
+         LDX   #0
 ]lp2     LDy   #13        ; This one is evil
 ]lp      ldal  10*$a0+BackgPeaField+6,x
          and   #$000f
@@ -469,8 +481,9 @@ RezzOut  PHB
          BCS   *+5
          jmp   ]lp2
 
+* Make and display 32x version
          jsr   Fade
-         LDX   #0         ; Magnify32
+         LDX   #0
 ]lp2     LDy   #10
 ]lp      ldal  12*$a0+BackgPeaField+8,x
          and   #$000f
@@ -505,8 +518,9 @@ RezzOut  PHB
          BCS   *+5
          jmp   ]lp2
 
+* Make and display 40x version
          jsr   Fade
-         LDX   #0         ; Magnify 40
+         LDX   #0
 ]lp2     LDy   #8
 ]lp      ldal  16*$a0+BackgPeaField+10,x
          and   #$000f
