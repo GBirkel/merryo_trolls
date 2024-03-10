@@ -25,15 +25,10 @@ h2 {
 	margin-bottom: 4px;
 }
 
-
 h2.subtitle {
-	transition: opacity 0.65s
-}
-
-h2.subtitle.next {
+	transition: opacity 0.65s;
 	position: absolute;
 }
-
 
 h3 {
 	font-size: 1.3em;
