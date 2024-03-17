@@ -219,7 +219,7 @@ Anyway, the most straightforward way to move a block from here to there is to lo
 </div></div>
 
 <p>
-(Those hex numbers on the right are a more accurate representation of what this looks like inside the computer.  It's all numbers, but the numbers in a computer's memory can lead a kind of double life:  A number can be just a number, or it can represent an Assembly Language instruction.  At the CPU rolls along, it interprets some of the numbers as instructions, and some of the numbers that follow are "arguments", used to inform the behavior of the instruction.  In this case, "LDA" is $AF, and the argument "$021300" is flipped around and split apart into "$00 $13 $02", and so on.)
+(Those hex numbers on the right are a more accurate representation of what this looks like inside the computer.  It's all numbers, but the numbers in a computer's memory can lead a kind of double life:  A number can be just a number, or it can represent an Assembly Language instruction.  As the CPU rolls along, it interprets some of the numbers as instructions, and some of the numbers that follow are "arguments", used to inform the behavior of the instruction.  In this case, "LDA" is $AF, and the argument "$021300" is flipped around and split apart into "$00 $13 $02", and so on.)
 </p><p>
 This example isn't very practical because it's too specific.  It's saying, "Load A with the number we find at $021300, and store that number at $012000."  When the computer runs this code, it always loads from one exact spot, and stores in another exact spot.  We'd have to write a whole lot of "LDA" and "STA" commands to move an entire block ... and we'd only be able to draw it to one exact place on the screen!  Nope, not practical.
 <p><p>
