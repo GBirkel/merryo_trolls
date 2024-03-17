@@ -45,6 +45,6 @@ Download and install these tools somewhere near your checked-out copy of this re
 
 Note that on MacOS you may need to de-quarantine them first, by going into their folders and running `sudo xattr -r -d com.apple.quarantine *` .
 
-With the right tools, you can take the resulting disk image and write it to an 800k 3.5-inch disk, and play the game on a stock Apple IIgs.
+With the right tools, you can take the resulting disk image and write it to an 800k 3.5-inch disk, and play the game on a stock Apple IIgs.  Or you can just double-click it, and it will open in Crossrunner.
 
 [^1]: But really, who knows what's possible? There's currently a land war in Asia going on.
