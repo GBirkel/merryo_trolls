@@ -161,6 +161,8 @@ def main(argv):
 
 		world_build_path = os.path.join(src_folder, "WORLD" + world + ".S")
 		world_build_h = open(world_build_path, "w")
+		# Combine the relevant world flags file with the main source file.
+		# This is what we'll build.  This is done to compensate for a Merlin32 compiler decifiency.
 		world_build_h.write(world_flags + main_s_file)
 		world_build_h.close()
 
