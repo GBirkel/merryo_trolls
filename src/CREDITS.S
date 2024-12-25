@@ -559,6 +559,40 @@ Message  BIG   4A4B,242B,2425,2425,2021,2663;0;12 ; Merryo
          DFB   0
          DFB   12
          HEX   60,0F,6F,00,60,72,6F,00,60,6F,6F,62 ; 408 438 4882
+         EMP   32
+         LIT   'INSPIRATION@FROM';3;16
+         LIT   '[@@[';6;4
+         LIT   '[@SHONEN@KNIFE@[';5;16
+         LIT   '[[[@DEEE@LITE[[[';4;16
+         LIT   '[[[@MINISTRY@[[[';5;16
+         LIT   '[@MONTY@PYTHON@[';4;16
+         LIT   '[WARREN@FARREL@[';5;16
+         LIT   '[@[@MR@@BILL@[@[';4;16
+         LIT   '[[@MUSSORGSKY@[[';5;16
+         LIT   '[@[@DELERUIM@[@[';4;16
+         LIT   '[MY@LITTLE@PONY[';5;16
+         LIT   '[@NEGATIVLAND@@[';4;16
+         LIT   '[PEIRS@@ANTHONY[';5;16
+         LIT   '[[@PINK@FLOYD@[[';4;16
+         LIT   '[[STEPHEN@KING[[';5;16
+         LIT   '[@TCHAIKOVSKY@[[';4;16
+         LIT   '[@[@[@MOBY@[@[@[';5;16
+         LIT   '[@SKINNY@PUPPY@[';4;16
+         LIT   '[[@DAVID@BOWIE@[';5;16
+         LIT   '[@[@LAIBACH@@[@[';4;16
+         LIT   '[[@@INTERMIX@@[[';5;16
+         LIT   '[[@STOKOWSKI@[[[';4;16
+         LIT   '[@HELLO@KITTY@@[';5;16
+         LIT   '[[@@CHESTER@@@[[';4;16
+         LIT   '[[[@@MOZART@@[[[';5;16
+         EMP   32
+         LIT   'DEFINITELY@NO';3;13
+         LIT   'INSPIRATION@FROM';3;16
+         LIT   '[@@[';6;4
+         LIT   '[@GUNS@N@ROSES@[';4;16
+         LIT   '[[@@MEATLOAF@@[[';5;16
+         LIT   '[[@[@BARNEY@[@[[';4;16
+         LIT   '[[@@@MADONNA@@[[';5;16
          EMP   64
          EMP   64
          EMP   64
