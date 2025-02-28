@@ -28,18 +28,18 @@ Among other controls, it had a "wrapping interval", so you could move chunks of 
  70  CALL 8192
  75  GET A$
  76  IF A$ = "0" THEN  POKE G,65: GOTO 120
- 80  IF A$ = "4" AND W > 4 THEN W = W - 2
- 85  IF A$ = "6" AND W < 256 THEN W = W + 2
+ 80  IF A$ = "4" AND W &gt; 4 THEN W = W - 2
+ 85  IF A$ = "6" AND W &lt; 256 THEN W = W + 2
  90  IF A$ = "1" THEN Y = Y - 1: IF Y =  - 1 THEN Y = 255:A$ = "8"
  92  IF A$ = "3" THEN Y = Y + 1: IF Y = 256 THEN Y = 0:A$ = "2"
  94  IF A$ = "8" THEN X = X - 1: IF X =  - 1 THEN X = 15:A$ = "7"
  96  IF A$ = "2" THEN X = X + 1: IF X = 16 THEN X = 0:A$ = "9"
  98  IF A$ = "7" THEN P = P - 1: IF P =  - 1 THEN P = 15:A$ = "="
  99  IF A$ = "9" THEN P = P + 1: IF P = 16 THEN P = 0:A$ = "/"
- 100  IF A$ = "=" AND B > 2 THEN B = B - 1
- 101  IF A$ = "/" AND B < 34 THEN B = B + 1
- 102  IF A$ = "+" AND M > 0 THEN M = M - 1: POKE 2,M: CALL S
- 103  IF A$ = "-" AND M < 190 THEN M = M + 1: POKE 2,M: CALL S
+ 100  IF A$ = "=" AND B &gt; 2 THEN B = B - 1
+ 101  IF A$ = "/" AND B &lt; 34 THEN B = B + 1
+ 102  IF A$ = "+" AND M &gt; 0 THEN M = M - 1: POKE 2,M: CALL S
+ 103  IF A$ = "-" AND M &lt; 190 THEN M = M + 1: POKE 2,M: CALL S
  110  GOTO 50
  120  PRINT : PRINT "Stopped at:"
  121 A = (P * 4096) + (X * 256) + Y
@@ -50,14 +50,14 @@ Among other controls, it had a "wrapping interval", so you could move chunks of 
  126  PRINT "Lenth x Width = ";C
  130  PRINT : PRINT "To capture screen:"
  140  PRINT "]mtr"
- 150  PRINT "*00/1000<e1/2000.9fffm"
+ 150  PRINT "*00/1000&lt;e1/2000.9fffm"
  160  PRINT "*bsave ga.save1,a$1000,l$8000"
  170  PRINT : PRINT "To capture data:"
  175  PRINT "]mtr"
- 180  PRINT "*00/1000<";
+ 180  PRINT "*00/1000&lt;";
  183 Q$ = "0123456789ABCDEF"
  184  PRINT  MID$ (Q$, INT (B / 16) + 1,1); MID$ (Q$,(B -  INT (B / 16) * 16) + 1,1);"/";
- 185 D = C + A: IF D > 65535 THEN D = D - 65535
+ 185 D = C + A: IF D &gt; 65535 THEN D = D - 65535
  186  PRINT  MID$ (Q$, INT (A / 4096) + 1,1);:A = A -  INT (A / 4096) * 4096
  187  PRINT  MID$ (Q$, INT (A / 256) + 1,1);:A = A -  INT (A / 256) * 256
  188  PRINT  MID$ (Q$, INT (A / 16) + 1,1);:A = A -  INT (A / 16) * 16
